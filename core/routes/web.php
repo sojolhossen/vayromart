@@ -6,6 +6,79 @@ Route::get('/clear', function () {
     \Illuminate\Support\Facades\Artisan::call('optimize:clear');
 });
 
+Route::get('/test-report', function () {
+    $botToken = env('TELEGRAM_BOT_TOKEN');
+    $chatId = env('TELEGRAM_CHAT_ID');
+    
+    if (!$botToken || !$chatId) {
+        return "Please set TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID in .env first!";
+    }
+    
+    $date = date('Y-m-d');
+    
+    $totalVisitors = \DB::table('visitor_logs')->where('visit_date', $date)->count();
+    $deviceStats = \DB::table('visitor_logs')
+        ->where('visit_date', $date)
+        ->select('device', \DB::raw('count(*) as total'))
+        ->groupBy('device')
+        ->get()
+        ->pluck('total', 'device')
+        ->toArray();
+    
+    $pcCount = $deviceStats['PC'] ?? 0;
+    $mobileCount = $deviceStats['Mobile'] ?? 0;
+    $tabletCount = $deviceStats['Tablet'] ?? 0;
+    
+    $totalOrders = \App\Models\Order::isValidOrder()->whereDate('created_at', $date)->count();
+    $totalSales = \App\Models\Order::isValidOrder()->whereDate('created_at', $date)->sum('total_amount');
+    $newUsers = \App\Models\User::whereDate('created_at', $date)->count();
+    
+    $message = "📊 <b>TEST Daily Website Report (" . date('d M Y', strtotime($date)) . ")</b>\n";
+    $message .= "━━━━━━━━━━━━━━━━━━━\n\n";
+    $message .= "👥 <b>Traffic Overview (Today so far):</b>\n";
+    $message .= "• Unique Visitors: <b>" . $totalVisitors . "</b>\n";
+    $message .= "• PC Visitors: <b>" . $pcCount . "</b>\n";
+    $message .= "• Mobile Visitors: <b>" . $mobileCount . "</b>\n";
+    if ($tabletCount > 0) {
+        $message .= "• Tablet Visitors: <b>" . $tabletCount . "</b>\n";
+    }
+    $message .= "\n🛒 <b>Sales & Orders:</b>\n";
+    $message .= "• Total Orders: <b>" . $totalOrders . "</b>\n";
+    $message .= "• Total Sales: <b>" . gs('cur_sym') . showAmount($totalSales, currencyFormat: false) . " " . gs('cur_text') . "</b>\n";
+    $message .= "\n👤 <b>User Registrations:</b>\n";
+    $message .= "• New Signups: <b>" . $newUsers . "</b>\n";
+    $message .= "\n━━━━━━━━━━━━━━━━━━━";
+    
+    $url = "https://api.telegram.org/bot" . $botToken . "/sendMessage";
+    $data = [
+        'chat_id' => $chatId,
+        'text' => $message,
+        'parse_mode' => 'HTML',
+        'disable_web_page_preview' => true,
+    ];
+
+    $options = [
+        'http' => [
+            'header'  => "Content-type: application/x-www-form-urlencoded\r\n",
+            'method'  => 'POST',
+            'content' => http_build_query($data),
+            'ssl' => [
+                'verify_peer' => false,
+                'verify_peer_name' => false,
+            ]
+        ]
+    ];
+
+    $context  = stream_context_create($options);
+    $result = @file_get_contents($url, false, $context);
+    
+    if ($result !== false) {
+        return "Test report sent successfully to Telegram!";
+    }
+    
+    return "Failed to send report. Please check Telegram bot permissions.";
+});
+
 // User Support Ticket
 Route::controller('TicketController')->prefix('ticket')->name('ticket.')->group(function () {
     Route::get('/', 'supportTicket')->name('index');
