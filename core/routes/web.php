@@ -188,6 +188,9 @@ Route::controller('SiteController')->group(function () {
 
 Route::post('/ai-chatbot/message', 'ChatbotController@sendMessage')->name('chatbot.message');
 
+Route::post('/telegram/webhook', [App\Http\Controllers\TelegramController::class, 'webhook'])->name('telegram.webhook');
+Route::get('/telegram/set-webhook', [App\Http\Controllers\TelegramController::class, 'setWebhook'])->name('telegram.set_webhook');
+
 // Chatbot Landing Pages
 Route::controller('LandingPageController')->prefix('landing')->name('landing.')->group(function () {
     Route::get('/{slug}', 'viewPage')->name('view');

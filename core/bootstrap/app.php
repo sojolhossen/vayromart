@@ -74,7 +74,7 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         $middleware->validateCsrfTokens(
-            except: ['user/deposit', 'ipn*']
+            except: ['user/deposit', 'ipn*', 'telegram/webhook']
         );
     })
     ->withExceptions(function (Exceptions $exceptions) {
