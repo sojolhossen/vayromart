@@ -1,0 +1,1 @@
+var firebaseConfig = {"apiKey":"AIzaSyBhbbzekQFvVJSK7BMab5g_mfW_r-RFAFw","authDomain":"vayromart.firebaseapp.com","projectId":"vayromart","storageBucket":"vayromart.firebasestorage.app","messagingSenderId":"164677323342","appId":"1:164677323342:web:61a871fa83cf3e7ccad11f","measurementId":"G-M6RQX369JH"}

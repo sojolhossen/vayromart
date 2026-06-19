@@ -1,0 +1,112 @@
+/* ─── Categories Grid Page — Minimal Style ─── */
+
+.categories-grid-wrapper {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 16px;
+}
+
+@media (max-width: 1199px) {
+    .categories-grid-wrapper {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+@media (max-width: 767px) {
+    .categories-grid-wrapper {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+    }
+}
+
+@media (max-width: 480px) {
+    .categories-grid-wrapper {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+    }
+}
+
+/* ─── Category Card ─── */
+.cat-grid-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 16px 10px 12px;
+    background: #fafafa;
+    border-radius: 12px;
+    text-decoration: none !important;
+    transition: background 0.2s ease, transform 0.2s ease;
+    text-align: center;
+}
+
+.cat-grid-card:hover {
+    background: hsl(var(--base) / 0.07);
+    transform: translateY(-3px);
+}
+
+/* ─── Image ─── */
+.cat-grid-card__img-wrap {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    margin-bottom: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    transition: box-shadow 0.2s ease, transform 0.25s ease;
+}
+
+.cat-grid-card:hover .cat-grid-card__img-wrap {
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+    transform: scale(1.06);
+}
+
+.cat-grid-card__img {
+    width: 42px;
+    height: 42px;
+    object-fit: contain;
+}
+
+/* ─── Text ─── */
+.cat-grid-card__name {
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: #444;
+    margin: 0;
+    line-height: 1.3;
+    word-break: break-word;
+    transition: color 0.2s ease;
+}
+
+.cat-grid-card:hover .cat-grid-card__name {
+    color: hsl(var(--base));
+}
+
+/* hide subcategory count for cleaner look */
+.cat-grid-card__count {
+    display: none;
+}
+
+/* ─── Mobile ─── */
+@media (max-width: 575px) {
+    .cat-grid-card {
+        padding: 12px 6px 10px;
+    }
+
+    .cat-grid-card__img-wrap {
+        width: 52px;
+        height: 52px;
+    }
+
+    .cat-grid-card__img {
+        width: 34px;
+        height: 34px;
+    }
+
+    .cat-grid-card__name {
+        font-size: 0.72rem;
+    }
+}

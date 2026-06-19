@@ -1,0 +1,14 @@
+User-agent: *
+Allow: /
+
+Disallow: /admin/
+Disallow: /login/
+Disallow: /register/
+Disallow: /cart/
+Disallow: /checkout/
+Disallow: /account/
+Disallow: /wishlist/
+Disallow: /search/
+Disallow: /filter/
+
+Sitemap: https://vayromart.com/sitemap.xml

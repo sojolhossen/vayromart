@@ -1,0 +1,23 @@
+name: Deploy Website via FTP
+
+on:
+  push:
+    branches:
+      - main  # আপনার মেইন ব্রাঞ্চের নাম master হলে এখানে master লিখবেন
+
+jobs:
+  web-deploy:
+    name: Deploying to Hosting
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Get latest code
+      uses: actions/checkout@v3
+    
+    - name: Sync files to Server
+      uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+      with:
+        server: ${{ secrets.FTP_SERVER }}
+        username: ${{ secrets.FTP_USERNAME }}
+        password: ${{ secrets.FTP_PASSWORD }}
+        server-dir: /  # আগের স্ক্রিনশট অনুযায়ী আপনার নির্দিষ্ট সাব-ফোল্ডারের জন্য শুধু / থাকবে
