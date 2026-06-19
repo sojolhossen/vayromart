@@ -9,19 +9,37 @@
         <div class="input-images"></div>
     </form>
 
-    <div class="d-flex justify-content-end mb-3 gap-3">
-        <select name="order_by" class="form-select w-auto">
-            <option value="id::desc" @selected(request()->order_by == 'id::desc')>@lang('Newest')</option>
-            <option value="id::asc" @selected(request()->order_by == 'id::asc')>@lang('Oldest')</option>
-            <option value="file_name::asc" @selected(request()->order_by == 'name::asc')>@lang('Name A-Z')</option>
-            <option value="file_name::desc" @selected(request()->order_by == 'name::desc')>@lang('Name Z-A')</option>
-        </select>
-        <x-search-form></x-search-form>
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-3">
+        <div class="d-flex gap-2 align-items-center flex-wrap">
+            <a href="{{ request()->fullUrlWithQuery(['status' => null]) }}" class="btn btn-sm btn-outline--primary @if(!request()->status) active @endif">@lang('All')</a>
+            <a href="{{ request()->fullUrlWithQuery(['status' => 'used']) }}" class="btn btn-sm btn-outline--success @if(request()->status == 'used') active @endif">@lang('Used')</a>
+            <a href="{{ request()->fullUrlWithQuery(['status' => 'unused']) }}" class="btn btn-sm btn-outline--danger @if(request()->status == 'unused') active @endif">@lang('Unused')</a>
+            
+            <button class="btn btn-sm btn--danger confirmationBtn" type="button" data-question="@lang('Are you sure to delete all unused files permanently?')" data-action="{{ route('admin.media.delete.unused') }}"><i class="las la-trash-alt"></i> @lang('Delete All Unused')</button>
+        </div>
+
+        <div class="d-flex gap-3 align-items-center">
+            <select name="order_by" class="form-select w-auto">
+                <option value="id::desc" @selected(request()->order_by == 'id::desc')>@lang('Newest')</option>
+                <option value="id::asc" @selected(request()->order_by == 'id::asc')>@lang('Oldest')</option>
+                <option value="file_name::asc" @selected(request()->order_by == 'name::asc')>@lang('Name A-Z')</option>
+                <option value="file_name::desc" @selected(request()->order_by == 'name::desc')>@lang('Name Z-A')</option>
+            </select>
+            <x-search-form></x-search-form>
+        </div>
     </div>
 
     <div class="media-content">
         @foreach ($mediaFiles as $file)
+            @php
+                $totalUses = $file->products_count + $file->product_images_count + $file->product_variants_count + $file->product_variant_images_count;
+                $isUsed = $totalUses > 0;
+            @endphp
             <div class="media-item">
+                <span class="badge {{ $isUsed ? 'badge--success' : 'badge--danger' }} position-absolute top-0 start-0 m-2" style="z-index: 2;">
+                    {{ $isUsed ? trans('Used') : trans('Unused') }}
+                </span>
+
                 <div class="dropdown ">
                     <button class="media-button" type="button" id="dropdown-id-{{ $file->id }}" data-bs-toggle="dropdown" aria-expanded="false">
                         <i class="la la-ellipsis-v"></i>
@@ -31,7 +49,7 @@
                         $fileInfo = getFileInfoViaFullPath($file->full_url);
                         $fileInfo->id = $file->id;
                         $fileInfo->created_at = showDateTime($file->created_at);
-                        $fileInfo->total_uses = $file->products_count + $file->product_images_count + $file->product_variants_count + $file->product_variant_images_count;
+                        $fileInfo->total_uses = $totalUses;
                     @endphp
 
                     <div class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdown-id-{{ $file->id }}" data-bs-popper="static">

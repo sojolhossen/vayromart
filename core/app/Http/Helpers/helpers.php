@@ -911,7 +911,16 @@ function importFileReader($file, $columns, $modelClass = Product::class) {
 
 function getFileInfoViaFullPath($fullPath) {
     $pathInfo = pathinfo(parse_url($fullPath, PHP_URL_PATH));
-    $headers = get_headers($fullPath, 1);
+    $context = stream_context_create([
+        'ssl' => [
+            'verify_peer' => false,
+            'verify_peer_name' => false,
+        ],
+    ]);
+    $headers = @get_headers($fullPath, 1, $context);
+    if (!is_array($headers)) {
+        $headers = [];
+    }
 
     return (object) [
         'basename' => $pathInfo['basename'] ?? null,

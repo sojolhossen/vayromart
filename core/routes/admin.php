@@ -224,6 +224,7 @@ Route::middleware('admin')->group(function () {
         Route::get('/', 'media');
         Route::get('files', 'mediaFiles')->name('.files');
         Route::post('upload', 'upload')->name('.upload');
+        Route::post('delete-unused', 'deleteUnused')->name('.delete.unused');
         Route::post('delete/{id}', 'delete')->name('.delete');
     });
 

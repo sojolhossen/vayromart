@@ -18,6 +18,23 @@ class MediaController extends Controller {
             ->withCount('productVariants')
             ->withCount('productVariantImages');
 
+        if (request()->has('status')) {
+            $status = request()->status;
+            if ($status == 'used') {
+                $mediaFiles->where(function($q) {
+                    $q->has('products')
+                      ->orHas('productImages')
+                      ->orHas('productVariants')
+                      ->orHas('productVariantImages');
+                });
+            } elseif ($status == 'unused') {
+                $mediaFiles->doesntHave('products')
+                    ->doesntHave('productImages')
+                    ->doesntHave('productVariants')
+                    ->doesntHave('productVariantImages');
+            }
+        }
+
         if (request()->has('order_by')) {
             try {
                 $orderBy = explode('::', request()->order_by);
@@ -38,6 +55,29 @@ class MediaController extends Controller {
     public function mediaFiles() {
         $mediaFiles = Media::orderBy('id', 'desc')->paginate(33);
         return response()->json($mediaFiles);
+    }
+
+    public function deleteUnused() {
+        $unusedMedia = Media::doesntHave('products')
+            ->doesntHave('productImages')
+            ->doesntHave('productVariants')
+            ->doesntHave('productVariantImages')
+            ->get();
+
+        $count = 0;
+        foreach ($unusedMedia as $media) {
+            try {
+                fileManager()->removeFile($media->path . '/' . @$media->file_name);
+                fileManager()->removeFile($media->path . '/thumb_' . @$media->file_name);
+                $media->delete();
+                $count++;
+            } catch (\Exception $e) {
+                // Ignore error if file doesn't exist
+            }
+        }
+
+        $notify[] = ['success', $count . ' unused files deleted successfully'];
+        return back()->withNotify($notify);
     }
 
     public function upload(Request $request) {
