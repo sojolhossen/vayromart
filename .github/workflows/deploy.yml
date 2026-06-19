@@ -20,4 +20,4 @@ jobs:
         server: ${{ secrets.FTP_SERVER }}
         username: ${{ secrets.FTP_USERNAME }}
         password: ${{ secrets.FTP_PASSWORD }}
-        server-dir: /  # আগের স্ক্রিনশট অনুযায়ী আপনার নির্দিষ্ট সাব-ফোল্ডারের জন্য শুধু / থাকবে
+        server-dir: /vayromart.com/  # আগের স্ক্রিনশট অনুযায়ী আপনার নির্দিষ্ট সাব-ফোল্ডারের জন্য /vayromart.com/ ব্যবহার করুন
