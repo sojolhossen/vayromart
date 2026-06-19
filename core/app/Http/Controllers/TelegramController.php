@@ -22,7 +22,8 @@ class TelegramController extends Controller {
             }
 
             // Security: Only allow configured admin Chat ID to query details
-            if ($chatId != env('TELEGRAM_CHAT_ID')) {
+            $configuredChatId = trim(env('TELEGRAM_CHAT_ID'), '"\' ');
+            if (strval($chatId) !== strval($configuredChatId)) {
                 return response('Unauthorized', 200);
             }
 
@@ -203,7 +204,15 @@ class TelegramController extends Controller {
             $this->sendTelegramMessage($chatId, $message);
 
         } catch (\Exception $e) {
-            // Silence exceptions to keep Telegram webhook happy
+            try {
+                $errorMsg = "❌ <b>Telegram Webhook Error</b>\n";
+                $errorMsg .= "• Message: " . $e->getMessage() . "\n";
+                $errorMsg .= "• File: " . basename($e->getFile()) . "\n";
+                $errorMsg .= "• Line: " . $e->getLine();
+                $this->sendTelegramMessage($chatId ?? env('TELEGRAM_CHAT_ID'), $errorMsg);
+            } catch (\Exception $e2) {
+                // Squelch
+            }
         }
 
         return response('OK', 200);
