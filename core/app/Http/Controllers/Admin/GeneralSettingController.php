@@ -16,7 +16,21 @@ class GeneralSettingController extends Controller {
         return view('admin.setting.system', compact('pageTitle', 'settings'));
     }
 
+    private function checkSettingColumn() {
+        if (!\Illuminate\Support\Facades\Schema::hasColumn('general_settings', 'homepage_products_limit')) {
+            try {
+                \Illuminate\Support\Facades\Schema::table('general_settings', function ($table) {
+                    $table->integer('homepage_products_limit')->default(20);
+                });
+                \Illuminate\Support\Facades\Cache::forget('GeneralSetting');
+            } catch (\Exception $e) {
+                \Log::error("Failed to auto-create homepage_products_limit: " . $e->getMessage());
+            }
+        }
+    }
+
     public function general() {
+        $this->checkSettingColumn();
         $pageTitle = 'General Setting';
         $timezones = timezone_identifiers_list();
         $currentTimezone = array_search(config('app.timezone'), $timezones);
@@ -24,6 +38,7 @@ class GeneralSettingController extends Controller {
     }
 
     public function generalUpdate(Request $request) {
+        $this->checkSettingColumn();
         $request->validate([
             'site_name' => 'required|string|max:40',
             'preloader_title' => 'required|string|max:40',
