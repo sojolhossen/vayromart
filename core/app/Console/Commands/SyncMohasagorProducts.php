@@ -134,37 +134,18 @@ class SyncMohasagorProducts extends Command
         $product->regular_price = $item['price'];
         $product->sale_price = null; // No default discount unless set manually
 
-        // Save Mohasagor's 'sale_price' as wholesale/dropship cost privately in extra_descriptions
+        // Filter out Mohasagor's wholesale/dropship cost from extra_descriptions to keep it hidden
         $extraDesc = $product->extra_descriptions ?? [];
         if (!is_array($extraDesc)) {
             $extraDesc = [];
         }
         $newExtraDesc = [];
-        $found = false;
-        foreach ($extraDesc as $key => $val) {
-            if ($key === 'dropship_price') {
-                $newExtraDesc[] = [
-                    'key' => 'dropship_price',
-                    'value' => (string)$val
-                ];
-                $found = true;
-            } elseif (is_array($val) && isset($val['key'])) {
-                if ($val['key'] === 'dropship_price') {
-                    $newExtraDesc[] = [
-                        'key' => 'dropship_price',
-                        'value' => (string)$item['sale_price']
-                    ];
-                    $found = true;
-                } else {
+        foreach ($extraDesc as $val) {
+            if (is_array($val) && isset($val['key'])) {
+                if ($val['key'] !== 'dropship_price') {
                     $newExtraDesc[] = $val;
                 }
             }
-        }
-        if (!$found) {
-            $newExtraDesc[] = [
-                'key' => 'dropship_price',
-                'value' => (string)$item['sale_price']
-            ];
         }
         $product->extra_descriptions = $newExtraDesc;
 

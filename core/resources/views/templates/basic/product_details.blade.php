@@ -79,12 +79,14 @@
                                             @if ($product->extra_descriptions)
                                                 <div class="description-item mt-5">
                                                     @foreach ($product->extra_descriptions as $description)
-                                                        <h4>{{ __(@$description['key']) }}</h4>
-                                                        <p>
-                                                            @php
-                                                                echo @$description['value'];
-                                                            @endphp
-                                                        </p>
+                                                        @if (@$description['key'] !== 'dropship_price')
+                                                            <h4>{{ __(@$description['key']) }}</h4>
+                                                            <p>
+                                                                @php
+                                                                    echo @$description['value'];
+                                                                @endphp
+                                                            </p>
+                                                        @endif
                                                     @endforeach
                                                 </div>
                                             @endif
