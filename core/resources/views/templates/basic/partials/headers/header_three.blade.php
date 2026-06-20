@@ -11,7 +11,7 @@
 @endphp
 
 @if (@$headerThree->status == 'on')
-    <div class="header-bottom @if (gs('homepage_layout') == 'full_width_banner') without-category @endif">
+    <div class="header-bottom d-none d-lg-block @if (gs('homepage_layout') == 'full_width_banner') without-category @endif">
         <div class="container">
             <div class="row g-0">
                 <div class="header-bottom-wrapper {{ $layoutClass }}">
