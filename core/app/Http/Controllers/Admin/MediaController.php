@@ -447,5 +447,80 @@ class MediaController extends Controller {
                     ->update(['data_values' => $newDataValues]);
             }
         }
+
+        // 5. Auto-Optimize Logo Images
+        $logoPath = base_path('../assets/images/logo_icon');
+        if (file_exists($logoPath) && is_dir($logoPath)) {
+            try {
+                $manager = new \Intervention\Image\ImageManager(new \Intervention\Image\Drivers\Gd\Driver());
+                $logos = ['logo.png' => 'logo.webp', 'logo_dark.png' => 'logo_dark.webp'];
+                foreach ($logos as $png => $webp) {
+                    $pngFilePath = $logoPath . '/' . $png;
+                    $webpFilePath = $logoPath . '/' . $webp;
+                    if (file_exists($pngFilePath) && !file_exists($webpFilePath)) {
+                        $img = $manager->read($pngFilePath);
+                        // Scale down if width is greater than 600px
+                        if ($img->width() > 600) {
+                            $img->scale(width: 600);
+                            // Also save back scaled version to PNG to reduce size of original
+                            $img->save($pngFilePath);
+                        }
+                        // Save as WebP
+                        $img->toWebp(80)->save($webpFilePath);
+                    }
+                }
+            } catch (\Exception $e) {
+                \Log::error("Failed to auto-optimize logo images: " . $e->getMessage());
+            }
+        }
+
+        // 6. Auto-Optimize Frontend section images (banners, sliders, etc.)
+        $frontendPath = base_path('../assets/images/frontend');
+        if (file_exists($frontendPath) && is_dir($frontendPath)) {
+            try {
+                $directory = new \RecursiveDirectoryIterator($frontendPath);
+                $iterator = new \RecursiveIteratorIterator($directory);
+                $manager = new \Intervention\Image\ImageManager(new \Intervention\Image\Drivers\Gd\Driver());
+                
+                foreach ($iterator as $info) {
+                    if ($info->isFile()) {
+                        $ext = strtolower($info->getExtension());
+                        if (in_array($ext, ['png', 'jpg', 'jpeg'])) {
+                            $filePath = $info->getRealPath();
+                            $dirPath = dirname($filePath);
+                            $filename = $info->getFilename();
+                            $basename = pathinfo($filename, PATHINFO_FILENAME);
+                            $newFilename = $basename . '.webp';
+                            $newPath = $dirPath . '/' . $newFilename;
+                            
+                            if (!file_exists($newPath)) {
+                                $image = $manager->read($filePath);
+                                // Scale down if too wide for banners
+                                if ($image->width() > 1200) {
+                                    $image->scale(width: 1200);
+                                }
+                                $image->toWebp(80)->save($newPath);
+                                
+                                // Update frontends database table references
+                                \Illuminate\Support\Facades\DB::table('frontends')
+                                    ->where('data_values', 'LIKE', '%' . $filename . '%')
+                                    ->get()
+                                    ->each(function($front) use ($filename, $newFilename) {
+                                        $dataValues = str_replace($filename, $newFilename, $front->data_values);
+                                        \Illuminate\Support\Facades\DB::table('frontends')
+                                            ->where('id', $front->id)
+                                            ->update(['data_values' => $dataValues]);
+                                    });
+                                
+                                // Delete old file
+                                @unlink($filePath);
+                            }
+                        }
+                    }
+                }
+            } catch (\Exception $e) {
+                \Log::error("Failed to auto-optimize frontend images: " . $e->getMessage());
+            }
+        }
     }
 }

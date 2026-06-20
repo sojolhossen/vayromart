@@ -69,11 +69,19 @@ function frontendComponent($componentName) {
 }
 
 function siteLogo($type = null) {
-    $name = $type ? "/logo_$type.png" : '/logo.png';
-    return getImage(getFilePath('logoIcon') . $name);
+    $name = $type ? "logo_$type" : 'logo';
+    $path = getFilePath('logoIcon');
+    if (file_exists($path . '/' . $name . '.webp')) {
+        return getImage($path . '/' . $name . '.webp');
+    }
+    return getImage($path . '/' . $name . '.png');
 }
 function siteFavicon() {
-    return getImage(getFilePath('logoIcon') . '/favicon.png');
+    $path = getFilePath('logoIcon');
+    if (file_exists($path . '/favicon.webp')) {
+        return getImage($path . '/favicon.webp');
+    }
+    return getImage($path . '/favicon.png');
 }
 
 function loadReCaptcha() {
