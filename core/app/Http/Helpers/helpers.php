@@ -894,7 +894,9 @@ function getSectionData($key, $isOnlyData = false, $isFrontend = false) {
             'section' => 'Template::sections.promo_banner'
         ],
         'offer_'    => [
-            'modelQuery' => $isFrontend ? Offer::running() : Offer::query(),
+            'modelQuery' => ($isFrontend ? Offer::running() : Offer::query())->with(['products' => function ($q) {
+                $q->published()->ratingReviewCount()->with(['brand:id,name', 'productVariants', 'displayImage', 'activeOffer']);
+            }]),
             'section' => 'Template::sections.offer'
         ]
     ];

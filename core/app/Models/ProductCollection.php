@@ -11,6 +11,10 @@ class ProductCollection extends Model
 
     public function products()
     {
-        return Product::published()->whereIn('id', $this->product_ids ?? [])->ratingReviewCount()->with('brand:id,name', 'productVariants')->get();
+        return Product::published()
+            ->whereIn('id', $this->product_ids ?? [])
+            ->ratingReviewCount()
+            ->with(['brand:id,name', 'productVariants', 'displayImage', 'activeOffer'])
+            ->get();
     }
 }

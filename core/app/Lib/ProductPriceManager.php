@@ -23,6 +23,9 @@ class ProductPriceManager {
     public function getProductPrices($product, $variant = null) {
         // If a variant is provided, use its prices; otherwise, use main product prices
         if ($variant) {
+            if (!$variant->relationLoaded('product')) {
+                $variant->setRelation('product', $product);
+            }
             $regularPrice = $variant->regular_price;
             $salePrice    = $this->getOnSalePrice($variant);
         } else {

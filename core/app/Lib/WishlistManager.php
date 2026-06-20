@@ -18,11 +18,26 @@ class WishlistManager {
         return Wishlist::where('session_id', getSessionId())->where('id', $id)->first();
     }
 
-    public function isProductExistInWishlist($productId) {
-        if (auth()->check()) {
-            return Wishlist::where('user_id', auth()->id())->where('product_id', $productId)->exists();
+    private static $wishlistProductIds = null;
+
+    public static function clearCache() {
+        self::$wishlistProductIds = null;
+    }
+
+    private function loadWishlistProductIds() {
+        if (is_null(self::$wishlistProductIds)) {
+            if (auth()->check()) {
+                self::$wishlistProductIds = Wishlist::where('user_id', auth()->id())->pluck('product_id')->toArray();
+            } else {
+                self::$wishlistProductIds = Wishlist::where('session_id', getSessionId())->pluck('product_id')->toArray();
+            }
         }
-        return Wishlist::where('session_id', getSessionId())->where('product_id', $productId)->exists();
+        return self::$wishlistProductIds;
+    }
+
+    public function isProductExistInWishlist($productId) {
+        $ids = $this->loadWishlistProductIds();
+        return in_array($productId, $ids);
     }
 
     public function userWishlistQuery($checkProduct = true) {

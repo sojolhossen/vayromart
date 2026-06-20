@@ -211,6 +211,7 @@ class Product extends Model {
             ->withAvg(['reviews' => function ($review1) {
                 $review1->where('status', Status::REVIEW_APPROVED);
             }], 'rating')
+            ->with(['brand:id,name', 'productVariants', 'displayImage', 'activeOffer'])
             ->orderBy('total', 'desc')
             ->orderBy('products.id', 'desc');
 
