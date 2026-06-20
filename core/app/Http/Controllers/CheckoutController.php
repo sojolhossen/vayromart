@@ -21,6 +21,9 @@ class CheckoutController extends Controller {
 
     public function storeGuestUser(Request $request) {
         $countryData  = (array)json_decode(file_get_contents(resource_path('views/partials/country.json')));
+        if (isset($countryData['BD'])) {
+            $countryData = ['BD' => $countryData['BD']];
+        }
         $countryCodes = implode(',', array_keys($countryData));
         $mobileCodes  = implode(',', array_column($countryData, 'dial_code'));
         $countries    = implode(',', array_column($countryData, 'country'));

@@ -1,5 +1,6 @@
 @php
-    $products = \App\Models\Product::published()->orderBy('id', 'desc')->paginate(20);
+    $limit = gs('homepage_products_limit') ?? 20;
+    $products = \App\Models\Product::published()->orderByRaw('SHA1(id) DESC')->paginate($limit);
 @endphp
 
 <section class="my-60">

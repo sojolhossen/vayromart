@@ -95,6 +95,16 @@
                                 </div>
                             </div>
 
+                            <div class="form-group col-md-4 col-sm-6">
+                                <div class="form-group">
+                                    <label>@lang('Our Products Section Limit')</label>
+                                    <span title="@lang('Set how many products you want to show in the Our Products section on the homepage.')">
+                                        <i class="la la-info-circle"></i>
+                                    </span>
+                                    <input class="form-control" type="number" name="homepage_products_limit" value="{{ gs('homepage_products_limit') ?? 20 }}" required min="1" max="100">
+                                </div>
+                            </div>
+
                         </div>
 
                         <button type="submit" class="btn btn--primary w-100 h-45">@lang('Submit')</button>

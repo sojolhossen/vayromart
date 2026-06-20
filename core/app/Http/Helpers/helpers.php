@@ -712,7 +712,11 @@ function getSessionId() {
 }
 
 function getCountries() {
-    return json_decode(file_get_contents(resource_path('views/partials/country.json')));
+    $countries = json_decode(file_get_contents(resource_path('views/partials/country.json')));
+    if (isset($countries->BD)) {
+        return (object) ['BD' => $countries->BD];
+    }
+    return $countries;
 }
 
 

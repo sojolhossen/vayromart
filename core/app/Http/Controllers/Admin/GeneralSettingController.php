@@ -35,6 +35,7 @@ class GeneralSettingController extends Controller {
             'paginate_number' => 'required|integer',
             'recently_viewed_items' => 'required|integer|gte:0',
             'recently_viewed_days' => 'required|integer|gte:0',
+            'homepage_products_limit' => 'required|integer|min:1|max:100',
         ]);
 
         $timezones = timezone_identifiers_list();
@@ -50,6 +51,7 @@ class GeneralSettingController extends Controller {
         $general->currency_format = $request->currency_format;
         $general->recently_viewed_items = $request->recently_viewed_items;
         $general->recently_viewed_days = $request->recently_viewed_days;
+        $general->homepage_products_limit = $request->homepage_products_limit;
         $general->save();
 
         $timezoneFile = config_path('timezone.php');
