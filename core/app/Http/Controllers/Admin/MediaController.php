@@ -22,6 +22,12 @@ class MediaController extends Controller {
             }
         }
 
+        try {
+            $this->repairDatabaseReferences();
+        } catch (\Exception $e) {
+            \Log::error("Failed to repair database image references: " . $e->getMessage());
+        }
+
         $pageTitle = 'Product Images';
         $mediaFiles = Media::searchable(['file_name'])
             ->withCount('products')
@@ -235,6 +241,48 @@ class MediaController extends Controller {
             $media->file_name = $newFilename;
             $media->save();
 
+            // Update Category image/icon references
+            \App\Models\Category::where('image', $filename)->update(['image' => $newFilename]);
+            \App\Models\Category::where('icon', $filename)->update(['icon' => $newFilename]);
+
+            // Update Brand logo references
+            \App\Models\Brand::where('logo', $filename)->update(['logo' => $newFilename]);
+
+            // Update Product descriptions/summaries/extra_descriptions
+            \App\Models\Product::where('description', 'LIKE', '%' . $filename . '%')
+                ->get()
+                ->each(function($prod) use ($filename, $newFilename) {
+                    $prod->description = str_replace($filename, $newFilename, $prod->description);
+                    $prod->save();
+                });
+
+            \App\Models\Product::where('summary', 'LIKE', '%' . $filename . '%')
+                ->get()
+                ->each(function($prod) use ($filename, $newFilename) {
+                    $prod->summary = str_replace($filename, $newFilename, $prod->summary);
+                    $prod->save();
+                });
+
+            \Illuminate\Support\Facades\DB::table('products')
+                ->where('extra_descriptions', 'LIKE', '%' . $filename . '%')
+                ->get()
+                ->each(function($prod) use ($filename, $newFilename) {
+                    $extraDecs = str_replace($filename, $newFilename, $prod->extra_descriptions);
+                    \Illuminate\Support\Facades\DB::table('products')
+                        ->where('id', $prod->id)
+                        ->update(['extra_descriptions' => $extraDecs]);
+                });
+
+            \Illuminate\Support\Facades\DB::table('frontends')
+                ->where('data_values', 'LIKE', '%' . $filename . '%')
+                ->get()
+                ->each(function($front) use ($filename, $newFilename) {
+                    $dataValues = str_replace($filename, $newFilename, $front->data_values);
+                    \Illuminate\Support\Facades\DB::table('frontends')
+                        ->where('id', $front->id)
+                        ->update(['data_values' => $dataValues]);
+                });
+
             return response()->json([
                 'success' => true,
                 'message' => "Converted {$filename} to WebP successfully.",
@@ -277,5 +325,127 @@ class MediaController extends Controller {
 
         $notify[] = ['success', $count . ' selected files deleted successfully'];
         return back()->withNotify($notify);
+    }
+
+    private function repairDatabaseReferences() {
+        $webpFiles = Media::where('file_name', 'LIKE', '%.webp')->pluck('file_name')->toArray();
+        $webpByBasename = [];
+        foreach ($webpFiles as $file) {
+            $base = strtolower(pathinfo($file, PATHINFO_FILENAME));
+            $webpByBasename[$base] = $file;
+        }
+
+        // 1. Repair Category image & icon
+        $categories = \App\Models\Category::all();
+        foreach ($categories as $cat) {
+            $changed = false;
+            if ($cat->image) {
+                $ext = strtolower(pathinfo($cat->image, PATHINFO_EXTENSION));
+                if ($ext !== 'webp') {
+                    $base = strtolower(pathinfo($cat->image, PATHINFO_FILENAME));
+                    if (isset($webpByBasename[$base])) {
+                        $cat->image = $webpByBasename[$base];
+                        $changed = true;
+                    }
+                }
+            }
+            if ($cat->icon) {
+                $ext = strtolower(pathinfo($cat->icon, PATHINFO_EXTENSION));
+                if ($ext !== 'webp') {
+                    $base = strtolower(pathinfo($cat->icon, PATHINFO_FILENAME));
+                    if (isset($webpByBasename[$base])) {
+                        $cat->icon = $webpByBasename[$base];
+                        $changed = true;
+                    }
+                }
+            }
+            if ($changed) {
+                $cat->save();
+            }
+        }
+
+        // 2. Repair Brand logo
+        $brands = \App\Models\Brand::all();
+        foreach ($brands as $brand) {
+            if ($brand->logo) {
+                $ext = strtolower(pathinfo($brand->logo, PATHINFO_EXTENSION));
+                if ($ext !== 'webp') {
+                    $base = strtolower(pathinfo($brand->logo, PATHINFO_FILENAME));
+                    if (isset($webpByBasename[$base])) {
+                        $brand->logo = $webpByBasename[$base];
+                        $brand->save();
+                    }
+                }
+            }
+        }
+
+        // Helper function for in-memory string search and replace
+        $replaceFunc = function($text, $webpByBasename, &$changed) {
+            if (empty($text)) return $text;
+            return preg_replace_callback('#([^/\\\\\'"\s>]+)\.(?:png|jpg|jpeg)#i', function($matches) use ($webpByBasename, &$changed) {
+                $original = $matches[0];
+                $base = strtolower($matches[1]);
+                if (isset($webpByBasename[$base])) {
+                    $changed = true;
+                    return $webpByBasename[$base];
+                }
+                return $original;
+            }, $text);
+        };
+
+        // 3. Repair Products (description, summary, extra_descriptions)
+        $products = \App\Models\Product::where(function($q) {
+            $q->where('description', 'LIKE', '%.png%')
+              ->orWhere('description', 'LIKE', '%.jpg%')
+              ->orWhere('description', 'LIKE', '%.jpeg%')
+              ->orWhere('summary', 'LIKE', '%.png%')
+              ->orWhere('summary', 'LIKE', '%.jpg%')
+              ->orWhere('summary', 'LIKE', '%.jpeg%')
+              ->orWhere('extra_descriptions', 'LIKE', '%.png%')
+              ->orWhere('extra_descriptions', 'LIKE', '%.jpg%')
+              ->orWhere('extra_descriptions', 'LIKE', '%.jpeg%');
+        })->get();
+
+        foreach ($products as $prod) {
+            $changed = false;
+            if ($prod->description) {
+                $prod->description = $replaceFunc($prod->description, $webpByBasename, $changed);
+            }
+            if ($prod->summary) {
+                $prod->summary = $replaceFunc($prod->summary, $webpByBasename, $changed);
+            }
+            if ($prod->extra_descriptions) {
+                if (is_array($prod->extra_descriptions) || is_object($prod->extra_descriptions)) {
+                    $jsonStr = json_encode($prod->extra_descriptions);
+                    $newJsonStr = $replaceFunc($jsonStr, $webpByBasename, $changed);
+                    if ($changed) {
+                        $prod->extra_descriptions = json_decode($newJsonStr, true);
+                    }
+                } else {
+                    $prod->extra_descriptions = $replaceFunc($prod->extra_descriptions, $webpByBasename, $changed);
+                }
+            }
+            if ($changed) {
+                $prod->save();
+            }
+        }
+
+        // 4. Repair Frontends (data_values)
+        $frontends = \Illuminate\Support\Facades\DB::table('frontends')
+            ->where(function($q) {
+                $q->where('data_values', 'LIKE', '%.png%')
+                  ->orWhere('data_values', 'LIKE', '%.jpg%')
+                  ->orWhere('data_values', 'LIKE', '%.jpeg%');
+            })->get();
+
+        foreach ($frontends as $front) {
+            $changed = false;
+            $newDataValues = $replaceFunc($front->data_values, $webpByBasename, $changed);
+            if ($changed) {
+                \Illuminate\Support\Facades\DB::table('frontends')
+                    ->where('id', $front->id)
+                    ->update(['data_values' => $newDataValues]);
+            }
+        }
     }
 }
