@@ -1,10 +1,23 @@
 @extends('Template::layouts.master')
 
 @section('content')
+    @php
+        $allCats = collect();
+        $flatten = function($category) use (&$flatten, &$allCats) {
+            $allCats->push($category);
+            foreach ($category->allSubcategories as $sub) {
+                $flatten($sub);
+            }
+        };
+        foreach ($categories as $cat) {
+            $flatten($cat);
+        }
+    @endphp
+
     <div class="pt-60 pb-60">
         <div class="container">
             <div class="categories-grid-wrapper">
-                @forelse ($categories as $category)
+                @forelse ($allCats as $category)
                     <a href="{{ $category->shopLink() }}" class="cat-grid-card">
                         <div class="cat-grid-card__img-wrap">
                             <img src="{{ getImage(null) }}"
@@ -14,11 +27,6 @@
                         </div>
                         <div class="cat-grid-card__body">
                             <h6 class="cat-grid-card__name">{{ __($category->name) }}</h6>
-                            @if ($category->allSubcategories->count() > 0)
-                                <span class="cat-grid-card__count">
-                                    {{ $category->allSubcategories->count() }} @lang('Subcategories')
-                                </span>
-                            @endif
                         </div>
                     </a>
                 @empty
