@@ -432,6 +432,17 @@
                 setPartialCart(response.partialCartData);
                 setCartCount(response.cartItemCount);
                 setCartSubtotal(response.cartSubtotal);
+
+                if (typeof fbq !== 'undefined') {
+                    fbq('track', 'AddToCart', {
+                        content_name: response.product_name,
+                        content_category: response.product_category,
+                        content_ids: [response.product_id.toString()],
+                        content_type: 'product',
+                        value: response.product_price,
+                        currency: '{{ gs("cur_text") }}'
+                    });
+                }
             }
             notify(response.status, response.message);
         });
@@ -464,6 +475,16 @@
 
         $.post(addToCartUrl, data).done((response) => {
             if (response.status == 'success') {
+                if (typeof fbq !== 'undefined') {
+                    fbq('track', 'AddToCart', {
+                        content_name: response.product_name,
+                        content_category: response.product_category,
+                        content_ids: [response.product_id.toString()],
+                        content_type: 'product',
+                        value: response.product_price,
+                        currency: '{{ gs("cur_text") }}'
+                    });
+                }
                 window.location.href = "{{ route('checkout.shipping.info') }}";
             } else {
                 notify(response.status, response.message);

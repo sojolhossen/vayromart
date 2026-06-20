@@ -91,3 +91,30 @@
         }
     </style>
 @endpush
+
+@push('script')
+    @php
+        $fbPixel = \App\Models\Extension::where('act', 'facebook-pixel')->where('status', \App\Constants\Status::ENABLE)->first();
+    @endphp
+    @if ($fbPixel)
+        <script>
+            (function($) {
+                "use strict";
+                @php
+                    $cartItems = cartManager()->getCart();
+                    $subtotal = cartManager()->subtotal($cartItems);
+                    $itemIds = $cartItems->pluck('product_id')->toArray();
+                @endphp
+                if (typeof fbq !== 'undefined') {
+                    fbq('track', 'InitiateCheckout', {
+                        content_ids: {!! json_encode($itemIds) !!},
+                        content_type: 'product',
+                        value: {{ $subtotal }},
+                        currency: '{{ gs("cur_text") }}',
+                        num_items: {{ $cartItems->sum('quantity') }}
+                    });
+                }
+            })(jQuery);
+        </script>
+    @endif
+@endpush

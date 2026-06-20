@@ -205,5 +205,21 @@
                 });
             });
         });
+
+        @php
+            $fbPixel = \App\Models\Extension::where('act', 'facebook-pixel')->where('status', \App\Constants\Status::ENABLE)->first();
+        @endphp
+        @if ($fbPixel)
+            if (typeof fbq !== 'undefined') {
+                fbq('track', 'ViewContent', {
+                    content_name: '{{ __($product->name) }}',
+                    content_category: '{{ __($product->categories->first()->name ?? "Uncategorized") }}',
+                    content_ids: ['{{ $product->id }}'],
+                    content_type: 'product',
+                    value: {{ $product->salePrice() ?? 0 }},
+                    currency: '{{ gs("cur_text") }}'
+                });
+            }
+        @endif
     </script>
 @endpush

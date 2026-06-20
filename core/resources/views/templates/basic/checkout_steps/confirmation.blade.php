@@ -35,3 +35,28 @@
         }
     </style>
 @endpush
+
+@push('script')
+    @php
+        $fbPixel = \App\Models\Extension::where('act', 'facebook-pixel')->where('status', \App\Constants\Status::ENABLE)->first();
+    @endphp
+    @if ($fbPixel)
+        <script>
+            (function($) {
+                "use strict";
+                @php
+                    $itemIds = $order->orderDetail->pluck('product_id')->toArray();
+                @endphp
+                if (typeof fbq !== 'undefined') {
+                    fbq('track', 'Purchase', {
+                        content_ids: {!! json_encode($itemIds) !!},
+                        content_type: 'product',
+                        value: {{ $order->total_amount }},
+                        currency: '{{ gs("cur_text") }}',
+                        num_items: {{ $order->orderDetail->sum('quantity') }}
+                    });
+                }
+            })(jQuery);
+        </script>
+    @endif
+@endpush

@@ -109,6 +109,16 @@
                                         <small class="text-muted">@lang('Add profit margins automatically to the API product price.')</small>
                                     </div>
 
+                                    <!-- Regular Price Markup Setup -->
+                                    <div class="form-group mb-3">
+                                        <label class="fw-bold mb-1">@lang('Regular Price Markup / Original Price (%)')</label>
+                                        <div class="input-group">
+                                            <input type="number" class="form-control" name="regular_price_markup" id="regular_price_markup" placeholder="e.g. 10" min="0" step="0.1">
+                                            <span class="input-group-text">%</span>
+                                        </div>
+                                        <small class="text-muted">@lang('Set regular price higher than selling price by this percentage to show a discount. If empty/0, regular price will equal selling price.')</small>
+                                    </div>
+
                                     <!-- Limit & Status -->
                                     <div class="row">
                                         <div class="col-md-6 col-12 mb-3">
@@ -396,6 +406,16 @@
                                         <small class="text-muted">@lang('Add profit margins automatically to the product price.')</small>
                                     </div>
 
+                                    <!-- Regular Price Markup Setup -->
+                                    <div class="form-group mb-3">
+                                        <label class="fw-bold mb-1">@lang('Regular Price Markup / Original Price (%)')</label>
+                                        <div class="input-group">
+                                            <input type="number" class="form-control" name="single_regular_price_markup" id="single_regular_price_markup" placeholder="e.g. 10" min="0" step="0.1">
+                                            <span class="input-group-text">%</span>
+                                        </div>
+                                        <small class="text-muted">@lang('Set regular price higher than selling price by this percentage to show a discount.')</small>
+                                    </div>
+
                                     <!-- Default Status -->
                                     <div class="form-group mb-3">
                                         <label class="fw-bold mb-1">@lang('Default Status')</label>
@@ -519,6 +539,16 @@
                                             <input type="number" class="form-control" name="scraper_price_markup_value" id="scraper_price_markup_value" placeholder="0.00" min="0" step="0.01">
                                         </div>
                                         <small class="text-muted">@lang('Add profit margins automatically to the product price.')</small>
+                                    </div>
+
+                                    <!-- Regular Price Markup Setup -->
+                                    <div class="form-group mb-3">
+                                        <label class="fw-bold mb-1">@lang('Regular Price Markup / Original Price (%)')</label>
+                                        <div class="input-group">
+                                            <input type="number" class="form-control" name="scraper_regular_price_markup" id="scraper_regular_price_markup" placeholder="e.g. 10" min="0" step="0.1">
+                                            <span class="input-group-text">%</span>
+                                        </div>
+                                        <small class="text-muted">@lang('Set regular price higher than selling price by this percentage to show a discount.')</small>
                                     </div>
 
                                     <!-- Stock & Status -->
@@ -683,6 +713,7 @@
             let localCategoryId = '';
             let priceMarkupType = 'none';
             let priceMarkupValue = 0;
+            let regularPriceMarkup = 0;
             let publishStatus = 1;
             let updateExisting = true;
             let outOfStockDefaultQty = 100;
@@ -801,6 +832,7 @@
                 localCategoryId = localCategorySelect.val();
                 priceMarkupType = markupTypeSelect.val();
                 priceMarkupValue = parseFloat(markupValueInput.val()) || 0;
+                regularPriceMarkup = parseFloat($('#regular_price_markup').val()) || 0;
                 publishStatus = parseInt(statusSelect.val());
                 outOfStockDefaultQty = parseInt(outOfStockDefaultQtyInput.val());
 
@@ -925,6 +957,7 @@
                         local_category_id: localCategoryId,
                         price_markup_type: priceMarkupType,
                         price_markup_value: priceMarkupValue,
+                        regular_price_markup: regularPriceMarkup,
                         publish_status: publishStatus,
                         out_of_stock_default_qty: outOfStockDefaultQty
                     },
@@ -1190,8 +1223,8 @@
 
                 // 1. Filter
                 filteredProducts = categoryProducts.filter(p => {
-                    const nameMatch = !keyword || (p.name && p.name.toLowerCase().includes(keyword));
-                    const skuMatch = !keyword || (p.product_code && p.product_code.toLowerCase().includes(keyword)) || ('mhs-' + p.id).includes(keyword);
+                    const nameMatch = !keyword || (p.name && String(p.name).toLowerCase().includes(keyword));
+                    const skuMatch = !keyword || (p.product_code && String(p.product_code).toLowerCase().includes(keyword)) || ('mhs-' + p.id).includes(keyword);
                     
                     let statusMatch = true;
                     if (statusFilter === 'imported') {
@@ -1381,8 +1414,8 @@
 
                 // 1. Filter
                 filteredScrapedProducts = scrapedProducts.filter(p => {
-                    const nameMatch = !keyword || (p.name && p.name.toLowerCase().includes(keyword));
-                    const skuMatch = !keyword || (p.product_code && p.product_code.toLowerCase().includes(keyword)) || ('mhs-' + p.id).includes(keyword);
+                    const nameMatch = !keyword || (p.name && String(p.name).toLowerCase().includes(keyword));
+                    const skuMatch = !keyword || (p.product_code && String(p.product_code).toLowerCase().includes(keyword)) || ('mhs-' + p.id).includes(keyword);
                     
                     let statusMatch = true;
                     if (statusFilter === 'imported') {
@@ -1509,6 +1542,7 @@
                 localCategoryId = $('#scraper_local_category_id').val();
                 priceMarkupType = $('#scraper_price_markup_type').val();
                 priceMarkupValue = parseFloat($('#scraper_price_markup_value').val()) || 0;
+                regularPriceMarkup = parseFloat($('#scraper_regular_price_markup').val()) || 0;
                 publishStatus = parseInt($('#scraper_publish_status').val());
                 outOfStockDefaultQty = parseInt($('#scraper_out_of_stock_default_qty').val());
 
@@ -1580,6 +1614,7 @@
                 localCategoryId = localCategorySelect.val();
                 priceMarkupType = markupTypeSelect.val();
                 priceMarkupValue = parseFloat(markupValueInput.val()) || 0;
+                regularPriceMarkup = parseFloat($('#regular_price_markup').val()) || 0;
                 publishStatus = parseInt(statusSelect.val());
                 outOfStockDefaultQty = parseInt(outOfStockDefaultQtyInput.val());
 
@@ -1665,6 +1700,7 @@
                     local_category_id: localCategoryId,
                     price_markup_type: priceMarkupType,
                     price_markup_value: priceMarkupValue,
+                    regular_price_markup: regularPriceMarkup,
                     publish_status: publishStatus,
                     out_of_stock_default_qty: outOfStockDefaultQty
                 };
@@ -1850,6 +1886,7 @@
                 const localCategoryId = $('#single_local_category_id').val();
                 const priceMarkupType = $('#single_price_markup_type').val();
                 const priceMarkupValue = parseFloat($('#single_price_markup_value').val()) || 0;
+                const regularPriceMarkup = parseFloat($('#single_regular_price_markup').val()) || 0;
                 const publishStatus = parseInt($('#single_publish_status').val());
                 const outOfStockDefaultQty = parseInt($('#single_out_of_stock_default_qty').val()) || 100;
 
@@ -1862,6 +1899,7 @@
                         local_category_id: localCategoryId,
                         price_markup_type: priceMarkupType,
                         price_markup_value: priceMarkupValue,
+                        regular_price_markup: regularPriceMarkup,
                         publish_status: publishStatus,
                         out_of_stock_default_qty: outOfStockDefaultQty
                     },

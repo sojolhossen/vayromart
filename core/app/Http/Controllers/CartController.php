@@ -62,7 +62,7 @@ class CartController extends Controller
 
     public function addToCart(Request $request, int $productId)
     {
-        $product = Product::with('productVariants')->withCount('attributes')->find($productId);
+        $product = Product::with(['productVariants', 'categories'])->withCount('attributes')->find($productId);
 
         if (!$product) {
             return errorResponse('Product not found');
@@ -103,6 +103,10 @@ class CartController extends Controller
             'partialCartData' => $this->partialCart(),
             'cartItemCount'   => $this->cartItemsCount(),
             'cartSubtotal'    => $this->cartSubtotal(),
+            'product_name'    => $product->name,
+            'product_price'   => $product->prices($variant)->sale_price,
+            'product_id'      => $product->id,
+            'product_category'=> $product->categories->first()->name ?? 'Uncategorized',
         ]);
     }
 

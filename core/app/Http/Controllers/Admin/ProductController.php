@@ -612,6 +612,7 @@ class ProductController extends Controller {
         $localCategoryId = $request->local_category_id ?: null;
         $priceMarkupType = $request->price_markup_type ?: 'none';
         $priceMarkupValue = floatval($request->price_markup_value ?: 0);
+        $regularPriceMarkup = floatval($request->regular_price_markup ?: 0);
         $publishStatus = $request->has('publish_status') ? intval($request->publish_status) : null;
         $outOfStockDefaultQty = intval($request->out_of_stock_default_qty ?? 100);
         
@@ -680,7 +681,7 @@ class ProductController extends Controller {
                 $itemCat = trim($item['category'] ?? '');
                 if (strtolower($itemCat) === strtolower($category)) {
                     // Sync the product
-                    $result = $this->syncMohasagorProduct($item, $updateExisting, $localCategoryId, $priceMarkupType, $priceMarkupValue, $publishStatus, $outOfStockDefaultQty);
+                    $result = $this->syncMohasagorProduct($item, $updateExisting, $localCategoryId, $priceMarkupType, $priceMarkupValue, $publishStatus, $outOfStockDefaultQty, $regularPriceMarkup);
                     
                     if ($result['status'] == 'created') {
                         $stockNote = ($result['api_stock_status'] !== 'available') ? " (API Out of Stock - Local Stock set to {$outOfStockDefaultQty})" : "";
@@ -733,7 +734,7 @@ class ProductController extends Controller {
         }
     }
 
-    private function syncMohasagorProduct($item, $updateExisting, $localCategoryId = null, $priceMarkupType = 'none', $priceMarkupValue = 0, $publishStatus = null, $outOfStockDefaultQty = 100)
+    private function syncMohasagorProduct($item, $updateExisting, $localCategoryId = null, $priceMarkupType = 'none', $priceMarkupValue = 0, $publishStatus = null, $outOfStockDefaultQty = 100, $regularPriceMarkup = 0)
     {
         $mohasagorId = $item['id'];
         $sku = 'MHS-' . $mohasagorId;
@@ -766,8 +767,15 @@ class ProductController extends Controller {
             $finalPrice = $originalPrice + $priceMarkupValue;
         }
         
-        $product->regular_price = round($finalPrice, 2);
-        $product->sale_price = null; // No default discount unless set manually
+        $finalPrice = round($finalPrice, 2);
+
+        if ($regularPriceMarkup > 0) {
+            $product->sale_price = $finalPrice;
+            $product->regular_price = round($finalPrice + ($finalPrice * ($regularPriceMarkup / 100)), 2);
+        } else {
+            $product->regular_price = $finalPrice;
+            $product->sale_price = null;
+        }
 
         // Filter out Mohasagor's wholesale/dropship cost from extra_descriptions to keep it hidden
         $extraDesc = $product->extra_descriptions ?? [];
@@ -1018,6 +1026,13 @@ class ProductController extends Controller {
         if ($category !== '') {
             foreach ($products as $p) {
                 if (strtolower($p['category'] ?? '') === strtolower($category)) {
+                    if ($query !== '') {
+                        $nameMatch = str_contains(strtolower($p['name'] ?? ''), $query);
+                        $skuMatch = str_contains(strtolower($p['product_code'] ?? ''), $query) || str_contains(strtolower('MHS-' . ($p['id'] ?? '')), $query);
+                        if (!$nameMatch && !$skuMatch) {
+                            continue;
+                        }
+                    }
                     $sku = 'MHS-' . $p['id'];
                     $localProduct = Product::where('sku', $sku)->first();
                     $p['is_imported'] = $localProduct ? true : false;
@@ -1064,6 +1079,7 @@ class ProductController extends Controller {
         $localCategoryId = $request->local_category_id ?: null;
         $priceMarkupType = $request->price_markup_type ?: 'none';
         $priceMarkupValue = floatval($request->price_markup_value ?: 0);
+        $regularPriceMarkup = floatval($request->regular_price_markup ?: 0);
         $publishStatus = $request->has('publish_status') ? intval($request->publish_status) : null;
         $outOfStockDefaultQty = intval($request->out_of_stock_default_qty ?? 100);
 
@@ -1099,8 +1115,15 @@ class ProductController extends Controller {
                     $finalPrice = $price + $priceMarkupValue;
                 }
 
-                $product->regular_price = round($finalPrice, 2);
-                $product->sale_price = null;
+                $finalPrice = round($finalPrice, 2);
+
+                if ($regularPriceMarkup > 0) {
+                    $product->sale_price = $finalPrice;
+                    $product->regular_price = round($finalPrice + ($finalPrice * ($regularPriceMarkup / 100)), 2);
+                } else {
+                    $product->regular_price = $finalPrice;
+                    $product->sale_price = null;
+                }
 
                 // Filter out wholesale/dropship cost from extra_descriptions to keep it hidden
                 $extraDesc = $product->extra_descriptions ?? [];
@@ -1212,7 +1235,8 @@ class ProductController extends Controller {
                 $priceMarkupType,
                 $priceMarkupValue,
                 $publishStatus,
-                $outOfStockDefaultQty
+                $outOfStockDefaultQty,
+                $regularPriceMarkup
             );
 
             if ($result['status'] === 'created' || $result['status'] === 'updated') {

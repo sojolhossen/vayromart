@@ -853,7 +853,7 @@ function createUniqueSlug($name, $model, $id = 0) {
     $slug = slug($name ?? 'No title');
 
     $originalSlug = $slug;
-    $hasSoftDelete = method_exists($model, 'withTrashed');
+    $hasSoftDelete = in_array('Illuminate\Database\Eloquent\SoftDeletes', class_uses_recursive($model));
 
     $query = $hasSoftDelete ? $model::withTrashed()->where('slug', $slug) : $model::where('slug', $slug);
 
