@@ -816,8 +816,9 @@ function createUniqueSlug($name, $model, $id = 0) {
     $slug = slug($name ?? 'No title');
 
     $originalSlug = $slug;
+    $hasSoftDelete = method_exists($model, 'withTrashed');
 
-    $query = $model::withTrashed()->where('slug', $slug);
+    $query = $hasSoftDelete ? $model::withTrashed()->where('slug', $slug) : $model::where('slug', $slug);
 
     if ($id) {
         $query->where('id', '!=', $id);
@@ -827,7 +828,10 @@ function createUniqueSlug($name, $model, $id = 0) {
 
     while ($query->exists()) {
         $slug = $originalSlug . '-' . $i++;
-        $query = $model::where('slug', $slug);
+        $query = $hasSoftDelete ? $model::withTrashed()->where('slug', $slug) : $model::where('slug', $slug);
+        if ($id) {
+            $query->where('id', '!=', $id);
+        }
     }
 
     return $slug;
