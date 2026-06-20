@@ -43,6 +43,13 @@
         </div>
 
         <div class="d-flex gap-3 align-items-center">
+            <select name="format" class="form-select w-auto">
+                <option value="">@lang('All Formats')</option>
+                <option value="webp" @selected(request()->format == 'webp')>@lang('WEBP')</option>
+                <option value="png" @selected(request()->format == 'png')>@lang('PNG')</option>
+                <option value="jpg" @selected(request()->format == 'jpg')>@lang('JPG')</option>
+                <option value="jpeg" @selected(request()->format == 'jpeg')>@lang('JPEG')</option>
+            </select>
             <select name="order_by" class="form-select w-auto">
                 <option value="id::desc" @selected(request()->order_by == 'id::desc')>@lang('Newest')</option>
                 <option value="id::asc" @selected(request()->order_by == 'id::asc')>@lang('Oldest')</option>
@@ -407,6 +414,17 @@
                 const selected = $(this).val();
                 const url = new URL(window.location.href);
                 url.searchParams.set('order_by', selected);
+                window.location.href = url.toString();
+            });
+
+            $('[name=format]').on('change', function() {
+                const selected = $(this).val();
+                const url = new URL(window.location.href);
+                if (selected) {
+                    url.searchParams.set('format', selected);
+                } else {
+                    url.searchParams.delete('format');
+                }
                 window.location.href = url.toString();
             });
         })(jQuery);

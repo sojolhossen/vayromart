@@ -46,6 +46,10 @@ class MediaController extends Controller {
             }
         }
 
+        if (request()->has('format') && request()->format != '') {
+            $mediaFiles->where('file_name', 'LIKE', '%.' . request()->format);
+        }
+
         if (request()->has('order_by')) {
             try {
                 $orderBy = explode('::', request()->order_by);
