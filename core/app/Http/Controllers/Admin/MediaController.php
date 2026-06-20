@@ -249,4 +249,33 @@ class MediaController extends Controller {
             ]);
         }
     }
+
+    public function deleteSelected(Request $request) {
+        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
+            'ids' => 'required|array',
+            'ids.*' => 'required|integer'
+        ]);
+
+        if ($validator->fails()) {
+            $notify[] = ['error', 'No images selected or invalid IDs.'];
+            return back()->withNotify($notify);
+        }
+
+        $mediaFiles = Media::whereIn('id', $request->ids)->get();
+        $count = 0;
+
+        foreach ($mediaFiles as $media) {
+            try {
+                fileManager()->removeFile($media->path . '/' . @$media->file_name);
+                fileManager()->removeFile($media->path . '/thumb_' . @$media->file_name);
+                $media->delete();
+                $count++;
+            } catch (\Exception $e) {
+                // Ignore error if file doesn't exist
+            }
+        }
+
+        $notify[] = ['success', $count . ' selected files deleted successfully'];
+        return back()->withNotify($notify);
+    }
 }

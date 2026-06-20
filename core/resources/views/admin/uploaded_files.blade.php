@@ -35,6 +35,13 @@
 
     <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-3">
         <div class="d-flex gap-2 align-items-center flex-wrap">
+            <div class="form-check me-2 ms-1 d-flex align-items-center">
+                <input class="form-check-input" type="checkbox" id="selectAllMedia" style="width: 1.25rem; height: 1.25rem; cursor: pointer; border: 1px solid #aaa; margin-top: 0;">
+                <label class="form-check-label small fw-bold ms-2 mb-0" for="selectAllMedia" style="cursor: pointer;">@lang('Select All')</label>
+            </div>
+            
+            <button class="btn btn-sm btn--danger me-3" id="deleteSelectedBtn" type="button" disabled><i class="las la-trash"></i> @lang('Delete Selected')</button>
+
             <a href="{{ request()->fullUrlWithQuery(['status' => null]) }}" class="btn btn-sm btn-outline--primary @if(!request()->status) active @endif">@lang('All')</a>
             <a href="{{ request()->fullUrlWithQuery(['status' => 'used']) }}" class="btn btn-sm btn-outline--success @if(request()->status == 'used') active @endif">@lang('Used')</a>
             <a href="{{ request()->fullUrlWithQuery(['status' => 'unused']) }}" class="btn btn-sm btn-outline--danger @if(request()->status == 'unused') active @endif">@lang('Unused')</a>
@@ -67,7 +74,11 @@
                 $isUsed = $totalUses > 0;
             @endphp
             <div class="media-item">
-                <span class="badge {{ $isUsed ? 'badge--success' : 'badge--danger' }} position-absolute top-0 start-0 m-2" style="z-index: 2;">
+                <div class="form-check position-absolute top-0 start-0 m-2" style="z-index: 3;">
+                    <input class="form-check-input media-checkbox" type="checkbox" value="{{ $file->id }}" style="width: 1.25rem; height: 1.25rem; cursor: pointer; border: 1px solid #aaa;">
+                </div>
+
+                <span class="badge {{ $isUsed ? 'badge--success' : 'badge--danger' }} position-absolute top-0 start-0 m-2" style="z-index: 2; margin-left: 2.25rem !important;">
                     {{ $isUsed ? trans('Used') : trans('Unused') }}
                 </span>
 
@@ -426,6 +437,48 @@
                     url.searchParams.delete('format');
                 }
                 window.location.href = url.toString();
+            });
+
+            // Selective delete logic
+            const selectAll = $('#selectAllMedia');
+            const deleteSelectedBtn = $('#deleteSelectedBtn');
+
+            const toggleDeleteBtn = () => {
+                const checkedCount = $('.media-checkbox:checked').length;
+                deleteSelectedBtn.prop('disabled', checkedCount === 0);
+            };
+
+            selectAll.on('change', function() {
+                $('.media-checkbox').prop('checked', this.checked);
+                toggleDeleteBtn();
+            });
+
+            $(document).on('change', '.media-checkbox', function() {
+                const allChecked = $('.media-checkbox').length === $('.media-checkbox:checked').length;
+                selectAll.prop('checked', allChecked);
+                toggleDeleteBtn();
+            });
+
+            deleteSelectedBtn.on('click', function() {
+                const checkedIds = $('.media-checkbox:checked').map(function() {
+                    return $(this).val();
+                }).get();
+
+                if (checkedIds.length === 0) return;
+
+                const modal = $('#confirmationModal');
+                modal.find('.question').text(`Are you sure you want to delete ${checkedIds.length} selected files permanently?`);
+                modal.find('form').attr('action', "{{ route('admin.media.delete.selected') }}");
+                
+                // Clear any previously appended dynamic inputs
+                modal.find('.dynamic-id-input').remove();
+                
+                // Append checked IDs as hidden fields
+                checkedIds.forEach(id => {
+                    modal.find('form').append(`<input type="hidden" name="ids[]" class="dynamic-id-input" value="${id}">`);
+                });
+
+                modal.modal('show');
             });
         })(jQuery);
     </script>

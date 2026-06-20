@@ -226,6 +226,7 @@ Route::middleware('admin')->group(function () {
         Route::get('files', 'mediaFiles')->name('.files');
         Route::post('upload', 'upload')->name('.upload');
         Route::post('delete-unused', 'deleteUnused')->name('.delete.unused');
+        Route::post('delete-selected', 'deleteSelected')->name('.delete.selected');
         Route::post('delete/{id}', 'delete')->name('.delete');
         Route::post('webp/toggle', 'toggleWebpConvert')->name('.webp.toggle');
         Route::get('webp/convert/init', 'initBulkConvert')->name('.webp.convert.init');
