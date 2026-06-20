@@ -1485,4 +1485,24 @@ class ProductController extends Controller {
             'count' => count($results)
         ]);
     }
+
+    public function bulkCategoryUpdate(Request $request) {
+        $request->validate([
+            'product_ids' => 'required|array|min:1',
+            'product_ids.*' => 'required|integer|exists:products,id',
+            'categories' => 'required|array|min:1',
+            'categories.*' => 'required|integer|exists:categories,id',
+        ]);
+
+        $productIds = $request->product_ids;
+        $categoryIds = $request->categories;
+
+        foreach ($productIds as $productId) {
+            $product = Product::findOrFail($productId);
+            $this->productManager->adjustCategories($categoryIds, $product, true);
+        }
+
+        $notify[] = ['success', 'Category updated successfully for selected products'];
+        return back()->withNotify($notify);
+    }
 }

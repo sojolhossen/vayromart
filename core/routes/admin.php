@@ -172,6 +172,7 @@ Route::middleware('admin')->group(function () {
             Route::post('duplicate/{id}', 'duplicate')->name('duplicate');
             Route::post('product-store/{id?}', 'store')->name('store');
             Route::post('delete-product/{id}', 'delete')->name('delete');
+            Route::post('bulk-category-update', 'bulkCategoryUpdate')->name('bulk.category.update');
             Route::get('digital/download/{id}', 'digitalDownload')->name('digital.download');
             Route::get('mohasagor-sync', 'mohasagorSyncPage')->name('mohasagor.sync');
             Route::post('mohasagor-sync/import-chunk', 'mohasagorImportChunk')->name('mohasagor.sync.import_chunk');

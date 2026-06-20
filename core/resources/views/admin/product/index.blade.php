@@ -8,6 +8,9 @@
                         <table class="table--light style--two table">
                             <thead>
                                 <tr>
+                                    <th>
+                                        <input type="checkbox" id="selectAllProducts" class="form-check-input">
+                                    </th>
                                     <th>@lang('Product')</th>
                                     <th>@lang('Price')</th>
                                     <th>@lang('Downloadable')</th>
@@ -19,6 +22,9 @@
                             <tbody>
                                 @forelse($products as $product)
                                     <tr>
+                                        <td>
+                                            <input type="checkbox" class="product-checkbox form-check-input" value="{{ $product->id }}">
+                                        </td>
                                         <td>
                                             <!-- Product Card -->
                                             <div class="d-flex flex-wrap flex-md-nowrap gap-2 justify-content-lg-start justify-content-end">
@@ -112,6 +118,39 @@
     </div>
 
     <x-confirmation-modal />
+
+    @if (!$trashed)
+        <!-- Bulk Category Modal -->
+        <div class="modal fade" id="bulkCategoryModal" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">@lang('Bulk Update Category')</h5>
+                        <button type="button" class="close btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <form action="{{ route('admin.products.bulk.category.update') }}" method="POST" id="bulkCategoryForm">
+                        @csrf
+                        <div id="selectedProductsContainer"></div>
+                        <div class="modal-body">
+                            <div class="form-group">
+                                <label class="required font-weight-bold">@lang('Select Categories')</label>
+                                <div class="border p-3 rounded" style="max-height: 250px; overflow-y: auto; background: #fdfdfd;">
+                                    @php
+                                        $categories = App\Models\Category::with('allSubcategories')->isParent()->get();
+                                    @endphp
+                                    <x-category-checkbox :categories="$categories" />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn--dark" data-bs-dismiss="modal">@lang('Close')</button>
+                            <button type="submit" class="btn btn--primary">@lang('Update')</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    @endif
 
     @if (Route::is('admin.products.all'))
         <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasRight" aria-labelledby="offcanvasRightLabel">
@@ -211,6 +250,9 @@
 
 @push('breadcrumb-plugins')
     <x-search-form></x-search-form>
+    @if (!$trashed)
+        <button class="btn btn--warning d-none" id="bulkCategoryBtn" type="button"><i class="las la-tags"></i> @lang('Bulk Category')</button>
+    @endif
     @if (Route::is('admin.products.all'))
         <button class="btn btn--primary" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasRight" aria-controls="offcanvasRight"><i class="las la-sliders-h"></i>@lang('Filter')</button>
     @endif
@@ -300,6 +342,43 @@
             $(".exportBtn").on('click', function(e) {
                 let modal = $("#exportModal");
                 modal.modal('show')
+            });
+
+            // Handle select all checkbox in table header
+            $('#selectAllProducts').on('click', function() {
+                $('.product-checkbox').prop('checked', $(this).prop('checked'));
+                toggleBulkBtn();
+            });
+
+            // Handle individual checkboxes
+            $(document).on('change', '.product-checkbox', function() {
+                var allChecked = $('.product-checkbox:checked').length === $('.product-checkbox').length;
+                $('#selectAllProducts').prop('checked', allChecked);
+                toggleBulkBtn();
+            });
+
+            // Toggle bulk action button visibility
+            function toggleBulkBtn() {
+                var checkedCount = $('.product-checkbox:checked').length;
+                if (checkedCount > 0) {
+                    $('#bulkCategoryBtn').removeClass('d-none');
+                } else {
+                    $('#bulkCategoryBtn').addClass('d-none');
+                }
+            }
+
+            // Click bulk category update button
+            $('#bulkCategoryBtn').on('click', function() {
+                var modal = $('#bulkCategoryModal');
+                var container = $('#selectedProductsContainer');
+                container.empty();
+                
+                // Add hidden inputs for each selected product
+                $('.product-checkbox:checked').each(function() {
+                    container.append(`<input type="hidden" name="product_ids[]" value="${$(this).val()}">`);
+                });
+
+                modal.modal('show');
             });
 
         })(jQuery);
