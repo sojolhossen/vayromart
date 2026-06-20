@@ -13,4 +13,8 @@
      @endforeach
  </div>
 
+ @if (in_array('header_three', $headers))
+     @include('Template::partials.headers.header_three')
+ @endif
+
  @include('Template::partials.mobile_menu')
