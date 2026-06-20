@@ -227,6 +227,9 @@ Route::middleware('admin')->group(function () {
         Route::post('upload', 'upload')->name('.upload');
         Route::post('delete-unused', 'deleteUnused')->name('.delete.unused');
         Route::post('delete/{id}', 'delete')->name('.delete');
+        Route::post('webp/toggle', 'toggleWebpConvert')->name('.webp.toggle');
+        Route::get('webp/convert/init', 'initBulkConvert')->name('.webp.convert.init');
+        Route::post('webp/convert/step', 'stepBulkConvert')->name('.webp.convert.step');
     });
 
     //Coupons

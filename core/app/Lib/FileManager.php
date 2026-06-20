@@ -110,6 +110,10 @@ class FileManager {
             $this->filename = $this->getFileName();
         }
 
+        if ($this->isImage && gs('webp_auto_convert')) {
+            $this->filename = pathinfo($this->filename, PATHINFO_FILENAME) . '.webp';
+        }
+
         //upload file or image
         if ($this->isImage == true) {
             $this->uploadImage();

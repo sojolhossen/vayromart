@@ -27,6 +27,17 @@ class GeneralSettingController extends Controller {
                 \Log::error("Failed to auto-create homepage_products_limit: " . $e->getMessage());
             }
         }
+
+        if (!\Illuminate\Support\Facades\Schema::hasColumn('general_settings', 'webp_auto_convert')) {
+            try {
+                \Illuminate\Support\Facades\Schema::table('general_settings', function ($table) {
+                    $table->tinyInteger('webp_auto_convert')->default(1);
+                });
+                \Illuminate\Support\Facades\Cache::forget('GeneralSetting');
+            } catch (\Exception $e) {
+                \Log::error("Failed to auto-create webp_auto_convert: " . $e->getMessage());
+            }
+        }
     }
 
     public function general() {
