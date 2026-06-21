@@ -39,7 +39,7 @@ class PromoBannerController extends Controller
             'title'          => 'required|string',
             'type'           => 'required|in:1,2,3',
             'images'         => "nullable|array",
-            'images.*.image' => [$imageValidation, new FileTypeValidate(['png', 'jpg', 'jpeg', 'gif'])],
+            'images.*.image' => [$imageValidation, new FileTypeValidate(['png', 'jpg', 'jpeg', 'gif', 'webp'])],
             'images.*.link'  => 'nullable|string'
         ]);
 

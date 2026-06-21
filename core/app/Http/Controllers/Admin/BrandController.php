@@ -72,7 +72,7 @@ class BrandController extends Controller {
             'meta_keywords'         => 'nullable|array',
             'meta_keywords.array.*' => 'required_with:meta_keywords|string',
             'is_featured'            => 'required|in:0,1',
-            'image_input'           => [$imgValidation, 'image', new FileTypeValidate(['jpeg', 'jpg', 'png'])],
+            'image_input'           => [$imgValidation, 'image', new FileTypeValidate(['jpeg', 'jpg', 'png', 'webp'])],
         ];
         $request->validate($validationRule, [
             'meta_keywords.array.*' => 'All keywords',

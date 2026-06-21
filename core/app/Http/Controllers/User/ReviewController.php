@@ -34,7 +34,7 @@ class ReviewController extends Controller {
             'review'          => 'nullable|string|max:2000',
             'rating'          => 'required|numeric|in:1,2,3,4,5',
             'images'          => ['nullable', 'array', 'max:10'],
-            'images.*'        => ['nullable', new FileTypeValidate(['jpg', 'jpeg', 'png'])],
+            'images.*'        => ['nullable', new FileTypeValidate(['jpg', 'jpeg', 'png', 'webp'])],
             'old_images'      => ['nullable', 'array'],
             'old_images.*'    => ['nullable', 'exists:product_review_images,id'],
         ]);

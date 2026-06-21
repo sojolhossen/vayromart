@@ -123,7 +123,7 @@ class PageBuilderController extends Controller
 
     public function manageSeoStore(Request $request, $id){
         $request->validate([
-            'image'=>['nullable',new FileTypeValidate(['jpeg', 'jpg', 'png'])]
+            'image'=>['nullable',new FileTypeValidate(['jpeg', 'jpg', 'png', 'webp'])]
         ]);
 
         $page = Page::findOrFail($id);

@@ -80,7 +80,7 @@ class FileManager {
     public function __construct($file = null) {
         $this->file = $file;
         if ($file) {
-            $imageExtensions = ['jpg', 'jpeg', 'png', 'JPG', 'JPEG', 'PNG'];
+            $imageExtensions = ['jpg', 'jpeg', 'png', 'webp', 'JPG', 'JPEG', 'PNG', 'WEBP'];
             if (in_array($file->getClientOriginalExtension(), $imageExtensions)) {
                 $this->isImage = true;
             } else {
@@ -110,7 +110,7 @@ class FileManager {
             $this->filename = $this->getFileName();
         }
 
-        if ($this->isImage && gs('webp_auto_convert')) {
+        if ($this->isImage) {
             $this->filename = pathinfo($this->filename, PATHINFO_FILENAME) . '.webp';
         }
 

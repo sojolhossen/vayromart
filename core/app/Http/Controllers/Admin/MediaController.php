@@ -104,7 +104,7 @@ class MediaController extends Controller {
     public function upload(Request $request) {
         $validator = Validator::make($request->all(), [
             'photos'           => 'required|array|max:20',
-            'photos.*'         => ['required', 'image', new FileTypeValidate(['jpeg', 'jpg', 'png'])],
+            'photos.*'         => ['required', 'image', new FileTypeValidate(['jpeg', 'jpg', 'png', 'webp'])],
             'files_for'        => 'required|in:product,category,categoryIcon,brand'
         ], [
             'photos.required' => 'Please upload at least one image',
@@ -126,12 +126,16 @@ class MediaController extends Controller {
             $path = getFilePath($filesFor);
 
             $counter = 0;
-            $newFilename = $originalName;
-
-            while (file_exists($path . '/' . $newFilename)) {
-                $counter++;
-                $newFilename = $filename . '(' . $counter . ').' . $extension;
+            $targetExt = $extension;
+            if (in_array(strtolower($extension), ['jpg', 'jpeg', 'png', 'webp'])) {
+                $targetExt = 'webp';
             }
+
+            while (file_exists($path . '/' . $filename . ($counter ? '(' . $counter . ')' : '') . '.' . $targetExt)) {
+                $counter++;
+            }
+            $newFilename = $filename . ($counter ? '(' . $counter . ')' : '') . '.' . $extension;
+
             $media            = new Media();
             $media->path      = getFilePath($filesFor);
             $media->file_name = fileUploader($photo, getFilePath($filesFor), getFileSize($filesFor), null, getThumbSize($filesFor), $newFilename);

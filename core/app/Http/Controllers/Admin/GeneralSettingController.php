@@ -124,9 +124,9 @@ class GeneralSettingController extends Controller {
 
     public function logoIconUpdate(Request $request) {
         $request->validate([
-            'logo'      => ['image', new FileTypeValidate(['jpg', 'jpeg', 'png'])],
-            'logo_dark' => ['image', new FileTypeValidate(['jpg', 'jpeg', 'png'])],
-            'favicon'   => ['image', new FileTypeValidate(['png'])],
+            'logo'      => ['image', new FileTypeValidate(['jpg', 'jpeg', 'png', 'webp'])],
+            'logo_dark' => ['image', new FileTypeValidate(['jpg', 'jpeg', 'png', 'webp'])],
+            'favicon'   => ['image', new FileTypeValidate(['png', 'webp'])],
             'preloader' => ['image', new FileTypeValidate(['jpg', 'jpeg', 'png', 'gif'])],
         ]);
 
@@ -134,7 +134,11 @@ class GeneralSettingController extends Controller {
 
         if ($request->hasFile('logo')) {
             try {
-                fileUploader($request->logo, $path, filename: 'logo.png');
+                $oldLogoPng = $path . '/logo.png';
+                $oldLogoWebp = $path . '/logo.webp';
+                if (file_exists($oldLogoPng)) @unlink($oldLogoPng);
+                if (file_exists($oldLogoWebp)) @unlink($oldLogoWebp);
+                fileUploader($request->logo, $path, filename: 'logo.webp');
             } catch (\Exception $exp) {
                 $notify[] = ['error', 'Couldn\'t upload the logo'];
                 return back()->withNotify($notify);
@@ -143,7 +147,11 @@ class GeneralSettingController extends Controller {
 
         if ($request->hasFile('logo_dark')) {
             try {
-                fileUploader($request->logo_dark, $path, filename: 'logo_dark.png');
+                $oldLogoPng = $path . '/logo_dark.png';
+                $oldLogoWebp = $path . '/logo_dark.webp';
+                if (file_exists($oldLogoPng)) @unlink($oldLogoPng);
+                if (file_exists($oldLogoWebp)) @unlink($oldLogoWebp);
+                fileUploader($request->logo_dark, $path, filename: 'logo_dark.webp');
             } catch (\Exception $exp) {
                 $notify[] = ['error', 'Couldn\'t upload the logo'];
                 return back()->withNotify($notify);
@@ -152,7 +160,11 @@ class GeneralSettingController extends Controller {
 
         if ($request->hasFile('favicon')) {
             try {
-                fileUploader($request->favicon, $path, filename: 'favicon.png');
+                $oldFaviconPng = $path . '/favicon.png';
+                $oldFaviconWebp = $path . '/favicon.webp';
+                if (file_exists($oldFaviconPng)) @unlink($oldFaviconPng);
+                if (file_exists($oldFaviconWebp)) @unlink($oldFaviconWebp);
+                fileUploader($request->favicon, $path, filename: 'favicon.webp');
             } catch (\Exception $exp) {
                 $notify[] = ['error', 'Couldn\'t upload the favicon'];
                 return back()->withNotify($notify);
@@ -163,7 +175,7 @@ class GeneralSettingController extends Controller {
             try {
                 fileUploader($request->preloader, $path, filename: 'preloader.gif');
             } catch (\Exception $exp) {
-                $notify[] = ['error', 'Couldn\'t upload the favicon'];
+                $notify[] = ['error', 'Couldn\'t upload the preloader'];
                 return back()->withNotify($notify);
             }
         }

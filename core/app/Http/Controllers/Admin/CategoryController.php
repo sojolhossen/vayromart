@@ -101,8 +101,8 @@ class CategoryController extends Controller {
             'meta_keywords.array.*' => 'nullable|string',
             'featured_category'     => 'nullable|integer|between:0,1',
             'filter_menu'           => 'nullable|integer|between:0,1',
-            'image'                 => ['nullable', 'image', new FileTypeValidate(['jpeg', 'jpg', 'png'])],
-            'icon'                  => ['nullable', 'image', new FileTypeValidate(['jpeg', 'jpg', 'png'])],
+            'image'                 => ['nullable', 'image', new FileTypeValidate(['jpeg', 'jpg', 'png', 'webp'])],
+            'icon'                  => ['nullable', 'image', new FileTypeValidate(['jpeg', 'jpg', 'png', 'webp'])],
         ]);
 
         return $validator;

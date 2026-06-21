@@ -20,7 +20,7 @@ class ProfileController extends Controller {
         $request->validate([
             'firstname' => 'required|string',
             'lastname' => 'required|string',
-            'image' => ['nullable', new FileTypeValidate(['png', 'jpg', 'jpeg'])],
+            'image' => ['nullable', new FileTypeValidate(['png', 'jpg', 'jpeg', 'webp'])],
         ]);
 
         $user = auth()->user();

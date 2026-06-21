@@ -88,13 +88,13 @@ class FrontendController extends Controller {
         foreach ($request->except('_token', 'video') as $inputField => $val) {
             if ($inputField == 'has_image' && $imgJson) {
                 foreach ($imgJson as $imgValKey => $imgJsonVal) {
-                    $validationRule['image_input.' . $imgValKey] = ['nullable', 'image', new FileTypeValidate(['jpg', 'jpeg', 'png'])];
+                    $validationRule['image_input.' . $imgValKey] = ['nullable', 'image', new FileTypeValidate(['jpg', 'jpeg', 'png', 'webp'])];
                     $validationMessage['image_input.' . $imgValKey . '.image'] = keyToTitle($imgValKey) . ' must be an image';
                     $validationMessage['image_input.' . $imgValKey . '.mimes'] = keyToTitle($imgValKey) . ' file type not supported';
                 }
                 continue;
             } elseif ($inputField == 'seo_image') {
-                $validationRule['image_input'] = ['nullable', 'image', new FileTypeValidate(['jpeg', 'jpg', 'png'])];
+                $validationRule['image_input'] = ['nullable', 'image', new FileTypeValidate(['jpeg', 'jpg', 'png', 'webp'])];
                 continue;
             }
             $validationRule[$inputField] = ['nullable'];
@@ -225,7 +225,7 @@ class FrontendController extends Controller {
 
     public function frontendSeoUpdate(Request $request, $key, $id) {
         $request->validate([
-            'image' => ['nullable', new FileTypeValidate(['jpeg', 'jpg', 'png'])]
+            'image' => ['nullable', new FileTypeValidate(['jpeg', 'jpg', 'png', 'webp'])]
         ]);
         $hasSeo = @getPageSections()->$key->element->seo;
         if (!$hasSeo) {
