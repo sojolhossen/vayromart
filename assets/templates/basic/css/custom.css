@@ -53,6 +53,8 @@ body {
     border-radius: 16px;
     overflow: hidden;
     transition: transform 0.3s ease, box-shadow 0.3s ease;
+    aspect-ratio: 300 / 510;
+    width: 100%;
 }
 
 .hero-banner:hover {
@@ -301,6 +303,9 @@ body {
 /* Homepage Hero Banner Auto Adjust Style */
 .slider-wrapper {
     height: auto !important;
+    aspect-ratio: 990 / 480;
+    width: 100%;
+    overflow: hidden;
 }
 
 .banner-slider.owl-carousel .owl-stage-outer,

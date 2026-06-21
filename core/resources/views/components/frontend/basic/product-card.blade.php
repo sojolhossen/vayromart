@@ -51,7 +51,7 @@
         </ul>
 
         <a href="{{ $product->link() }}">
-            <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" class="lazyload" data-src="{{ $product->mainImage() }}" alt="flash" width="200" height="200">
+            <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" class="lazyload" data-src="{{ $product->mainImage() }}" alt="flash" width="200" height="200" style="aspect-ratio: 1/1; width: 100%; height: auto; object-fit: contain;">
         </a>
     </div>
 
