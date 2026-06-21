@@ -23,5 +23,6 @@
 @endif
 
 @push('style')
-    <link rel="stylesheet" href="{{asset($activeTemplateTrue.'css/service-section.css') }}">
+    <link rel="stylesheet" href="{{asset($activeTemplateTrue.'css/service-section.css') }}" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="{{asset($activeTemplateTrue.'css/service-section.css') }}"></noscript>
 @endpush

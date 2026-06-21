@@ -80,7 +80,8 @@
 </div>
 
 @push('style-lib')
-    <link rel="stylesheet" href="{{ asset('assets/global/css/select2.min.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/global/css/select2.min.css') }}" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="{{ asset('assets/global/css/select2.min.css') }}"></noscript>
 @endpush
 
 @push('script-lib')

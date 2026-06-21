@@ -18,7 +18,13 @@
     <noscript><link rel="stylesheet" href="{{ asset('assets/global/css/line-awesome.min.css') }}"></noscript>
     @stack('style-lib')
     <link rel="stylesheet" href="{{ asset($activeTemplateTrue . 'css/main.css') }}">
-    <link rel="stylesheet" href="{{ asset($activeTemplateTrue . 'css/color.php?color=' . gs('base_color')) }}">
+    <style>
+        :root {
+            --base-h: {{ hexToHsl(gs('base_color'))['h'] }};
+            --base-s: {{ hexToHsl(gs('base_color'))['s'] }}%;
+            --base-l: {{ hexToHsl(gs('base_color'))['l'] }}%;
+        }
+    </style>
     @stack('style')
     <link href="{{ asset($activeTemplateTrue . 'css/custom.css') }}" rel="stylesheet">
 </head>
