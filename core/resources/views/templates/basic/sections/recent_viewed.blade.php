@@ -2,7 +2,7 @@
     $content = getContent('recent_viewed.content', true);
 @endphp
 
-<div class="recently-viewed-section mt-60 mb-60">
+<div class="recently-viewed-section mt-60 mb-60 d-none">
     <div class="container">
         <div class="section-header left-style">
             <h5 class="title">{{ @$content->data_values?->title }}</h5>
@@ -40,6 +40,7 @@
                 viewedProducts = viewedProducts.slice(0, config.limit);
 
                 if (viewedProducts.length > 0) {
+                    recentViewSection.removeClass('d-none');
                     viewedProducts.forEach(function(product) {
                         let productHtml = `
                         <div class="product-card">
@@ -84,8 +85,6 @@
                     });
 
                     localStorage.setItem("recentlyViewed", JSON.stringify(viewedProducts));
-                } else {
-                    recentViewSection.remove();
                 }
             }
 
