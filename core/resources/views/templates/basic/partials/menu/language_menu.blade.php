@@ -7,7 +7,7 @@
         <button class="dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
             <img class="dropdown-flag lazyload"
                 src="{{ getImage(getFilePath('language') . '/' . @$activeLanguage->image, getFileSize('language')) }}"
-                alt="@lang('image')">
+                alt="@lang('image')" width="18" height="18">
             <span>{{ __($activeLanguage['name']) }}</span>
         </button>
 
@@ -19,7 +19,7 @@
                 <a class="dropdown-item" href="{{ route('lang', $lang->code) }}">
                     <img class="dropdown-flag lazyload"
                         src="{{ getImage(getFilePath('language') . '/' . @$lang->image, getFileSize('language')) }}"
-                        alt="country">
+                        alt="country" width="18" height="18">
                     <span>{{ __(@$lang->name) }}</span>
                 </a>
             @endforeach

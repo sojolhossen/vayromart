@@ -19,9 +19,9 @@
             <div class="footer-top">
                 <div class="footer-widget widget-about">
                     @if (@$footer->logo)
-                        <img src="{{ getImage(null) }}"
+                        <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
                             data-src="{{ getImage('assets/images/frontend/footer/' . @$footer->logo) }}"
-                            class="lazyload footer-logo" alt="footer-logo">
+                            class="lazyload footer-logo" alt="footer-logo" width="220" height="51" style="aspect-ratio: 220/51; width: 100%; height: auto;">
                     @endif
 
                     @if (@$footer->footer_note)
@@ -74,24 +74,20 @@
                 @endforeach
             </div>
         @endif
-        @if (@$footer->copyright_text || $socials->count() > 0 || @$footer->payment_methods)
-            <div class="footer-copyright">
-                <div
-                    class="copyright-area d-flex flex-wrap align-items-center @if ($socials->count() == 0 && !@$footer->payment_methods) justify-content-center @else justify-content-between @endif gap-4 flex-wrap-reverse">
-
+        @if (
+            @$footer->copyright_text ||
+                @$footer->payment_methods ||
+                (!blank($socials) && @$footer->social_status == Status::YES))
+            <div class="footer-copyright py-3">
+                <div class="d-flex flex-wrap gap-3 justify-content-between align-items-center">
                     @if (@$footer->copyright_text)
                         <div class="left">
-                            @php
-                                $copyrightText = str_replace('{year}', date('Y'), $footer->copyright_text);
-                                $siteName = '<a href="' . route('home') . '">' . e(gs('site_name')) . '</a>';
-                                $copyrightText = str_replace('{site_name}', $siteName, $copyrightText);
-                            @endphp
-                            <p>{!! __(@$copyrightText) !!}</p>
+                            <p class="mb-0">
+                                @php echo @$footer->copyright_text; @endphp
+                            </p>
                         </div>
                     @endif
-
-
-                    @if ($socials->count() > 0)
+                    @if (!blank($socials) && @$footer->social_status == Status::YES)
                         <ul class="social-icons d-flex gap-2 flex-wrap mt-0">
                             @foreach ($socials as $item)
                                 <li>
@@ -106,9 +102,9 @@
                     @endif
                     @if (@$footer->payment_methods)
                         <div class="right">
-                            <img src="{{ getImage(null) }}"
+                            <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
                                 data-src="{{ getImage('assets/images/frontend/footer/' . @$footer->payment_methods, '250x30') }}"
-                                class="lazyload" alt="@lang('footer')">
+                                class="lazyload" alt="@lang('footer')" width="250" height="30" style="aspect-ratio: 250/30; width: 100%; height: auto;">
                         </div>
                     @endif
                 </div>

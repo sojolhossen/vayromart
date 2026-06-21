@@ -11,7 +11,7 @@
     <li>
         <a href="{{ route('categories') }}" class="ecommerce" id="cate-button">
             <span class="ecommerce__icon">
-                <img src="{{ svg('category') }}" alt="">
+                <img src="{{ svg('category') }}" alt="category" width="22" height="22">
             </span>
             <span class="ecommerce__text">@lang('Category')</span>
         </a>
@@ -20,7 +20,7 @@
     <li>
         <a href="javascript:void(0)" class="ecommerce @auth user-account-btn @endauth" id="account-button" @guest data-bs-toggle="modal" data-bs-target="#loginModal" @endguest>
             <span class="ecommerce__icon">
-                <img src="{{ svg('my_account') }}" alt="">
+                <img src="{{ svg('my_account') }}" alt="account" width="22" height="22">
             </span>
             <span class="ecommerce__text">@lang('Account')</span>
         </a>
