@@ -17,7 +17,7 @@
                         <div class="best-sell-inner d-flex flex-wrap">
                             <div class="thumb">
                                 <a href="{{ $product->link() }}">
-                                    <img src="{{ getImage(null) }}" data-src="{{ $product->mainImage() }}" class="lazyload" alt="products" width="80" height="80">
+                                    <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-src="{{ $product->mainImage() }}" class="lazyload" alt="products" width="80" height="80">
                                 </a>
                             </div>
 

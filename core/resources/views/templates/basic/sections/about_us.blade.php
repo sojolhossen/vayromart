@@ -27,7 +27,7 @@
             @if (@$content->data_values->image)
                 <div class="col-md-5 col-lg-6">
                     <div class="text-center">
-                        <img src="{{ getImage(null) }}" data-src="{{ getImage('assets/images/frontend/about_us/' . @$content->data_values->image, '686x528') }}" alt="image" class="img-fluid lazyload" width="686" height="528">
+                        <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-src="{{ getImage('assets/images/frontend/about_us/' . @$content->data_values->image, '686x528') }}" alt="image" class="img-fluid lazyload" width="686" height="528">
                     </div>
                 </div>
             @endif
