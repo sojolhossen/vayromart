@@ -17,7 +17,7 @@
     <link rel="stylesheet" href="{{ asset('assets/global/css/line-awesome.min.css') }}" media="print" onload="this.media='all'">
     <noscript><link rel="stylesheet" href="{{ asset('assets/global/css/line-awesome.min.css') }}"></noscript>
     @stack('style-lib')
-    <link rel="stylesheet" href="{{ asset($activeTemplateTrue . 'css/main.css') }}">
+    <link rel="stylesheet" href="{{ asset($activeTemplateTrue . 'css/main.css') }}?v=1.1">
     <style>
         :root {
             --base-h: {{ hexToHsl(gs('base_color'))['h'] }};
@@ -26,7 +26,7 @@
         }
     </style>
     @stack('style')
-    <link href="{{ asset($activeTemplateTrue . 'css/custom.css') }}" rel="stylesheet">
+    <link href="{{ asset($activeTemplateTrue . 'css/custom.css') }}?v=1.1" rel="stylesheet">
 </head>
 
 @php echo loadExtension('google-analytics') @endphp
