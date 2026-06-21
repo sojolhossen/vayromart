@@ -9,7 +9,7 @@
                 @foreach ($elements as $element)
                     <div class="services-card">
                         <div class="services-card__icon">
-                            <img src="{{ getImage('assets/images/frontend/services/' . $element->data_values->image, '60x50') }}" alt="">
+                            <img src="{{ getImage('assets/images/frontend/services/' . $element->data_values->image, '60x50') }}" alt="service" width="60" height="50">
                         </div>
                         <div class="services-card__content">
                             <h5 class="services-card__text mb-1">{{ __($element->data_values->title) }}</h5>

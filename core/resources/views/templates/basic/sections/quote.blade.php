@@ -8,7 +8,7 @@
             @if (@$content->data_values->image)
                 <div class="col-md-4">
                     <div class="text-center d-none d-md-block">
-                        <img src="{{ frontendImage('quote', @$content->data_values->image, '265x600') }}" alt="image" class="img-fluid testimonial__img" />
+                        <img src="{{ frontendImage('quote', @$content->data_values->image, '265x600') }}" alt="image" class="img-fluid testimonial__img" width="265" height="600" />
                     </div>
                 </div>
             @endif

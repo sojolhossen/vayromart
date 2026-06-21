@@ -19,11 +19,14 @@
                         $size = getFileSize('triplePromoBanner');
                         $path = getFilePath('triplePromoBanner');
                     }
+                    $dimensions = explode('x', $size);
+                    $width = isset($dimensions[0]) ? $dimensions[0] : null;
+                    $height = isset($dimensions[1]) ? $dimensions[1] : null;
                 @endphp
                 @foreach ($promoImages as $promoImage)
                     <div class="{{ $class }}">
                         <a href="{{ $promoImage->link??'javascript:void(0)' }}" class="d-block overlay-effects rounded--5">
-                            <img src="{{ getImage(null, $size) }}" data-src="{{ getImage($path . '/' . $promoImage->image, $size) }}" class="w-100 lazyload" alt="">
+                            <img src="{{ getImage(null, $size) }}" data-src="{{ getImage($path . '/' . $promoImage->image, $size) }}" class="w-100 lazyload" alt="promo" @if($width && $height) width="{{ $width }}" height="{{ $height }}" @endif>
                         </a>
                     </div>
                 @endforeach

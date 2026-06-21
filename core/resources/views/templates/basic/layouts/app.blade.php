@@ -27,7 +27,9 @@
         }
     </style>
     @stack('style')
-    <link href="{{ asset($activeTemplateTrue . 'css/custom.css') }}?v=1.1" rel="stylesheet">
+    <style>
+        {!! file_get_contents(base_path('../' . $activeTemplateTrue . 'css/custom.css')) !!}
+    </style>
 </head>
 
 @php echo loadExtension('google-analytics') @endphp

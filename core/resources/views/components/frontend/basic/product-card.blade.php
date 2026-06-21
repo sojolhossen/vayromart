@@ -51,7 +51,7 @@
         </ul>
 
         <a href="{{ $product->link() }}">
-            <img src="{{ getImage(null) }}" class="lazyload" data-src="{{ $product->mainImage() }}" alt="flash">
+            <img src="{{ getImage(null) }}" class="lazyload" data-src="{{ $product->mainImage() }}" alt="flash" width="200" height="200">
         </a>
     </div>
 

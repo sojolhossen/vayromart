@@ -8,7 +8,7 @@
             @foreach ($sliders as $slider)
                 <div class="slide-item">
                     <a href="{{ @$slider->data_values->link }}" class="d-block">
-                        <img src="{{  frontendImage('banner', @$slider->data_values->slider, '990x480') }}" alt="slider-image">
+                        <img src="{{  frontendImage('banner', @$slider->data_values->slider, '990x480') }}" alt="slider-image" width="990" height="480">
                     </a>
                 </div>
             @endforeach

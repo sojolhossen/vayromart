@@ -14,7 +14,7 @@
                                     <div class="counter-list__card">
                                         <div class="counter-list__card-head">
                                             @if (@$item->data_values?->image)
-                                                <img src="{{ getImage('assets/images/frontend/counter/' . @$item->data_values->image) }}" alt="@lang('image')" class="counter-list__card-img">
+                                                <img src="{{ getImage('assets/images/frontend/counter/' . @$item->data_values->image) }}" alt="@lang('image')" class="counter-list__card-img" width="35" height="35">
                                             @endif
                                             @if (@$item->data_values->counter_value)
                                                 <span class="counter-list__card-title">

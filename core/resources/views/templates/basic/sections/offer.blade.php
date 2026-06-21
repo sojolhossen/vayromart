@@ -20,13 +20,19 @@
             <div class="d-flex flex-wrap offer-wrapper">
 
                 @if ($offer->banner && $offer->show_banner)
+                    @php
+                        $offerBannerSize = getFileSize('offerBanner');
+                        $offerBannerDimensions = explode('x', $offerBannerSize);
+                        $offerBannerWidth = isset($offerBannerDimensions[0]) ? $offerBannerDimensions[0] : null;
+                        $offerBannerHeight = isset($offerBannerDimensions[1]) ? $offerBannerDimensions[1] : null;
+                    @endphp
                     <div class="offer-banner">
                         @if ($offer->show_countdown)
                             <div class="offer-countdown">
                                 <x-dynamic-component :component="frontendComponent('offer-countdown')" />
                             </div>
                         @endif
-                        <a href="{{ route('offer.products', encrypt($offer->id)) }}" class="h-100"> <img class="w-100 rounded--5" src="{{ getImage(getFilePath('offerBanner') . '/' . $offer->banner, getFileSize('offerBanner')) }}" alt="offer-banner"></a>
+                        <a href="{{ route('offer.products', encrypt($offer->id)) }}" class="h-100"> <img class="w-100 rounded--5" src="{{ getImage(getFilePath('offerBanner') . '/' . $offer->banner, $offerBannerSize) }}" alt="offer-banner" @if($offerBannerWidth && $offerBannerHeight) width="{{ $offerBannerWidth }}" height="{{ $offerBannerHeight }}" @endif></a>
                     </div>
 
                     <div class="product-slider-wrapper flex-grow-1">

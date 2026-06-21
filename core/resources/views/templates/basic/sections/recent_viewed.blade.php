@@ -45,7 +45,7 @@
                         <div class="product-card">
                             <div class="product-thumb">
                                 <a href="${product.plink}">
-                                    <img src="${product.pima}" alt="${product.pna}">
+                                    <img src="${product.pima}" alt="${product.pna}" width="200" height="200">
                                 </a>
                             </div>
                             <div class="product-content">

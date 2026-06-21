@@ -15,7 +15,7 @@
 
         @if (gs('homepage_layout') == 'sidebar_menu' && @$content->data_values->fixed_banner)
             <div class="hero-banner">
-                <a href="{{ @$content->data_values->fixed_banner_link }}" class="d-inline"><img class="w-100 h-100" src="{{ frontendImage('banner', @$content->data_values->fixed_banner, '300x510') }}" alt=""></a>
+                <a href="{{ @$content->data_values->fixed_banner_link }}" class="d-inline"><img class="w-100 h-100" src="{{ frontendImage('banner', @$content->data_values->fixed_banner, '300x510') }}" alt="banner" width="300" height="510"></a>
             </div>
         @endif
     </div>
