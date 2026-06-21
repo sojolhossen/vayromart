@@ -286,11 +286,16 @@
 @endpush
 
 @push('style-lib')
-    <link rel="stylesheet" href="{{ asset($activeTemplateTrue . 'css/products-page.css') }}">
-    <link rel="stylesheet" href="{{ asset($activeTemplateTrue . 'css/product-details.css') }}">
-    <link rel="stylesheet" href="{{ asset($activeTemplateTrue . 'css/owl.carousel.min.css') }}">
-    <link rel="stylesheet" href="{{ asset($activeTemplateTrue . 'css/xzoom/xzoom.css') }}">
-    <link rel="stylesheet" href="{{ asset($activeTemplateTrue . 'css/xzoom/magnific-popup.css') }}">
+    <link rel="stylesheet" href="{{ asset($activeTemplateTrue . 'css/products-page.css') }}" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="{{ asset($activeTemplateTrue . 'css/products-page.css') }}"></noscript>
+    <link rel="stylesheet" href="{{ asset($activeTemplateTrue . 'css/product-details.css') }}" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="{{ asset($activeTemplateTrue . 'css/product-details.css') }}"></noscript>
+    <link rel="stylesheet" href="{{ asset($activeTemplateTrue . 'css/owl.carousel.min.css') }}" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="{{ asset($activeTemplateTrue . 'css/owl.carousel.min.css') }}"></noscript>
+    <link rel="stylesheet" href="{{ asset($activeTemplateTrue . 'css/xzoom/xzoom.css') }}" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="{{ asset($activeTemplateTrue . 'css/xzoom/xzoom.css') }}"></noscript>
+    <link rel="stylesheet" href="{{ asset($activeTemplateTrue . 'css/xzoom/magnific-popup.css') }}" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="{{ asset($activeTemplateTrue . 'css/xzoom/magnific-popup.css') }}"></noscript>
 @endpush
 
 @push('script')

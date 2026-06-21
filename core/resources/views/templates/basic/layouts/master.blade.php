@@ -97,6 +97,6 @@
     <x-frontend.visermart-script />
 @endpush
 
-@push('style-lib')
+@push('script-lib')
     <script src="{{ asset($activeTemplateTrue . 'js/lazyload.js') }}"></script>
 @endpush

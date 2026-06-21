@@ -22,5 +22,6 @@
 </div>
 
 @push('style-lib')
-   <link rel="stylesheet" href="{{ asset($activeTemplateTrue. 'css/banner.css') }}">
+   <link rel="stylesheet" href="{{ asset($activeTemplateTrue. 'css/banner.css') }}" media="print" onload="this.media='all'">
+   <noscript><link rel="stylesheet" href="{{ asset($activeTemplateTrue. 'css/banner.css') }}"></noscript>
 @endpush
