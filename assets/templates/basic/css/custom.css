@@ -1008,3 +1008,61 @@ body {
         border-radius: 0;
     }
 }
+
+/* Uninitialized Owl Carousels layout shift prevention */
+.banner-slider:not(.owl-loaded) {
+    display: flex !important;
+    flex-wrap: nowrap;
+    overflow: hidden;
+}
+.banner-slider:not(.owl-loaded) .slide-item {
+    width: 100%;
+    flex-shrink: 0;
+}
+
+.featured-category-slider:not(.owl-loaded) {
+    display: flex !important;
+    flex-wrap: nowrap;
+    overflow: hidden;
+    height: 140px;
+}
+.featured-category-slider:not(.owl-loaded) .banner-categories {
+    width: 12.5%;
+    flex-shrink: 0;
+}
+
+@media (max-width: 991px) {
+    .featured-category-slider:not(.owl-loaded) .banner-categories {
+        width: 25%;
+    }
+}
+@media (max-width: 575px) {
+    .featured-category-slider:not(.owl-loaded) .banner-categories {
+        width: 33.33%;
+    }
+}
+
+.recent-view:not(.owl-loaded),
+.product-with-banner:not(.owl-loaded) {
+    display: flex !important;
+    flex-wrap: nowrap;
+    overflow: hidden;
+    height: 320px;
+}
+.recent-view:not(.owl-loaded) .product-card,
+.product-with-banner:not(.owl-loaded) .offer-product {
+    width: 20%;
+    flex-shrink: 0;
+}
+@media (max-width: 991px) {
+    .recent-view:not(.owl-loaded) .product-card,
+    .product-with-banner:not(.owl-loaded) .offer-product {
+        width: 33.33%;
+    }
+}
+@media (max-width: 575px) {
+    .recent-view:not(.owl-loaded) .product-card,
+    .product-with-banner:not(.owl-loaded) .offer-product {
+        width: 50%;
+    }
+}
