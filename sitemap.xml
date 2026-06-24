@@ -3,7 +3,7 @@
 
   <!-- Home Page -->
   <url>
-    <loc>https://www.vayromart.com/</loc>
+    <loc>https://vayromart.com/</loc>
     <lastmod>2025-12-25</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
@@ -11,7 +11,7 @@
 
   <!-- About Page -->
   <url>
-    <loc>https://www.vayromart.com/about</loc>
+    <loc>https://vayromart.com/about-us</loc>
     <lastmod>2025-12-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
@@ -19,7 +19,7 @@
 
   <!-- All Categories Page -->
   <url>
-    <loc>https://www.vayromart.com/categories</loc>
+    <loc>https://vayromart.com/categories</loc>
     <lastmod>2025-12-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
@@ -27,7 +27,7 @@
 
   <!-- All Brands Page -->
   <url>
-    <loc>https://www.vayromart.com/brands</loc>
+    <loc>https://vayromart.com/brands</loc>
     <lastmod>2025-12-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
@@ -35,7 +35,23 @@
 
   <!-- Contact Page -->
   <url>
-    <loc>https://www.vayromart.com/contact</loc>
+    <loc>https://vayromart.com/contact</loc>
+    <lastmod>2025-12-25</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- Offer Page -->
+  <url>
+    <loc>https://vayromart.com/offers</loc>
+    <lastmod>2025-12-25</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- FAQ Page -->
+  <url>
+    <loc>https://vayromart.com/faq</loc>
     <lastmod>2025-12-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>

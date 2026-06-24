@@ -1,3 +1,22 @@
+@php
+    $currentUrl = url()->current();
+    $appUrl = config('app.url');
+    if ($appUrl) {
+        $parsedApp = parse_url($appUrl);
+        $parsedCurrent = parse_url($currentUrl);
+        
+        $scheme = $parsedApp['scheme'] ?? $parsedCurrent['scheme'] ?? 'http';
+        $host = $parsedApp['host'] ?? $parsedCurrent['host'] ?? '';
+        $port = isset($parsedApp['port']) ? ':' . $parsedApp['port'] : '';
+        $path = $parsedCurrent['path'] ?? '';
+        
+        $canonicalUrl = $scheme . '://' . $host . $port . $path;
+    } else {
+        $canonicalUrl = $currentUrl;
+    }
+@endphp
+<link rel="canonical" href="{{ $canonicalUrl }}">
+
 @if ($seo)
     @php
         if(!isset($seoImage)){
@@ -28,7 +47,7 @@
     @php $socialImageSize =  @$seoContents->image_size ?  explode('x', @$seoContents->image_size) :explode('x', getFileSize('seo')) @endphp
     <meta property="og:image:width" content="{{ $socialImageSize[0] }}">
     <meta property="og:image:height" content="{{ $socialImageSize[1] }}">
-    <meta property="og:url" content="{{ url()->current() }}">
+    <meta property="og:url" content="{{ $canonicalUrl }}">
     {{-- <!-- Twitter Meta Tags --> --}}
     <meta name="twitter:card" content="summary_large_image">
 @endif
