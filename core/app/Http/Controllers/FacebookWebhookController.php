@@ -203,17 +203,29 @@ class FacebookWebhookController extends Controller
 
         // 3. Check for Cache-based Order OTP verification state
         if (Cache::has($pendingOrderCheckKey)) {
-            // Check if user entered a 4-digit mobile verification code
-            if (preg_match('/^\d{4}$/', $messageText)) {
+            // Check if user entered a 4-digit mobile verification code OR a full 11-digit mobile number
+            $cleanInput = preg_replace('/[^0-9]/', '', $messageText);
+            
+            if (strlen($cleanInput) === 4 || strlen($cleanInput) === 11 || strlen($cleanInput) === 13 || strlen($cleanInput) === 14) {
                 $orderId = Cache::get($pendingOrderCheckKey);
                 $order = Order::find($orderId);
 
                 if ($order) {
                     $mobile = $this->getOrderMobileNumber($order);
-                    // Extract last 4 digits
-                    $last4 = substr(preg_replace('/[^0-9]/', '', $mobile), -4);
+                    $cleanMobile = preg_replace('/[^0-9]/', '', $mobile);
+                    
+                    $last4 = substr($cleanMobile, -4);
+                    
+                    $isMatch = false;
+                    if (strlen($cleanInput) === 4) {
+                        // 4-digit match
+                        $isMatch = ($last4 === $cleanInput);
+                    } else {
+                        // Full mobile match (compare last 11 digits to handle country code differences)
+                        $isMatch = (substr($cleanMobile, -11) === substr($cleanInput, -11));
+                    }
 
-                    if ($last4 && $last4 === $messageText) {
+                    if ($isMatch) {
                         // Success - forget verification state
                         Cache::forget($pendingOrderCheckKey);
                         Cache::put("fb_order_verified_{$senderId}_{$order->id}", true, now()->addHours(2));
@@ -232,7 +244,7 @@ class FacebookWebhookController extends Controller
                         $databaseContext .= "- Delivery Address: " . json_encode($order->shipping_address) . "\n";
                         $databaseContext .= "Acknowledge the verification success and report the status and items details of this order clearly to the user in a friendly format. If they requested cancellation, inform them that they can now proceed with canceling it.";
                     } else {
-                        $botResponse = "দুঃখিত, আপনার দেওয়া মোবাইল নাম্বারের শেষ ৪টি ডিজিট মিলছে না। অনুগ্রহ করে সঠিক ৪টি ডিজিট লিখুন অথবা অন্য কোনো প্রশ্ন করুন।";
+                        $botResponse = "দুঃখিত, আপনার দেওয়া মোবাইল নাম্বারের শেষ ৪টি ডিজিট বা পূর্ণ নাম্বারটি মিলছে না। অনুগ্রহ করে অর্ডারের সাথে যুক্ত সঠিক নাম্বারটি লিখুন।";
                         $this->saveBotMessage($conversation->id, $botResponse);
                         $this->sendFacebookMessage($senderId, $botResponse);
                         return;
