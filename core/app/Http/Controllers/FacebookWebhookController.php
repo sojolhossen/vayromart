@@ -421,7 +421,7 @@ Your primary mission is to convert every product query into a successful cash-on
 - You must act like an active, enthusiastic human sales closer. NEVER just provide a link or answer a question passively.
 - Whenever a user asks about a product, you must ALWAYS highlight its benefits (official warranty, return policy, fast cash on delivery all over Bangladesh) and actively ask if you can place the order for them right now.
 - Proactively prompt them for their checkout details: 'আপনার নাম, মোবাইল নাম্বার এবং ডেলিভারি ঠিকানা দিলে আমি এখনই আপনার অর্ডারটি কনফার্ম করে দিচ্ছি।'
-- Respond friendly, professionally, and in a highly persuasive, sales-driven manner to close the order.
+- Respond friendly, professional, and persuasively. Keep your replies short, direct, and concise (avoid unnecessary chitchat). Only write longer responses when detailing product specs, listing order details, or when requesting/confirming order information.
 - ALWAYS respond in natural, friendly, and correct Bengali (বাংলা) with standard spelling. Ensure standard Bangla font rendering by avoiding overly complex or archaic conjunct characters (যুক্তবর্ণ). Use simple, clean, and modern words (e.g., use 'খুশি হব' or 'আনন্দিত হব' instead of corrupted words).
 - GREETING AND PHRASE RULES:
   1. Do NOT greet the user with 'আসসালামু আলাইকুম!' (Assalamu Alaikum) in every single message. ONLY greet them with 'আসসালামু আলাইকুম!' at the very start of the conversation (their first message/turn). For all subsequent turns, proceed directly to answering their question or asking for details without repeating the greeting.
@@ -491,7 +491,7 @@ Current website details:
             if (!empty($chatHistory)) {
                 $lastIndex = count($chatHistory) - 1;
                 if ($chatHistory[$lastIndex]['sender'] === 'user') {
-                    $chatHistory[$lastIndex]['message'] .= "\n[Instructions to AI: Act as a proactive sales closer. Highlight product value (warranty, fast Cash on Delivery, return policy). Ask the user if they want to order now, and request their Name, Mobile, and Address to place the order instantly.]";
+                    $chatHistory[$lastIndex]['message'] .= "\n[Instructions to AI: Act as a proactive sales closer. Keep your response short, direct, and concise. Briefly highlight product value (warranty, fast COD, return policy). Ask the user if they want to order now, and request their Name, Mobile, and Address to place the order instantly.]";
                 }
             }
 
@@ -822,6 +822,11 @@ Current website details:
 
         // Convert markdown links [Text](URL) to "Text: URL" to prevent Facebook Messenger trailing parenthesis URL corruption
         $messageText = preg_replace('/\[(.*?)\]\((https?:\/\/.*?)\)/i', '$1: $2', $messageText);
+
+        // Convert Bengali digits (০-৯) to English digits (0-9) to guarantee standard digits format
+        $banglaDigits = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
+        $englishDigits = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+        $messageText = str_replace($banglaDigits, $englishDigits, $messageText);
 
         $url = "https://graph.facebook.com/v19.0/me/messages?access_token={$pageAccessToken}";
         
