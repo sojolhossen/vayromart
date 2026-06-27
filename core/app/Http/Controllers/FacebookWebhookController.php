@@ -560,9 +560,34 @@ class FacebookWebhookController extends Controller
                     if (!empty($summary)) {
                         $databaseContext .= "  Description: " . trim($summary) . "\n";
                     }
+
+                    // Query and Append Variants (Sizes/Colors)
+                    try {
+                        $variants = \App\Models\ProductVariant::where('product_id', $product->id)->get();
+                        if ($variants->count() > 0) {
+                            $vStrings = [];
+                            foreach ($variants as $variant) {
+                                $vStrings[] = "{$variant->name} (Price: {$variant->price} BDT, Stock: {$variant->in_stock})";
+                            }
+                            $databaseContext .= "  Available Variants/Sizes/Colors: " . implode(", ", $vStrings) . "\n";
+                        }
+                    } catch (\Exception $e) {}
+
+                    // Query and Append Top Customer Reviews
+                    try {
+                        $reviews = \App\Models\ProductReview::where('product_id', $product->id)->where('rating', '>=', 4)->limit(3)->get();
+                        if ($reviews->count() > 0) {
+                            $rStrings = [];
+                            foreach ($reviews as $rev) {
+                                $rStrings[] = "\"{$rev->review}\" (Rating: {$rev->rating}/5 by {$rev->user->fullname})";
+                            }
+                            $databaseContext .= "  Top Customer Reviews: " . implode(" | ", $rStrings) . "\n";
+                        }
+                    } catch (\Exception $e) {}
+
                     $databaseContext .= "  Link: " . route('product.detail', $product->slug) . "\n";
                 }
-                $databaseContext .= "\nIf matching products are found, mention them to the user and supply the direct link (e.g. Product Name: URL) on a new line. Do NOT enclose links in parentheses or markdown brackets.\n";
+                $databaseContext .= "\nIf matching products are found, mention them to the user and supply the direct link (e.g. Product Name: URL) on a new line. Do NOT enclose links in parentheses or markdown brackets. Use variants and customer reviews to answer size/rating questions and improve sales trust.\n";
             }
         }
 
@@ -889,6 +914,31 @@ Current website details:
             $brands = \App\Models\Brand::pluck('name')->implode(', ');
             $context .= "Product Categories Available: {$categories}\n\n";
             $context .= "Brands Available: {$brands}\n\n";
+        } catch (\Exception $e) {}
+
+        // 6. Active Discount Coupons (Real-time from Database)
+        try {
+            $coupons = \App\Models\Coupon::where('status', 1)->get();
+            if ($coupons->count() > 0) {
+                $context .= "Store Active Discount Coupons (Offer these to customers when they ask for discounts/offers):\n";
+                foreach ($coupons as $coupon) {
+                    $type = $coupon->discount_type == 1 ? 'Fixed BDT' : 'Percentage (%)';
+                    $context .= "- Coupon Code: `{$coupon->code}` | Discount: {$coupon->value} " . ($coupon->discount_type == 1 ? 'BDT' : '%') . " | Min Purchase Required: {$coupon->min_limit} BDT\n";
+                }
+                $context .= "\n";
+            }
+        } catch (\Exception $e) {}
+
+        // 7. Active Marketing Offers / Special Deals
+        try {
+            $offers = \App\Models\Offer::where('status', 1)->get();
+            if ($offers->count() > 0) {
+                $context .= "Store Active Offers & Campaigns:\n";
+                foreach ($offers as $offer) {
+                    $context .= "- Campaign/Offer: {$offer->name} | Details: " . strip_tags($offer->description) . "\n";
+                }
+                $context .= "\n";
+            }
         } catch (\Exception $e) {}
 
         return $context;
