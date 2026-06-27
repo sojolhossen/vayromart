@@ -671,7 +671,7 @@ Current website details:
 {$databaseContext}";
 
             // Fetch chat history (last 8 messages, filtering out system errors)
-            $chatHistory = ChatbotMessage::where('conversation_id', $conversation->id)
+            $chatHistoryRaw = ChatbotMessage::where('conversation_id', $conversation->id)
                 ->where('message', 'not like', 'দুঃখিত, আমি এই মুহূর্তে%')
                 ->where('message', 'not like', 'AI Error:%')
                 ->orderBy('created_at', 'desc')
@@ -680,6 +680,18 @@ Current website details:
                 ->reverse()
                 ->values()
                 ->toArray();
+
+            // Filter out empty messages to prevent OpenAI/Nvidia "Empty content is not allowed" errors
+            $chatHistory = [];
+            foreach ($chatHistoryRaw as $msg) {
+                $cleanMsg = trim($msg['message'] ?? '');
+                if (!empty($cleanMsg)) {
+                    $chatHistory[] = [
+                        'sender' => $msg['sender'],
+                        'message' => $cleanMsg
+                    ];
+                }
+            }
 
             try {
                 // Call AI Service

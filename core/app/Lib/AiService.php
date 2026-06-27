@@ -117,20 +117,21 @@ class AiService
             'messages' => $messages
         ];
 
-        // If DeepSeek model or Nvidia API is used, inject parameters (like turning off reasoning thinking for instant chat responses)
-        if (stripos($model, 'deepseek') !== false || stripos($url, 'nvidia') !== false) {
-            $payload['extra_body'] = [
-                'chat_template_kwargs' => [
-                    'thinking' => false
-                ]
-            ];
-            $payload['chat_template_kwargs'] = [
-                'enable_thinking' => true,
-                'thinking' => false
-            ];
-            $payload['temperature'] = 1.0;
-            $payload['top_p'] = 0.95;
-            $payload['max_tokens'] = 4096;
+        // Fix model if it is mistakenly configured as an image diffusion model
+        if ($model === 'google/diffusiongemma-26b-a4b-it') {
+            $model = 'nvidia/llama-3.1-nemotron-70b-instruct';
+        }
+
+        $payload = [
+            'model' => $model,
+            'messages' => $messages
+        ];
+
+        // Safely add configuration parameters for Nvidia endpoints
+        if (stripos($url, 'nvidia') !== false) {
+            $payload['temperature'] = 0.7;
+            $payload['top_p'] = 0.9;
+            $payload['max_tokens'] = 1024;
         }
 
         $response = Http::timeout(30)
