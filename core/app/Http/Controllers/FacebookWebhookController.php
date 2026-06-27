@@ -778,18 +778,20 @@ Current website details:
             'আমি', 'দেখলাম', 'একটি', 'এটার', 'ওটার', 'কোনো', 'ভাই', 'পেজে', 'সমস্যা', 'নেই', 'আচ্ছা', 'ওয়ারেন্টি',
         ];
 
-        // Split on hyphens, whitespace and common punctuation so "Hoco-র" becomes ["Hoco", "র"]
-        $parts = preg_split('/[\s\-\/\(\)\[\]।,;:!\?]+/u', $string);
+        // Split on whitespace and common punctuation, but preserve hyphens (-) within words so "JR-L002" stays together
+        $parts = preg_split('/[\s\/\(\)\[\]।,;:!\?]+/u', $string);
         $filtered = [];
 
         foreach ($parts as $part) {
             $part = trim($part);
             if (mb_strlen($part) < 2) continue;
 
-            // Separately extract Latin (ASCII) runs and Bengali script runs
-            // so mixed tokens like "hocoর" produce ["hoco"] and ["র"] independently
+            // Separately extract Latin (ASCII) alphanumeric runs (allowing numbers to start them)
+            // and Bengali script runs
             $subTokens = [];
-            preg_match_all('/[a-zA-Z][a-zA-Z0-9]*/u', $part, $latinMatches);
+            
+            // Matches alphanumeric strings containing letters and/or numbers, optionally with hyphens
+            preg_match_all('/[a-zA-Z0-9\-]+/u', $part, $latinMatches);
             foreach ($latinMatches[0] as $lt) {
                 $subTokens[] = $lt;
             }
@@ -802,8 +804,8 @@ Current website details:
             }
 
             foreach ($subTokens as $token) {
-                $lower = mb_strtolower(trim($token));
-                if (mb_strlen($lower) >= 2 && !in_array($lower, $stopWords) && !is_numeric($lower)) {
+                $lower = mb_strtolower(trim($token, " -")); // trim whitespace and trailing hyphens
+                if (mb_strlen($lower) >= 2 && !in_array($lower, $stopWords)) {
                     $filtered[] = $lower;
                 }
             }
