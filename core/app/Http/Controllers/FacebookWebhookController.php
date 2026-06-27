@@ -70,8 +70,9 @@ class FacebookWebhookController extends Controller
                         continue;
                     }
                     
-                    // Ignore delivery / read / heartbeat webhooks (no text = nothing to process)
-                    if (empty($messaging['message']['text'])) {
+                    // Ignore delivery / read / heartbeat webhooks (no text and no attachments = nothing to process)
+                    $hasAttachments = isset($messaging['message']['attachments']) && !empty($messaging['message']['attachments']);
+                    if (empty($messaging['message']['text']) && !$hasAttachments) {
                         continue;
                     }
 
@@ -98,12 +99,54 @@ class FacebookWebhookController extends Controller
                         continue;
                     }
 
+                    $adProductContext = '';
+
+                    // ─── IMAGE ATTACHMENT PROCESSING (VISION AI) ───────────────────────────
+                    // If the customer sent an image, extract the URL and analyze it using NVIDIA Vision API
+                    // to recognize the product they uploaded.
+                    if ($hasAttachments) {
+                        foreach ($messaging['message']['attachments'] as $attachment) {
+                            if ($attachment['type'] === 'image' && isset($attachment['payload']['url'])) {
+                                $imageUrl = $attachment['payload']['url'];
+                                Log::info("Received image attachment from {$senderId}. URL: {$imageUrl}");
+
+                                // Show typing indicator
+                                $this->sendFacebookAction($senderId, 'typing_on');
+
+                                // Get NVIDIA API Key from config/env
+                                $general = gs();
+                                $chatbotSettings = [];
+                                if ($general->chatbot_settings) {
+                                    $chatbotSettings = is_string($general->chatbot_settings) 
+                                        ? json_decode($general->chatbot_settings, true) 
+                                        : (array)$general->chatbot_settings;
+                                }
+                                $apiKey = env('NVIDIA_API_KEY') ?: ($chatbotSettings['api_key']['nvidia'] ?? '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');
+
+                                // Describe image
+                                $identifiedProduct = \App\Lib\AiService::describeImage($imageUrl, $apiKey);
+                                if (!empty($identifiedProduct)) {
+                                    // Treat identified product name as adProductContext to force catalog match
+                                    $adProductContext = $identifiedProduct;
+                                    Cache::put("fb_ad_ref_{$senderId}", $identifiedProduct, now()->addHours(2));
+                                    
+                                    // If text was empty (user sent ONLY an image), set default question to trigger search
+                                    if (empty($messageText)) {
+                                        $messageText = "এই প্রোডাক্টটির দাম কত?";
+                                    }
+                                    Log::info("Image processed successfully. Product: {$identifiedProduct}. Query set to: {$messageText}");
+                                }
+                                break;
+                            }
+                        }
+                    }
+                    // ───────────────────────────────────────────────────────────────────────
+
                     // ─── AD REFERRAL CONTEXT EXTRACTION ─────────────────────────────────────
                     // When a customer clicks on a Messenger Ad, Facebook passes a 'referral'
                     // object containing properties like 'ref', 'ad_id', or 'source'.
                     // We extract potential product names/keywords from these fields and
                     // cache them so the AI knows which product they are viewing.
-                    $adProductContext = '';
                     $referralData = $messaging['referral'] ?? $messaging['message']['referral'] ?? null;
                     if ($referralData) {
                         $refParam = $referralData['ref'] ?? '';
@@ -114,7 +157,9 @@ class FacebookWebhookController extends Controller
                             // Convert hyphens/underscores to spaces to extract keyword phrases
                             $cleanRef = str_replace(['-', '_'], ' ', $refParam);
                             Cache::put("fb_ad_ref_{$senderId}", $cleanRef, now()->addHours(2));
-                            $adProductContext = $cleanRef;
+                            if (empty($adProductContext)) {
+                                $adProductContext = $cleanRef;
+                            }
                             Log::info("Extracted Ad Referral context for {$senderId}: {$cleanRef}");
                         } elseif (!empty($adId)) {
                             Cache::put("fb_ad_id_{$senderId}", $adId, now()->addHours(2));
@@ -128,7 +173,9 @@ class FacebookWebhookController extends Controller
                         $storyText = $messaging['message']['reply_to']['story']['text'] ?? '';
                         if (!empty($storyText)) {
                             Cache::put("fb_ad_ref_{$senderId}", $storyText, now()->addHours(2));
-                            $adProductContext = $storyText;
+                            if (empty($adProductContext)) {
+                                $adProductContext = $storyText;
+                            }
                             Log::info("Extracted Reply-to Story context for {$senderId}: {$storyText}");
                         }
                     }

@@ -152,4 +152,83 @@ class AiService
 
         return $responseText;
     }
+
+    /**
+     * Download an image from URL, encode to base64, and identify product name using NVIDIA Vision API
+     * 
+     * @param string $imageUrl
+     * @param string $apiKey
+     * @return string Product name keywords identified by the AI
+     */
+    public static function describeImage($imageUrl, $apiKey)
+    {
+        try {
+            // 1. Download image content
+            $imageContent = file_get_contents($imageUrl);
+            if (!$imageContent) {
+                return '';
+            }
+
+            // 2. Base64 encode the image
+            $base64Image = base64_encode($imageContent);
+            $mimeType = 'image/jpeg'; // Fallback MIME type
+
+            // Detect actual MIME type from image content
+            $finfo = new \finfo(FILEINFO_MIME_TYPE);
+            $detectedMime = $finfo->buffer($imageContent);
+            if ($detectedMime) {
+                $mimeType = $detectedMime;
+            }
+
+            $dataUri = "data:{$mimeType};base64,{$base64Image}";
+
+            // 3. Make request payload for NVIDIA Vision API
+            $url = 'https://integrate.api.nvidia.com/v1/chat/completions';
+            $payload = [
+                'model' => 'meta/llama-3.2-11b-vision-instruct', // NVIDIA Vision-capable model
+                'messages' => [
+                    [
+                        'role' => 'user',
+                        'content' => [
+                            [
+                                'type' => 'text',
+                                'text' => 'Identify the product/item shown in this image. Respond with only the product brand and model or item name in 1 to 3 words. Example: "Hoco Power Bank" or "Tp-link Router". Do not write sentences or explanation.'
+                            ],
+                            [
+                                'type' => 'image_url',
+                                'image_url' => [
+                                    'url' => $dataUri
+                                ]
+                            ]
+                        ]
+                    ]
+                ],
+                'max_tokens' => 50,
+                'temperature' => 0.20,
+                'top_p' => 0.70
+            ];
+
+            // 4. Send request
+            $response = Http::timeout(30)
+                ->withHeaders([
+                    'Authorization' => "Bearer {$apiKey}",
+                    'Content-Type' => 'application/json'
+                ])
+                ->post($url, $payload);
+
+            if ($response->successful()) {
+                $data = $response->json();
+                $resultText = $data['choices'][0]['message']['content'] ?? '';
+                $cleanResult = trim(str_replace(['"', "'", '.', "\n"], '', $resultText));
+                Log::info("NVIDIA Vision Identified product: {$cleanResult}");
+                return $cleanResult;
+            } else {
+                Log::error("NVIDIA Vision API Error: " . $response->body());
+            }
+        } catch (\Exception $e) {
+            Log::error("AiService describeImage Exception: " . $e->getMessage());
+        }
+
+        return '';
+    }
 }
