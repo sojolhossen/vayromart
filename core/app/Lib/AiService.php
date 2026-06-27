@@ -94,21 +94,29 @@ class AiService
     private static function callOpenAiCompatible($url, $apiKey, $model, $systemInstructions, $chatHistory)
     {
         $messages = [];
+        $systemSent = false;
 
-        // Add system instructions if provided
-        if (!empty($systemInstructions)) {
+        // Prepend system instructions to the first user message to guarantee instruction following
+        foreach ($chatHistory as $msg) {
+            $role = $msg['sender'] === 'user' ? 'user' : 'assistant';
+            $content = $msg['message'];
+
+            if ($role === 'user' && !$systemSent && !empty($systemInstructions)) {
+                $content = $systemInstructions . "\n\nUser Message:\n" . $content;
+                $systemSent = true;
+            }
+
             $messages[] = [
-                'role' => 'system',
-                'content' => $systemInstructions
+                'role' => $role,
+                'content' => $content
             ];
         }
 
-        // Add chat history
-        foreach ($chatHistory as $msg) {
-            $role = $msg['sender'] === 'user' ? 'user' : 'assistant';
+        // Fallback: if no chat history was provided, add system instruction as a user message
+        if (!$systemSent && !empty($systemInstructions)) {
             $messages[] = [
-                'role' => $role,
-                'content' => $msg['message']
+                'role' => 'user',
+                'content' => $systemInstructions . "\n\nPlease initialize and acknowledge."
             ];
         }
 
