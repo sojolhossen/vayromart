@@ -1,0 +1,10 @@
+# Ignore database dumps
+*.sql
+
+# Ignore zip files
+*.zip
+assets/**/*.zip
+
+# Ignore local environment files
+.env
+core/.env
