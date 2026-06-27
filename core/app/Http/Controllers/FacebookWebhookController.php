@@ -53,6 +53,11 @@ class FacebookWebhookController extends Controller
                 foreach ($entry['messaging'] as $messaging) {
                     // Ignore echo events (messages sent by the Facebook page itself)
                     if (isset($messaging['message']['is_echo']) && $messaging['message']['is_echo']) {
+                        // Admin replied manually! Pause chatbot for 24 hours to prevent AI conflict
+                        $recipientId = $messaging['recipient']['id'] ?? null;
+                        if ($recipientId) {
+                            Cache::put("fb_chat_paused_{$recipientId}", true, now()->addHours(24));
+                        }
                         continue;
                     }
                     
@@ -80,11 +85,78 @@ class FacebookWebhookController extends Controller
         return response()->json(['status' => 'INVALID_OBJECT'], 400);
     }
 
-    /**
-     * Process message from Facebook, fetch context, call AI NIM API, and send reply
-     */
     private function processMessage($senderId, $messageText)
     {
+        // A. Anti-Spam / Rate Limiting Check
+        $rateLimitKey = "fb_rate_limit_{$senderId}";
+        $rateLimitBlockKey = "fb_rate_limit_blocked_{$senderId}";
+
+        if (Cache::has($rateLimitBlockKey)) {
+            return; // Silently ignore requests while blocked
+        }
+
+        $messageCount = Cache::get($rateLimitKey, 0);
+        $messageCount++;
+        Cache::put($rateLimitKey, $messageCount, now()->addMinute());
+
+        if ($messageCount > 12) {
+            // Block for 5 minutes
+            Cache::put($rateLimitBlockKey, true, now()->addMinutes(5));
+            $this->sendFacebookMessage($senderId, "⚠️ আপনি খুব দ্রুত মেসেজ পাঠাচ্ছেন। স্প্যামিং প্রতিরোধে চ্যাটবটটি পরবর্তী ৫ মিনিটের জন্য সাময়িকভাবে পজ করা হলো।");
+            return;
+        }
+
+        // B. Chatbot Pause check (Human Handoff in action)
+        $pausedKey = "fb_chat_paused_{$senderId}";
+        if (Cache::has($pausedKey)) {
+            // Check if user wants to reactivate the bot manually
+            $unpauseKeywords = ['unpause', 'start bot', 'এআই চালু করুন', 'start chatbot'];
+            $shouldUnpause = false;
+            foreach ($unpauseKeywords as $kw) {
+                if (stripos($messageText, $kw) !== false) {
+                    $shouldUnpause = true;
+                    break;
+                }
+            }
+            if ($shouldUnpause) {
+                Cache::forget($pausedKey);
+                $this->sendFacebookMessage($senderId, "🤖 এআই চ্যাটবট আবার চালু করা হয়েছে! আমি আপনাকে কীভাবে সাহায্য করতে পারি?");
+            }
+            return; // Chatbot is paused
+        }
+
+        // C. Customer requesting human handoff manually
+        $handoffKeywords = ['human', 'live agent', 'talk to agent', 'agent', 'kotha bolte chai', 'kotha bolbo', 'kotha bolte', 'admin', 'অ্যাডমিন', 'এজেন্ট', 'লাইভ এজেন্ট', 'কথা বলতে চাই', 'কথা বলতে', 'মানুষের সাথে', 'মানুষ'];
+        $wantsHandoff = false;
+        foreach ($handoffKeywords as $hk) {
+            if (stripos($messageText, $hk) !== false) {
+                $wantsHandoff = true;
+                break;
+            }
+        }
+
+        if ($wantsHandoff) {
+            Cache::put($pausedKey, true, now()->addHours(24));
+            $botResponse = "🤖 আমি আপনার চ্যাটটি আমাদের লাইভ কাস্টমার সাপোর্ট এজেন্টের কাছে ট্রান্সফার করছি। পরবর্তী ২৪ ঘণ্টার জন্য চ্যাটবটটি সাময়িকভাবে বন্ধ থাকবে। আমাদের লাইভ এজেন্ট খুব দ্রুত আপনার সাথে যোগাযোগ করবেন। ধন্যবাদ!";
+            
+            $sessionKey = "facebook_{$senderId}";
+            $conversation = ChatbotConversation::where('session_id', $sessionKey)->first();
+            if (!$conversation) {
+                $conversation = ChatbotConversation::create([
+                    'session_id' => $sessionKey,
+                    'ip_address' => 'facebook_messenger',
+                ]);
+            }
+            ChatbotMessage::create([
+                'conversation_id' => $conversation->id,
+                'sender' => 'user',
+                'message' => $messageText,
+            ]);
+            $this->saveBotMessage($conversation->id, $botResponse);
+            $this->sendFacebookMessage($senderId, $botResponse);
+            return;
+        }
+
         // 1. Get or Create Conversation Session in DB using sender_id as key
         $sessionKey = "facebook_{$senderId}";
         $conversation = ChatbotConversation::where('session_id', $sessionKey)->first();
@@ -307,6 +379,17 @@ class FacebookWebhookController extends Controller
 
             if (!empty($matchedRules)) {
                 $databaseContext .= "\nMatched Business Knowledge/Rules:\n" . implode("\n\n", $matchedRules) . "\nUse this knowledge as facts to answer the user's questions.\n";
+            }
+        }
+
+        // 6.5 Check Business Hours (Bangladesh Time: UTC+6)
+        if (empty($botResponse)) {
+            $nowBd = now()->timezone('Asia/Dhaka');
+            $hour = $nowBd->hour;
+            $isClosed = ($hour < 10 || $hour >= 20); // Closed before 10 AM or after 8 PM
+            
+            if ($isClosed) {
+                $databaseContext .= "\n[SYSTEM NOTE: Note that it is currently outside Vayromart's business hours (10:00 AM to 8:00 PM BD Time). Vayromart office is CLOSED. Human live support is offline, but you (the AI) can still help users search products and place COD orders directly in the chat. If they ask about delivery times or human support, politely remind them that our office is closed and human agents will process orders/replies starting at 10:00 AM BD Time.]\n";
             }
         }
 
