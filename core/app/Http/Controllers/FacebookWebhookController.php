@@ -468,7 +468,19 @@ class FacebookWebhookController extends Controller
         // 5. Product Catalog Query Lookup
         $lastProductIdKey = "fb_last_product_id_{$senderId}";
         if (empty($botResponse)) {
-            $keywords = $this->extractKeywords($messageText);
+            // First attempt: Ask AI to extract clean product brand/model query from user message
+            $aiChatApiKey = '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';
+            $aiExtractedQuery = \App\Lib\AiService::extractProductQuery($messageText, $aiChatApiKey);
+            
+            $keywords = [];
+            if (!empty($aiExtractedQuery)) {
+                $keywords = $this->extractKeywords($aiExtractedQuery);
+            }
+            
+            // Fallback: If AI extracted nothing or message is generic, use PHP regex parser
+            if (empty($keywords)) {
+                $keywords = $this->extractKeywords($messageText);
+            }
 
             // If user's message is very short/generic (e.g., "dam koto", "details") and we have ad referral context,
             // extract keywords from the ad context to find the product.

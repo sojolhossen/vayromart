@@ -248,4 +248,52 @@ class AiService
 
         return '';
     }
+
+    /**
+     * Intelligently extract the product brand/model name from a customer's message using AI
+     * 
+     * @param string $messageText
+     * @param string $apiKey
+     * @return string Extracted product brand/model or empty string
+     */
+    public static function extractProductQuery($messageText, $apiKey)
+    {
+        try {
+            $url = 'https://integrate.api.nvidia.com/v1/chat/completions';
+            $payload = [
+                'model' => 'google/diffusiongemma-26b-a4b-it',
+                'messages' => [
+                    [
+                        'role' => 'user',
+                        'content' => "Identify the product brand name, model number, or catalog item the user is asking about in the following message. Respond with ONLY the extracted brand and model or product name. Do NOT write full sentences, thoughts, explanations, or quotes. If the user is not asking about any product, respond with 'none'.\n\nUser Message: \"{$messageText}\""
+                    ]
+                ],
+                'max_tokens' => 50,
+                'temperature' => 0.10,
+                'top_p' => 0.70,
+                'chat_template_kwargs' => ['enable_thinking' => false]
+            ];
+
+            $response = Http::timeout(10)
+                ->withHeaders([
+                    'Authorization' => "Bearer {$apiKey}",
+                    'Content-Type' => 'application/json'
+                ])
+                ->post($url, $payload);
+
+            if ($response->successful()) {
+                $data = $response->json();
+                $resultText = trim($data['choices'][0]['message']['content'] ?? '');
+                $cleanResult = trim(str_replace(['"', "'", '.', "\n"], '', $resultText));
+                if (strtolower($cleanResult) !== 'none') {
+                    Log::info("AI extracted search query: {$cleanResult}");
+                    return $cleanResult;
+                }
+            }
+        } catch (\Exception $e) {
+            Log::error("AiService extractProductQuery Exception: " . $e->getMessage());
+        }
+
+        return '';
+    }
 }
