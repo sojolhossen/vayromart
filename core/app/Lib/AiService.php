@@ -112,13 +112,8 @@ class AiService
             ];
         }
 
-        $payload = [
-            'model' => $model,
-            'messages' => $messages
-        ];
-
         // Fix model if it is mistakenly configured as an image diffusion model or restricted model
-        if ($model === 'google/diffusiongemma-26b-a4b-it' || $model === 'meta/llama-3.1-405b-instruct') {
+        if ($model === 'google/diffusiongemma-26b-a4b-it' || $model === 'meta/llama-3.1-405b-instruct' || empty($model)) {
             $model = 'nvidia/llama-3.1-nemotron-70b-instruct';
         }
 
