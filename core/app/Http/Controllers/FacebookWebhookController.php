@@ -301,25 +301,55 @@ class FacebookWebhookController extends Controller
         $lastProductIdKey = "fb_last_product_id_{$senderId}";
         if (empty($botResponse)) {
             $keywords = $this->extractKeywords($messageText);
+
+            // Bengali → English keyword translation map
+            // Lets customers search in Bengali and still find English-named products
+            $bengaliToEnglish = [
+                'পাওয়ার ব্যাংক' => 'power bank', 'পাওয়ারব্যাংক' => 'power bank',
+                'ঘড়ি' => 'watch', 'স্মার্টওয়াচ' => 'smartwatch', 'ওয়াচ' => 'watch',
+                'চার্জার' => 'charger', 'ইয়ারফোন' => 'earphone', 'হেডফোন' => 'headphone',
+                'ইয়ারবাড' => 'earbud', 'ব্লুটুথ' => 'bluetooth', 'রাউটার' => 'router',
+                'ক্যাবল' => 'cable', 'হোল্ডার' => 'holder', 'স্ট্যান্ড' => 'stand',
+                'কেস' => 'case', 'কভার' => 'cover', 'গ্লাস' => 'glass',
+                'ফোন' => 'phone', 'মোবাইল' => 'mobile', 'স্পিকার' => 'speaker',
+                'ফ্যান' => 'fan', 'ল্যাম্প' => 'lamp', 'লাইট' => 'light',
+                'হাব' => 'hub', 'অ্যাডাপ্টার' => 'adapter', 'কীবোর্ড' => 'keyboard',
+                'মাউস' => 'mouse', 'ব্যাগ' => 'bag', 'ক্যামেরা' => 'camera',
+                'সেলফি স্টিক' => 'selfie stick', 'ট্রাইপড' => 'tripod',
+            ];
+
+            // Expand keywords with English translations for any matched Bengali phrase
+            $expandedKeywords = $keywords;
+            $msgLower = mb_strtolower($messageText);
+            foreach ($bengaliToEnglish as $bn => $en) {
+                if (mb_strpos($msgLower, $bn) !== false) {
+                    foreach (explode(' ', $en) as $enWord) {
+                        if ($enWord !== '' && !in_array($enWord, $expandedKeywords)) {
+                            $expandedKeywords[] = $enWord;
+                        }
+                    }
+                }
+            }
+
             $matchingProducts = collect();
             $totalMatchingCount = 0;
 
-            if (!empty($keywords)) {
-                $matchQuery = Product::published()->where(function($q) use ($keywords) {
-                    foreach ($keywords as $word) {
-                        $q->orWhere('name', 'LIKE', "%{$word}%");
+            if (!empty($expandedKeywords)) {
+                $allMatches = Product::published()->where(function($q) use ($expandedKeywords) {
+                    foreach ($expandedKeywords as $word) {
+                        $q->orWhere('name', 'LIKE', "%{$word}%")
+                          ->orWhere('summary', 'LIKE', "%{$word}%")
+                          ->orWhere('meta_description', 'LIKE', "%{$word}%");
                     }
-                });
+                })->limit(40)->get();
 
-                $allMatches = $matchQuery->limit(30)->get();
-
-                // Score matching products by keyword match count in their name (using word boundary check)
-                $scored = $allMatches->map(function($product) use ($keywords) {
+                // Score: count keyword hits in product name using simple mb_strpos
+                // (avoids broken Unicode word-boundary regex that caused false negatives)
+                $scored = $allMatches->map(function($product) use ($expandedKeywords) {
                     $score = 0;
                     $nameLower = mb_strtolower($product->name);
-                    foreach ($keywords as $word) {
-                        $pattern = '/(?<![\p{L}\p{N}])' . preg_quote($word, '/') . '(?![\p{L}\p{N}])/iu';
-                        if (preg_match($pattern, $nameLower)) {
+                    foreach ($expandedKeywords as $word) {
+                        if (mb_strpos($nameLower, mb_strtolower($word)) !== false) {
                             $score++;
                         }
                     }
@@ -327,11 +357,13 @@ class FacebookWebhookController extends Controller
                     return $product;
                 });
 
-                // Filter products that have at least one whole-word match, then sort descending and take top 10
-                $matchingProducts = $scored->filter(function($product) {
-                    return $product->match_score > 0;
-                })->sortByDesc('match_score')->take(10);
+                // Prefer scored matches; fall back to all LIKE matches if scoring gives 0
+                $filtered = $scored->filter(fn($p) => $p->match_score > 0)->sortByDesc('match_score')->take(10);
+                if ($filtered->isEmpty() && $allMatches->isNotEmpty()) {
+                    $filtered = $allMatches->take(10)->map(function($p) { $p->match_score = 1; return $p; });
+                }
 
+                $matchingProducts = $filtered;
                 $totalMatchingCount = $matchingProducts->count();
 
                 if ($matchingProducts->count() > 0) {
@@ -349,8 +381,11 @@ class FacebookWebhookController extends Controller
                 }
             }
 
-            // Fallback: If no products matched but the user is asking generally about products/buying
-            $generalProductKeywords = ['product', 'products', 'item', 'items', 'buy', 'purchase', 'popular', 'sell', 'featured', 'show', 'dekhaw', 'kinbo', 'আছে', 'প্রোডাক্ট', 'কিনতে', 'মোবাইল', 'রাউটার', 'ফ্যান', 'নাকি'];
+            // Fallback: If no products matched but user is asking generally about products
+            $generalProductKeywords = [
+                'product', 'products', 'item', 'items', 'buy', 'purchase', 'popular', 'sell', 'featured', 'show',
+                'dekhaw', 'kinbo', 'প্রোডাক্ট', 'কিনতে', 'নাকি', 'দেখান', 'কী আছে', 'কি আছে', 'দেখাও',
+            ];
             $isGeneralProductQuery = false;
             foreach ($generalProductKeywords as $gKey) {
                 if (stripos($messageText, $gKey) !== false) {
@@ -360,7 +395,6 @@ class FacebookWebhookController extends Controller
             }
 
             if ($matchingProducts->isEmpty() && $isGeneralProductQuery) {
-                // Suggest some active published products from store
                 $matchingProducts = Product::published()->limit(4)->get();
                 $totalMatchingCount = Product::published()->count();
             }
