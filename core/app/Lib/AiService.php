@@ -117,8 +117,8 @@ class AiService
             'messages' => $messages
         ];
 
-        // Fix model if it is mistakenly configured as an image diffusion model
-        if ($model === 'google/diffusiongemma-26b-a4b-it') {
+        // Fix model if it is mistakenly configured as an image diffusion model or restricted model
+        if ($model === 'google/diffusiongemma-26b-a4b-it' || $model === 'meta/llama-3.1-405b-instruct') {
             $model = 'nvidia/llama-3.1-nemotron-70b-instruct';
         }
 
@@ -140,6 +140,20 @@ class AiService
                 'Content-Type' => 'application/json'
             ])
             ->post($url, $payload);
+
+        if (!$response->successful()) {
+            // Fallback: If 404 model not found occurs, retry with a guaranteed active model
+            if ($response->status() === 404 && $model !== 'nvidia/llama-3.1-nemotron-70b-instruct') {
+                Log::warning("Nvidia Model {$model} returned 404, retrying with nvidia/llama-3.1-nemotron-70b-instruct");
+                $payload['model'] = 'nvidia/llama-3.1-nemotron-70b-instruct';
+                $response = Http::timeout(30)
+                    ->withHeaders([
+                        'Authorization' => "Bearer {$apiKey}",
+                        'Content-Type' => 'application/json'
+                    ])
+                    ->post($url, $payload);
+            }
+        }
 
         if (!$response->successful()) {
             $error = $response->json();
@@ -186,7 +200,7 @@ class AiService
             // 3. Make request payload for NVIDIA Vision API
             $url = 'https://integrate.api.nvidia.com/v1/chat/completions';
             $payload = [
-                'model' => 'meta/llama-3.2-11b-vision-instruct', // NVIDIA Vision-capable model
+                'model' => 'nvidia/llama-3.2-11b-vision-instruct', // stable NVIDIA Vision model
                 'messages' => [
                     [
                         'role' => 'user',
