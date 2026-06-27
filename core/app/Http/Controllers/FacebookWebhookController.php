@@ -548,43 +548,64 @@ Current website details:
     }
 
     /**
-     * Extract unique keywords of length >= 3, filtering stop words
+     * Extract unique keywords, filtering stop words.
+     * Handles mixed-script tokens like "Hoco-র" → ["hoco"] and "Baseus-এর" → ["baseus"]
+     * by splitting on hyphens/punctuation first, then separating Latin and Bengali sub-tokens.
      */
     private function extractKeywords($string)
     {
-        $string = preg_replace('/[^\p{L}\p{N}\s]/u', '', $string); // Remove punctuation
-        $words = explode(' ', mb_strtolower($string));
-        
-        $filtered = [];
         $stopWords = [
             // English common words / fillers
-            'the', 'and', 'for', 'with', 'this', 'that', 'from', 'have', 'what', 'where', 'when', 'how', 'who', 'please', 
-            'yes', 'confirm', 'okay', 'ok', 'order', 'place', 'buy', 'want', 'details', 'name', 'mobile', 'phone', 'number', 
-            'address', 'email', 'customer', 'deliver', 'delivery', 'road', 'house', 'flat', 'block', 'sector', 'street', 
+            'the', 'and', 'for', 'with', 'this', 'that', 'from', 'have', 'what', 'where', 'when', 'how', 'who', 'please',
+            'yes', 'confirm', 'okay', 'ok', 'order', 'place', 'buy', 'want', 'details', 'name', 'mobile', 'phone', 'number',
+            'address', 'email', 'customer', 'deliver', 'delivery', 'road', 'house', 'flat', 'block', 'sector', 'street',
             'district', 'city', 'area', 'post', 'code', 'zip', 'care', 'support', 'contact', 'hello', 'hi', 'hey', 'help',
             'market', 'plaza', 'mall', 'shop', 'store',
-            
-            // Benglish common words / fillers / verbs
-            'amar', 'apnar', 'apni', 'tumi', 'amader', 'ki', 'koto', 'kobe', 'koikhane', 'ache', 'achhe', 'naki', 'dekhaw', 
-            'ata', 'eta', 'oita', 'kemon', 'hobe', 'gula', 'kono', 'ki', 'na', 'tai', 'kore', 'koro', 'korbo', 'korun', 'deo', 'dao', 
-            'din', 'dinn', 'diben', 'chai', 'chaile', 'kinte', 'kinbo', 'nibam', 'nibo', 'nilam', 'dile', 'vul', 'thik', 'valo', 
-            'dite', 'shomporke', 'bolte', 'parche', 'ha', 'haa', 'korte', 'gulo', 'ar', 'aro', 'ebong', 'o',
-            
-            // Bengali common words / fillers / verbs
-            'আমার', 'আপনার', 'আপনি', 'তুমি', 'আমাদের', 'কি', 'কত', 'কবে', 'কৈ', 'আছে', 'নাকি', 'देखাও', 'এটা', 'ওটা', 'কেমন', 
-            'হবে', 'গুলো', 'কোন', 'না', 'তাই', 'করে', 'করো', 'করবো', 'করুন', 'দেও', 'দাও', 'দিন', 'দিবেন', 'চাই', 'চাইলে', 
-            'কিনতে', 'কিনবো', 'নিব', 'নিবো', 'নিলাম', 'দিলে', 'ভুল', 'ঠিক', 'ভালো', 'দিতে', 'সম্পর্কে', 'বলতে', 'পারছে', 'হ্যাঁ', 
-            'অর্ডার', 'কনফার্ম', 'নাম', 'মোবাইল', 'ফোন', 'নাম্বার', 'ঠিকানা', 'আর', 'আরও', 'এবং', 'ও'
+            // Banglish common words
+            'amar', 'apnar', 'apni', 'tumi', 'amader', 'ki', 'koto', 'kobe', 'koikhane', 'ache', 'achhe', 'naki', 'dekhaw',
+            'ata', 'eta', 'oita', 'kemon', 'hobe', 'gula', 'kono', 'na', 'tai', 'kore', 'koro', 'korbo', 'korun', 'deo', 'dao',
+            'din', 'dinn', 'diben', 'chai', 'chaile', 'kinte', 'kinbo', 'nibam', 'nibo', 'nilam', 'dile', 'vul', 'thik', 'valo',
+            'dite', 'shomporke', 'bolte', 'parche', 'ha', 'haa', 'korte', 'gulo', 'ar', 'aro', 'ebong',
+            // Bengali common words
+            'আমার', 'আপনার', 'আপনি', 'তুমি', 'আমাদের', 'কি', 'কত', 'কবে', 'কৈ', 'আছে', 'নাকি', 'এটা', 'ওটা', 'কেমন',
+            'হবে', 'গুলো', 'কোন', 'না', 'তাই', 'করে', 'করো', 'করবো', 'করুন', 'দেও', 'দাও', 'দিন', 'দিবেন', 'চাই', 'চাইলে',
+            'কিনতে', 'কিনবো', 'নিব', 'নিবো', 'নিলাম', 'দিলে', 'ভুল', 'ঠিক', 'ভালো', 'দিতে', 'সম্পর্কে', 'বলতে', 'পারছে', 'হ্যাঁ',
+            'অর্ডার', 'কনফার্ম', 'নাম', 'মোবাইল', 'ফোন', 'নাম্বার', 'ঠিকানা', 'আর', 'আরও', 'এবং', 'ও',
+            'আমি', 'দেখলাম', 'একটি', 'এটার', 'ওটার', 'কোনো', 'ভাই', 'পেজে', 'সমস্যা', 'নেই', 'আচ্ছা', 'ওয়ারেন্টি',
         ];
 
-        foreach ($words as $word) {
-            $word = trim($word);
-            if (mb_strlen($word) >= 3 && !in_array($word, $stopWords) && !is_numeric($word)) {
-                $filtered[] = $word;
+        // Split on hyphens, whitespace and common punctuation so "Hoco-র" becomes ["Hoco", "র"]
+        $parts = preg_split('/[\s\-\/\(\)\[\]।,;:!\?]+/u', $string);
+        $filtered = [];
+
+        foreach ($parts as $part) {
+            $part = trim($part);
+            if (mb_strlen($part) < 2) continue;
+
+            // Separately extract Latin (ASCII) runs and Bengali script runs
+            // so mixed tokens like "hocoর" produce ["hoco"] and ["র"] independently
+            $subTokens = [];
+            preg_match_all('/[a-zA-Z][a-zA-Z0-9]*/u', $part, $latinMatches);
+            foreach ($latinMatches[0] as $lt) {
+                $subTokens[] = $lt;
+            }
+            preg_match_all('/[\x{0980}-\x{09FF}]+/u', $part, $bengaliMatches);
+            foreach ($bengaliMatches[0] as $bt) {
+                $subTokens[] = $bt;
+            }
+            if (empty($subTokens)) {
+                $subTokens[] = $part;
+            }
+
+            foreach ($subTokens as $token) {
+                $lower = mb_strtolower(trim($token));
+                if (mb_strlen($lower) >= 2 && !in_array($lower, $stopWords) && !is_numeric($lower)) {
+                    $filtered[] = $lower;
+                }
             }
         }
 
-        return array_unique($filtered);
+        return array_values(array_unique($filtered));
     }
 
     /**
