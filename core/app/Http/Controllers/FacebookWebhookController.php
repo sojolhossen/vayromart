@@ -401,8 +401,20 @@ class FacebookWebhookController extends Controller
         }
 
         // 4. Check for new Order status or cancellation query
-        if (empty($botResponse) && preg_match('/OID-\d+/i', $messageText, $matches)) {
+        $orderNumber = '';
+        $matchedOrder = null;
+        
+        // Match standard OID-00015 format OR a standalone 5-digit number (e.g. 00015)
+        // Also convert Bengali numbers (০-৯) to English (0-9)
+        $msgEn = strtr($messageText, ['০'=>'0','১'=>'1','২'=>'2','৩'=>'3','৪'=>'4','৫'=>'5','৬'=>'6','৭'=>'7','৮'=>'8','৯'=>'9']);
+        
+        if (preg_match('/OID-\d+/i', $msgEn, $matches)) {
             $orderNumber = strtoupper($matches[0]);
+        } elseif (preg_match('/\b\d{5}\b/', $msgEn, $matches)) {
+            $orderNumber = 'OID-' . $matches[0];
+        }
+
+        if (empty($botResponse) && !empty($orderNumber)) {
             $order = Order::where('order_number', $orderNumber)->first();
 
             if ($order) {
