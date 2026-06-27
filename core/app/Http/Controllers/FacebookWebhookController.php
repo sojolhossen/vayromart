@@ -111,6 +111,24 @@ class FacebookWebhookController extends Controller
         $pendingOrderCheckKey = "fb_pending_order_check_{$senderId}";
         $matchingProducts = null;
 
+        // Auto load last active order context if verified
+        $lastActiveOrderIdKey = "fb_last_active_order_{$senderId}";
+        if (Cache::has($lastActiveOrderIdKey)) {
+            $activeOrderId = Cache::get($lastActiveOrderIdKey);
+            $activeOrder = Order::find($activeOrderId);
+            if ($activeOrder) {
+                if (Cache::has("fb_order_verified_{$senderId}_{$activeOrderId}")) {
+                    $databaseContext .= "\nActive/Verified Order Context:\n";
+                    $databaseContext .= "- Order ID: {$activeOrder->id}\n";
+                    $databaseContext .= "- Order Number: {$activeOrder->order_number}\n";
+                    $databaseContext .= "- Status: " . strip_tags($activeOrder->statusBadge()) . "\n";
+                    $databaseContext .= "- Payment Status: " . strip_tags($activeOrder->paymentBadge()) . "\n";
+                    $databaseContext .= "- Total Amount: {$activeOrder->total_amount} BDT\n";
+                    $databaseContext .= "- Items: " . $activeOrder->products->pluck('name')->implode(', ') . "\n";
+                }
+            }
+        }
+
         // 3. Check for Cache-based Order OTP verification state
         if (Cache::has($pendingOrderCheckKey)) {
             // Check if user entered a 4-digit mobile verification code
@@ -126,8 +144,12 @@ class FacebookWebhookController extends Controller
                     if ($last4 && $last4 === $messageText) {
                         // Success - forget verification state
                         Cache::forget($pendingOrderCheckKey);
+                        Cache::put("fb_order_verified_{$senderId}_{$order->id}", true, now()->addHours(2));
+                        Cache::put("fb_last_active_order_{$senderId}", $order->id, now()->addHours(2));
+                        
                         $databaseContext .= "\n[SYSTEM: User successfully verified ownership of Order {$order->order_number} by matching the last 4 digits of the mobile number.]\n";
                         $databaseContext .= "Real-time Order Details for {$order->order_number}:\n";
+                        $databaseContext .= "- Order ID: {$order->id}\n";
                         $databaseContext .= "- Order Number: {$order->order_number}\n";
                         $databaseContext .= "- Status: " . strip_tags($order->statusBadge()) . "\n";
                         $databaseContext .= "- Payment Status: " . strip_tags($order->paymentBadge()) . "\n";
@@ -136,7 +158,7 @@ class FacebookWebhookController extends Controller
                         $databaseContext .= "- Delivery Type: " . ($order->shipping_method_id ? 'Standard Shipping' : 'Default') . "\n";
                         $databaseContext .= "- Items: " . $order->products->pluck('name')->implode(', ') . "\n";
                         $databaseContext .= "- Delivery Address: " . json_encode($order->shipping_address) . "\n";
-                        $databaseContext .= "Acknowledge the verification success and report the status and items details of this order clearly to the user in a friendly format.";
+                        $databaseContext .= "Acknowledge the verification success and report the status and items details of this order clearly to the user in a friendly format. If they requested cancellation, inform them that they can now proceed with canceling it.";
                     } else {
                         $botResponse = "দুঃখিত, আপনার দেওয়া মোবাইল নাম্বারের শেষ ৪টি ডিজিট মিলছে না। অনুগ্রহ করে সঠিক ৪টি ডিজিট লিখুন অথবা অন্য কোনো প্রশ্ন করুন।";
                         $this->saveBotMessage($conversation->id, $botResponse);
@@ -149,18 +171,33 @@ class FacebookWebhookController extends Controller
             }
         }
 
-        // 4. Check for new Order status query
+        // 4. Check for new Order status or cancellation query
         if (empty($botResponse) && preg_match('/OID-\d+/i', $messageText, $matches)) {
             $orderNumber = strtoupper($matches[0]);
             $order = Order::where('order_number', $orderNumber)->first();
 
             if ($order) {
-                // Request security verification (last 4 digits of mobile)
-                Cache::put($pendingOrderCheckKey, $order->id, now()->addMinutes(10));
-                $botResponse = "আমি দেখতে পাচ্ছি আপনি অর্ডার **{$order->order_number}** সম্পর্কে জানতে চেয়েছেন। নিরাপত্তার স্বার্থে, অনুগ্রহ করে এই অর্ডারের সাথে যুক্ত মোবাইল নাম্বারের শেষ ৪টি ডিজিট টাইপ করে দিন (যেমন: 4567)।";
-                $this->saveBotMessage($conversation->id, $botResponse);
-                $this->sendFacebookMessage($senderId, $botResponse);
-                return;
+                Cache::put("fb_last_active_order_{$senderId}", $order->id, now()->addHours(2));
+                
+                // Check if already verified
+                if (Cache::has("fb_order_verified_{$senderId}_{$order->id}")) {
+                    $databaseContext .= "\nReal-time Order Details for {$order->order_number}:\n";
+                    $databaseContext .= "- Order ID: {$order->id}\n";
+                    $databaseContext .= "- Order Number: {$order->order_number}\n";
+                    $databaseContext .= "- Status: " . strip_tags($order->statusBadge()) . "\n";
+                    $databaseContext .= "- Payment Status: " . strip_tags($order->paymentBadge()) . "\n";
+                    $databaseContext .= "- Total Amount: {$order->total_amount} BDT\n";
+                    $databaseContext .= "- Delivery Charge: {$order->shipping_charge} BDT\n";
+                    $databaseContext .= "- Items: " . $order->products->pluck('name')->implode(', ') . "\n";
+                    $databaseContext .= "- Delivery Address: " . json_encode($order->shipping_address) . "\n";
+                } else {
+                    // Request security verification (last 4 digits of mobile)
+                    Cache::put($pendingOrderCheckKey, $order->id, now()->addMinutes(10));
+                    $botResponse = "আমি দেখতে পাচ্ছি আপনি অর্ডার **{$order->order_number}** সম্পর্কে জানতে চেয়েছেন। নিরাপত্তার স্বার্থে, অনুগ্রহ করে এই অর্ডারের সাথে যুক্ত মোবাইল নাম্বারের শেষ ৪টি ডিজিট টাইপ করে দিন (যেমন: 4567)।";
+                    $this->saveBotMessage($conversation->id, $botResponse);
+                    $this->sendFacebookMessage($senderId, $botResponse);
+                    return;
+                }
             } else {
                 $databaseContext .= "\n[SYSTEM: Order {$orderNumber} was not found in our database. Inform the user to double check the order number.]\n";
             }
@@ -324,6 +361,15 @@ Your goals:
         [[PLACE_ORDER:{\"product_id\": <id>, \"variant_id\": 0, \"quantity\": 1, \"name\": \"<customer_name>\", \"mobile\": \"<customer_mobile>\", \"address\": \"<customer_address>\"}]]
         Replace <id> with the matched product ID, name, mobile, address with the collected details.
      e. Never output this tag unless all information is fully collected and the customer has explicitly confirmed to place the order in their latest turn.
+- ORDER CANCELLATION RULES:
+  1. Customers can cancel their Cash on Delivery orders if the order status is still 'Pending' in the context.
+  2. If the user requests to cancel their order (e.g. \"order cancel korte chai\", \"cancel my order\", \"cancel please\"):
+     a. Ensure the target order has been verified. If not, politely ask them to verify by sending the last 4 digits of the mobile number.
+     b. If verified, check the active order status. If it is not 'Pending' (e.g. it is Processing, Dispatched, or Delivered), politely state in Bengali that the order cannot be canceled directly because it is already being processed and advise them to contact support.
+     c. If 'Pending', ask for explicit confirmation (e.g. \"আপনি কি নিশ্চিতভাবে অর্ডারটি বাতিল করতে চান?\").
+     d. ONLY when the customer explicitly confirms to cancel in their latest turn (e.g. writing \"yes\", \"ha\", \"confirm\", \"বাতিল করুন\"), you MUST append/prepend this exact command tag at the very end of your final response:
+        [[CANCEL_ORDER:{\"order_id\": <id>}]]
+        Replace <id> with the matched numeric Order ID (from the Active/Verified Order Context).
 ";
 
             $systemInstructions = $systemInstructionsText . "
@@ -357,6 +403,9 @@ Current website details:
 
                 // Fix any clean-slugged or hallucinated product links
                 $botResponse = $this->fixProductLinks($botResponse, $matchingProducts);
+
+                // Intercept and process cancel order command if present
+                $botResponse = $this->processCancelOrder($botResponse, $senderId);
 
                 // Intercept and process placed order command if present
                 $botResponse = $this->processPlacedOrder($botResponse, $conversation->id, $senderId);
@@ -751,5 +800,72 @@ Current website details:
             
             return $basePath . $slug;
         }, $botResponse);
+    }
+
+    /**
+     * Intercept and process AI command to cancel an order
+     */
+    private function processCancelOrder($botResponse, $senderId)
+    {
+        if (preg_match('/\[\[CANCEL_ORDER:(.*?)\]\]/s', $botResponse, $matches)) {
+            $jsonData = json_decode(trim($matches[1]), true);
+            if ($jsonData && isset($jsonData['order_id'])) {
+                $orderId = intval($jsonData['order_id']);
+                $order = Order::find($orderId);
+
+                if (!$order) {
+                    return str_replace($matches[0], "\n\n[সিস্টেম নোটিশ: দুঃখিত, অর্ডার আইডিটি ডাটাবেজে পাওয়া যায়নি।]", $botResponse);
+                }
+
+                // Security check - must be verified
+                if (!Cache::has("fb_order_verified_{$senderId}_{$orderId}")) {
+                    return str_replace($matches[0], "\n\n[সিস্টেম নোটিশ: নিরাপত্তার স্বার্থে, অনুগ্রহ করে মোবাইল নাম্বারের শেষ ৪টি ডিজিট টাইপ করে ভেরিফাই করুন।]", $botResponse);
+                }
+
+                // Check status - only pending orders (status = 0) can be canceled
+                if ($order->status != \App\Constants\Status::ORDER_PENDING) {
+                    return str_replace($matches[0], "\n\n[সিস্টেম নোটিশ: দুঃখিত, অর্ডারটি ইতিমধ্যে প্রসেস বা ডিসপ্যাচ করা হয়েছে, তাই বাতিল করা সম্ভব নয়।]", $botResponse);
+                }
+
+                // 1. Cancel order (status = 4)
+                $order->status = \App\Constants\Status::ORDER_CANCELED;
+                $order->save();
+
+                // 2. Restore stock
+                foreach ($order->orderDetail as $detail) {
+                    $product = Product::find($detail->product_id);
+                    if ($product && $product->track_inventory) {
+                        $variant = $detail->product_variant_id ? \App\Models\ProductVariant::find($detail->product_variant_id) : null;
+                        $item = $variant ? $variant : $product;
+                        
+                        $item->in_stock += $detail->quantity;
+                        $item->save();
+
+                        // Create Stock Log
+                        $desc = "Restored stock from canceled order #{$order->order_number} via Facebook AI Agent";
+                        $productManager = new \App\Lib\ProductManager();
+                        $productManager->createStockLog($product, $detail->quantity, $desc, $variant, '+', $order->id);
+                    }
+                }
+
+                // 3. Clear cache states
+                Cache::forget("fb_last_active_order_{$senderId}");
+                Cache::forget("fb_order_verified_{$senderId}_{$orderId}");
+
+                // 4. Send Admin Notification
+                try {
+                    $adminNotification = new \App\Models\AdminNotification();
+                    $adminNotification->title = "Order #{$order->order_number} has been canceled via Facebook AI Agent";
+                    $adminNotification->click_url = urlPath('admin.order.index') . '?search=' . $order->order_number;
+                    $adminNotification->save();
+                } catch (\Exception $e) {}
+
+                $successMsg = "\n\n❌ **আপনার অর্ডারটি (নাম্বার: `{$order->order_number}`) সফলভাবে বাতিল করা হয়েছে।**\n";
+                $successMsg .= "আমাদের সাথে থাকার জন্য ধন্যবাদ!";
+
+                return str_replace($matches[0], $successMsg, $botResponse);
+            }
+        }
+        return $botResponse;
     }
 }
