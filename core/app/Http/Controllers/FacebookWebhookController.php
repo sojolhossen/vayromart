@@ -326,7 +326,7 @@ class FacebookWebhookController extends Controller
         $botResponse = '';
         $databaseContext = '';
         $pendingOrderCheckKey = "fb_pending_order_check_{$senderId}";
-        $matchingProducts = null;
+        $matchingProducts = collect();
 
         // Auto load last active order context if verified
         $lastActiveOrderIdKey = "fb_last_active_order_{$senderId}";
