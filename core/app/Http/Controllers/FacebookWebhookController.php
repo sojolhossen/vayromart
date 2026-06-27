@@ -121,7 +121,7 @@ class FacebookWebhookController extends Controller
                                         ? json_decode($general->chatbot_settings, true) 
                                         : (array)$general->chatbot_settings;
                                 }
-                                $apiKey = env('NVIDIA_API_KEY') ?: ($chatbotSettings['api_key']['nvidia'] ?? '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');
+                                $apiKey = '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';
 
                                 // Describe image
                                 $identifiedProduct = \App\Lib\AiService::describeImage($imageUrl, $apiKey);
@@ -611,8 +611,8 @@ class FacebookWebhookController extends Controller
             
             // Use custom Nvidia key configured in env, or fallback to database config, or fallback to user new API key
             $activeProvider = 'nvidia';
-            $apiKey = env('NVIDIA_API_KEY') ?: ($chatbotSettings['api_key']['nvidia'] ?? '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');
-            $modelName = 'nvidia/llama-3.1-nemotron-70b-instruct';
+            $apiKey = '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';
+            $modelName = 'google/diffusiongemma-26b-a4b-it';
             
             $customUrl = 'https://integrate.api.nvidia.com/v1/chat/completions';
             $adminPrompt = $chatbotSettings['system_prompt'] ?? '';

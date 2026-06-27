@@ -112,9 +112,9 @@ class AiService
             ];
         }
 
-        // Fix model if it is mistakenly configured as an image diffusion model or restricted model
-        if ($model === 'google/diffusiongemma-26b-a4b-it' || $model === 'meta/llama-3.1-405b-instruct' || empty($model)) {
-            $model = 'nvidia/llama-3.1-nemotron-70b-instruct';
+        // Fix model if empty fallback
+        if (empty($model)) {
+            $model = 'google/diffusiongemma-26b-a4b-it';
         }
 
         $payload = [
@@ -124,9 +124,16 @@ class AiService
 
         // Safely add configuration parameters for Nvidia endpoints
         if (stripos($url, 'nvidia') !== false) {
-            $payload['temperature'] = 0.7;
-            $payload['top_p'] = 0.9;
-            $payload['max_tokens'] = 1024;
+            $payload['temperature'] = 1.00;
+            $payload['top_p'] = 0.95;
+            $payload['max_tokens'] = 4096;
+            
+            // Required parameters for google/diffusiongemma model
+            if ($model === 'google/diffusiongemma-26b-a4b-it') {
+                $payload['chat_template_kwargs'] = [
+                    'enable_thinking' => true
+                ];
+            }
         }
 
         $response = Http::timeout(30)
@@ -195,7 +202,7 @@ class AiService
             // 3. Make request payload for NVIDIA Vision API
             $url = 'https://integrate.api.nvidia.com/v1/chat/completions';
             $payload = [
-                'model' => 'nvidia/llama-3.2-11b-vision-instruct', // stable NVIDIA Vision model
+                'model' => 'meta/llama-3.2-90b-vision-instruct', // stable meta vision model
                 'messages' => [
                     [
                         'role' => 'user',
