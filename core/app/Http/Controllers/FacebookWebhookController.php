@@ -134,7 +134,7 @@ class FacebookWebhookController extends Controller
                     }
                     // ───────────────────────────────────────────────────────────────────────
 
-                    if (empty($messageText)) {
+                    if (empty($messageText) && empty($adProductContext)) {
                         continue;
                     }
 
@@ -1128,5 +1128,70 @@ Current website details:
             }
         }
         return $botResponse;
+    }
+
+    private function isExactKbMatch($messageText, $senderId)
+    {
+        if (empty($messageText)) {
+            return false;
+        }
+
+        $allKnowledge = \App\Models\ChatbotKnowledge::where('is_active', 1)->get();
+        $msgLower = mb_strtolower(trim($messageText));
+
+        foreach ($allKnowledge as $kb) {
+            $questionLower = mb_strtolower(trim($kb->question));
+
+            if ($msgLower === $questionLower) {
+                $this->sendFacebookMessage($senderId, $kb->answer);
+                return true;
+            }
+
+            if (
+                mb_strlen($msgLower) >= 5 &&
+                (
+                    mb_strpos($questionLower, $msgLower) !== false ||
+                    mb_strpos($msgLower, $questionLower) !== false
+                )
+            ) {
+                $this->sendFacebookMessage($senderId, $kb->answer);
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function handleQuickReply($senderId, $messageText)
+    {
+        if (empty($messageText)) {
+            return false;
+        }
+
+        if ($this->isExactKbMatch($messageText, $senderId)) {
+            return true;
+        }
+
+        $keywords = $this->extractKeywords($messageText);
+        if (!empty($keywords)) {
+            $allKnowledge = \App\Models\ChatbotKnowledge::where('is_active', 1)->get();
+            foreach ($allKnowledge as $kb) {
+                $kbKeywords = $this->extractKeywords($kb->question);
+                $matchCount = 0;
+                foreach ($kbKeywords as $kbKw) {
+                    foreach ($keywords as $msgKw) {
+                        if (mb_strpos(mb_strtolower($kbKw), mb_strtolower($msgKw)) !== false) {
+                            $matchCount++;
+                        }
+                    }
+                }
+                if ($matchCount > 0 && $matchCount >= ceil(count($kbKeywords) / 2)) {
+                    $this->sendFacebookMessage($senderId, $kb->answer);
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 }
