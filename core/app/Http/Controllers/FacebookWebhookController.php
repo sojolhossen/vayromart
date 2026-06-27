@@ -530,9 +530,25 @@ class FacebookWebhookController extends Controller
             $searchTerms = array_values(array_unique(array_filter($searchTerms)));
 
             if (!empty($searchTerms)) {
-                $allMatches = Product::published()->where(function($q) use ($searchTerms) {
+                // Determine if we have high-quality specific keywords (length >= 4)
+                $hasLongKeywords = false;
+                foreach ($searchTerms as $word) {
+                    if (strlen($word) >= 4) {
+                        $hasLongKeywords = true;
+                        break;
+                    }
+                }
+
+                $allMatches = Product::published()->where(function($q) use ($searchTerms, $hasLongKeywords) {
                     foreach ($searchTerms as $word) {
-                        if (strlen($word) < 2) continue;
+                        $len = strlen($word);
+                        if ($len < 2) continue;
+                        
+                        // If we have specific longer keywords, ignore generic 2-3 character terms (like "jr", "in", "to") in the SQL query
+                        if ($hasLongKeywords && $len <= 3) {
+                            continue;
+                        }
+
                         $q->orWhere('name', 'LIKE', "%{$word}%")
                           ->orWhere('summary', 'LIKE', "%{$word}%")
                           ->orWhere('meta_description', 'LIKE', "%{$word}%");
