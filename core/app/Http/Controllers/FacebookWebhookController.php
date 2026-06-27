@@ -90,16 +90,76 @@ class FacebookWebhookController extends Controller
                         Cache::put($dedupKey, true, now()->addMinutes(10));
                     }
                     // ───────────────────────────────────────────────────────────────────────
-                    
-                    $senderId = $messaging['sender']['id'] ?? null;
+
+                    $senderId    = $messaging['sender']['id'] ?? null;
                     $messageText = trim($messaging['message']['text'] ?? '');
-                    
-                    if ($senderId && !empty($messageText)) {
-                        try {
-                            $this->processMessage($senderId, $messageText);
-                        } catch (\Exception $e) {
-                            Log::error("Error processing Facebook webhook message: " . $e->getMessage());
+
+                    if (!$senderId) {
+                        continue;
+                    }
+
+                    // ─── AD REFERRAL CONTEXT EXTRACTION ─────────────────────────────────────
+                    // When a customer clicks on a Messenger Ad, Facebook passes a 'referral'
+                    // object containing properties like 'ref', 'ad_id', or 'source'.
+                    // We extract potential product names/keywords from these fields and
+                    // cache them so the AI knows which product they are viewing.
+                    $adProductContext = '';
+                    $referralData = $messaging['referral'] ?? $messaging['message']['referral'] ?? null;
+                    if ($referralData) {
+                        $refParam = $referralData['ref'] ?? '';
+                        $adId = $referralData['ad_id'] ?? '';
+                        
+                        // Look for product slugs or names in the ref parameter
+                        if (!empty($refParam)) {
+                            // Convert hyphens/underscores to spaces to extract keyword phrases
+                            $cleanRef = str_replace(['-', '_'], ' ', $refParam);
+                            Cache::put("fb_ad_ref_{$senderId}", $cleanRef, now()->addHours(2));
+                            $adProductContext = $cleanRef;
+                            Log::info("Extracted Ad Referral context for {$senderId}: {$cleanRef}");
+                        } elseif (!empty($adId)) {
+                            Cache::put("fb_ad_id_{$senderId}", $adId, now()->addHours(2));
+                            Log::info("Extracted Ad ID for {$senderId}: {$adId}");
                         }
+                    }
+
+                    // Also extract context if the message text contains common product titles from ads
+                    // (e.g. "This chat contains a reply to...")
+                    if (isset($messaging['message']['reply_to']['story'])) {
+                        $storyText = $messaging['message']['reply_to']['story']['text'] ?? '';
+                        if (!empty($storyText)) {
+                            Cache::put("fb_ad_ref_{$senderId}", $storyText, now()->addHours(2));
+                            $adProductContext = $storyText;
+                            Log::info("Extracted Reply-to Story context for {$senderId}: {$storyText}");
+                        }
+                    }
+                    // ───────────────────────────────────────────────────────────────────────
+
+                    if (empty($messageText)) {
+                        continue;
+                    }
+
+                    // ─── QUICK REPLY / AD QUESTION INSTANT ANSWER ──────────────────────────
+                    // When a customer clicks a Quick Reply button (set in ads or Messenger
+                    // ice-breakers), the webhook contains a quick_reply.payload field.
+                    // We check our Knowledge Base for an exact or close match and reply
+                    // instantly — no AI API call needed, zero cost, near-zero latency.
+                    $isQuickReply = isset($messaging['message']['quick_reply']);
+                    if ($isQuickReply || $this->isExactKbMatch($messageText, $senderId)) {
+                        // Already handled inside isExactKbMatch (reply sent if match found)
+                        if (!$isQuickReply) {
+                            continue; // exact KB match was handled, skip AI
+                        }
+                        // For quick_reply, also try KB; if no match, fall through to normal AI
+                        if ($this->handleQuickReply($senderId, $messageText)) {
+                            continue; // answered from KB — skip AI
+                        }
+                    }
+                    // ───────────────────────────────────────────────────────────────────────
+
+                    try {
+                        $this->processMessage($senderId, $messageText, $adProductContext);
+                    } catch (\Exception $e) {
+                        Log::error("Error processing Facebook webhook message: " . $e->getMessage());
                     }
                 }
             }
@@ -111,8 +171,12 @@ class FacebookWebhookController extends Controller
     }
 
 
-    private function processMessage($senderId, $messageText)
+    private function processMessage($senderId, $messageText, $adProductContext = '')
     {
+        // Retrieve cached ad referral if not passed explicitly in this request
+        if (empty($adProductContext)) {
+            $adProductContext = Cache::get("fb_ad_ref_{$senderId}", '');
+        }
         // A. Anti-Spam / Rate Limiting Check
         $rateLimitKey = "fb_rate_limit_{$senderId}";
         $rateLimitBlockKey = "fb_rate_limit_blocked_{$senderId}";
@@ -326,6 +390,19 @@ class FacebookWebhookController extends Controller
         if (empty($botResponse)) {
             $keywords = $this->extractKeywords($messageText);
 
+            // If user's message is very short/generic (e.g., "dam koto", "details") and we have ad referral context,
+            // extract keywords from the ad context to find the product.
+            $isGenericQuery = false;
+            $genericKeywords = ['দাম', 'কত', 'দাম কত', 'dam koto', 'dam', 'koto', 'details', 'detail', 'বিবরণ', 'আছে', 'হবে', 'চাই', 'আছে নাকি', 'অর্ডার', 'কিনব', 'price', 'info', 'information'];
+            $cleanMsg = mb_strtolower(trim($messageText));
+            if (in_array($cleanMsg, $genericKeywords) || mb_strlen($cleanMsg) <= 8) {
+                $isGenericQuery = true;
+            }
+
+            if (($isGenericQuery || empty($keywords)) && !empty($adProductContext)) {
+                $keywords = array_merge($keywords, $this->extractKeywords($adProductContext));
+            }
+
             // Bengali → English keyword translation map
             // Lets customers search in Bengali and still find English-named products
             $bengaliToEnglish = [
@@ -344,7 +421,7 @@ class FacebookWebhookController extends Controller
 
             // Expand keywords with English translations for any matched Bengali phrase
             $expandedKeywords = $keywords;
-            $msgLower = mb_strtolower($messageText);
+            $msgLower = mb_strtolower($messageText . ' ' . $adProductContext);
             foreach ($bengaliToEnglish as $bn => $en) {
                 if (mb_strpos($msgLower, $bn) !== false) {
                     foreach (explode(' ', $en) as $enWord) {
