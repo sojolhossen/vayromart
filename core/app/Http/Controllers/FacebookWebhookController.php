@@ -491,24 +491,44 @@ class FacebookWebhookController extends Controller
                     }
                 })->limit(40)->get();
 
-                // Score: count keyword hits in product name using simple mb_strpos
-                // (avoids broken Unicode word-boundary regex that caused false negatives)
-                $scored = $allMatches->map(function($product) use ($expandedKeywords) {
-                    $score = 0;
+                // Fuzzy Matching & Levenshtein Scoring:
+                // We count exact keyword hits and calculate similarity percentage between the query phrase and product name.
+                $queryPhrase = implode(' ', $expandedKeywords);
+                
+                $scored = $allMatches->map(function($product) use ($expandedKeywords, $queryPhrase) {
+                    $hitScore = 0;
                     $nameLower = mb_strtolower($product->name);
+                    
+                    // 1. Keyword hits score
                     foreach ($expandedKeywords as $word) {
                         if (mb_strpos($nameLower, mb_strtolower($word)) !== false) {
-                            $score++;
+                            $hitScore += 3; // high weight for keyword match
                         }
                     }
-                    $product->match_score = $score;
+
+                    // 2. Levenshtein & similar_text fuzzy score
+                    $similarityPercent = 0;
+                    similar_text(mb_strtolower($queryPhrase), $nameLower, $similarityPercent);
+                    
+                    // Add similarity bonus to score
+                    $fuzzyBonus = $similarityPercent / 10; // e.g. 80% similarity = 8 points bonus
+                    
+                    $product->match_score = $hitScore + $fuzzyBonus;
+                    $product->similarity_pct = $similarityPercent;
                     return $product;
                 });
 
-                // Prefer scored matches; fall back to all LIKE matches if scoring gives 0
-                $filtered = $scored->filter(fn($p) => $p->match_score > 0)->sortByDesc('match_score')->take(10);
+                // Filter matches: require either at least 1 keyword hit or > 30% fuzzy similarity
+                $filtered = $scored->filter(function($p) {
+                    return $p->match_score > 0 || $p->similarity_pct >= 30;
+                })->sortByDesc('match_score')->take(10);
+
                 if ($filtered->isEmpty() && $allMatches->isNotEmpty()) {
-                    $filtered = $allMatches->take(10)->map(function($p) { $p->match_score = 1; return $p; });
+                    $filtered = $allMatches->take(10)->map(function($p) { 
+                        $p->match_score = 1; 
+                        $p->similarity_pct = 0; 
+                        return $p; 
+                    });
                 }
 
                 $matchingProducts = $filtered;
