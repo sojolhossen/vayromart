@@ -192,6 +192,16 @@ Route::post('/telegram/webhook', [App\Http\Controllers\TelegramController::class
 Route::get('/telegram/set-webhook', [App\Http\Controllers\TelegramController::class, 'setWebhook'])->name('telegram.set_webhook');
 Route::match(['get', 'post'], '/facebook/webhook', [App\Http\Controllers\FacebookWebhookController::class, 'handle'])->name('facebook.webhook');
 
+// Standalone Privacy Policy page (required for Meta/Facebook Developer Portal)
+Route::get('/privacy-policy', function () {
+    return view('privacy-policy');
+})->name('privacy.policy');
+
+// Data Deletion endpoint / callback URL (required for Meta Platform compliance)
+Route::get('/data-deletion', function () {
+    return redirect('/privacy-policy#data-deletion');
+})->name('data.deletion');
+
 // Chatbot Landing Pages
 Route::controller('LandingPageController')->prefix('landing')->name('landing.')->group(function () {
     Route::get('/{slug}', 'viewPage')->name('view');
