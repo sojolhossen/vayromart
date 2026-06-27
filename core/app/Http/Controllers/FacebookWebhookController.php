@@ -512,6 +512,24 @@ class FacebookWebhookController extends Controller
                 }
             }
 
+            // Keyword preference filter:
+            // If the query contains English alphanumeric brand/model words (e.g. "joyroom", "l002"),
+            // strip out general Bengali script tokens (e.g. "জিজ্ঞেস", "করেছিলাম") to avoid SQL query noise.
+            $hasEnglishBrandOrModel = false;
+            foreach ($expandedKeywords as $kw) {
+                if (preg_match('/[a-zA-Z]/', $kw)) {
+                    $hasEnglishBrandOrModel = true;
+                    break;
+                }
+            }
+
+            if ($hasEnglishBrandOrModel) {
+                $expandedKeywords = array_filter($expandedKeywords, function($kw) {
+                    // Only keep alphanumeric/English words if we have English brands/models in query
+                    return preg_match('/[a-zA-Z0-9]/', $kw);
+                });
+            }
+
             $matchingProducts = collect();
             $totalMatchingCount = 0;
 
@@ -873,10 +891,12 @@ Current website details:
             'dite', 'shomporke', 'bolte', 'parche', 'ha', 'haa', 'korte', 'gulo', 'ar', 'aro', 'ebong',
             // Bengali common words
             'আমার', 'আপনার', 'আপনি', 'তুমি', 'আমাদের', 'কি', 'কত', 'কবে', 'কৈ', 'আছে', 'নাকি', 'এটা', 'ওটা', 'কেমন',
-            'হবে', 'গুলো', 'কোন', 'না', 'তাই', 'করে', 'করো', 'করবো', 'করুন', 'দেও', 'দাও', 'দিন', 'দিবেন', 'চাই', 'চাইলে',
+            'হবে', 'গুলো', 'কোন', 'না', 'tai', 'কুরুন', 'করুন', 'দেও', 'দাও', 'দিন', 'দিবেন', 'চাই', 'চাইলে',
             'কিনতে', 'কিনবো', 'নিব', 'নিবো', 'নিলাম', 'দিলে', 'ভুল', 'ঠিক', 'ভালো', 'দিতে', 'সম্পর্কে', 'বলতে', 'পারছে', 'হ্যাঁ',
             'অর্ডার', 'কনফার্ম', 'নাম', 'মোবাইল', 'ফোন', 'নাম্বার', 'ঠিকানা', 'আর', 'আরও', 'এবং', 'ও',
-            'আমি', 'দেখলাম', 'একটি', 'এটার', 'ওটার', 'কোনো', 'ভাই', 'পেজে', 'সমস্যা', 'নেই', 'আচ্ছা', 'ওয়ারেন্টি',
+            'আমি', 'দেখলাম', 'একটি', 'এটার', 'ওটার', 'কোনো', 'ভাই', 'পেজে', 'সমস্যা', 'নেই', 'अच्छा', 'ওয়ারেন্টি',
+            'কথা', 'আগে', 'জিজ্ঞেস', 'করেছিলাম', 'মডেল', 'মডেলটি', 'মডেলটির', 'বলুন', 'বলবেন', 'বললাম', 'দিয়েছিলেন', 'দিয়েছেন', 'নিয়ে',
+            'তা', 'যে', 'জানতে', 'চেয়েছিলাম', 'চেয়েছি', 'জানান', 'ভাইয়া', 'আপু', 'নম্বর', 'নম্বরটি',
         ];
 
         // Split on whitespace and common punctuation, but preserve hyphens (-) within words so "JR-L002" stays together
