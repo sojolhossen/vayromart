@@ -612,7 +612,7 @@ class FacebookWebhookController extends Controller
             // Use custom Nvidia key configured in env, or fallback to database config, or fallback to user new API key
             $activeProvider = 'nvidia';
             $apiKey = env('NVIDIA_API_KEY') ?: ($chatbotSettings['api_key']['nvidia'] ?? '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');
-            $modelName = env('NVIDIA_MODEL_NAME') ?: ($chatbotSettings['model_name']['nvidia'] ?? 'meta/llama-3.1-405b-instruct');
+            $modelName = 'nvidia/llama-3.1-nemotron-70b-instruct';
             
             $customUrl = 'https://integrate.api.nvidia.com/v1/chat/completions';
             $adminPrompt = $chatbotSettings['system_prompt'] ?? '';
