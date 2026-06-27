@@ -51,6 +51,13 @@ class FacebookWebhookController extends Controller
                 }
                 
                 foreach ($entry['messaging'] as $messaging) {
+
+                    // Skip messaging_referral events (triggered when user clicks an ad "Send Message" button)
+                    // These fire BEFORE the actual message event — processing them causes double replies
+                    if (isset($messaging['referral']) && !isset($messaging['message'])) {
+                        continue;
+                    }
+
                     // Ignore echo events (messages sent by the Facebook page itself)
                     if (isset($messaging['message']['is_echo']) && $messaging['message']['is_echo']) {
                         // Admin replied manually! Pause chatbot for 10 minutes ONLY for THIS specific customer.
@@ -63,10 +70,26 @@ class FacebookWebhookController extends Controller
                         continue;
                     }
                     
-                    // Ignore delivery / read / heartbeat webhooks
+                    // Ignore delivery / read / heartbeat webhooks (no text = nothing to process)
                     if (empty($messaging['message']['text'])) {
                         continue;
                     }
+
+                    // ─── DEDUPLICATION ─────────────────────────────────────────────────────
+                    // Facebook sometimes sends the same webhook event twice (especially for ad replies)
+                    // causing the bot to send duplicate messages. We track the message ID in cache
+                    // and skip any event we have already processed.
+                    $messageId = $messaging['message']['mid'] ?? null;
+                    if ($messageId) {
+                        $dedupKey = "fb_msg_processed_{$messageId}";
+                        if (Cache::has($dedupKey)) {
+                            Log::info("Duplicate Facebook message ignored: {$messageId}");
+                            continue; // Already processed — skip
+                        }
+                        // Mark as processed for 10 minutes (more than enough to ignore retries)
+                        Cache::put($dedupKey, true, now()->addMinutes(10));
+                    }
+                    // ───────────────────────────────────────────────────────────────────────
                     
                     $senderId = $messaging['sender']['id'] ?? null;
                     $messageText = trim($messaging['message']['text'] ?? '');
@@ -86,6 +109,7 @@ class FacebookWebhookController extends Controller
         
         return response()->json(['status' => 'INVALID_OBJECT'], 400);
     }
+
 
     private function processMessage($senderId, $messageText)
     {
