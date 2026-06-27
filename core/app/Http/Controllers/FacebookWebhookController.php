@@ -402,16 +402,37 @@ class FacebookWebhookController extends Controller
 
         // 4. Check for new Order status or cancellation query
         $orderNumber = '';
-        $matchedOrder = null;
         
-        // Match standard OID-00015 format OR a standalone 5-digit number (e.g. 00015)
-        // Also convert Bengali numbers (০-৯) to English (0-9)
+        // Convert Bengali numbers (০-৯) to English (0-9)
         $msgEn = strtr($messageText, ['০'=>'0','১'=>'1','২'=>'2','৩'=>'3','৪'=>'4','৫'=>'5','৬'=>'6','৭'=>'7','৮'=>'8','৯'=>'9']);
         
+        // Pattern 1: Exact OID-XXXXX match
         if (preg_match('/OID-\d+/i', $msgEn, $matches)) {
             $orderNumber = strtoupper($matches[0]);
-        } elseif (preg_match('/\b\d{5}\b/', $msgEn, $matches)) {
-            $orderNumber = 'OID-' . $matches[0];
+        } else {
+            // Pattern 2: Customer specifies a number contextually near order-related keywords (e.g. "order 15", "id 120", "অর্ডার ১৫")
+            // Or if they just send a standalone number (e.g. "00015" or "15" in a simple message)
+            $orderKeywords = ['order', 'ordr', 'id', 'oid', 'number', 'no', 'অবস্থা', 'অর্ডার', 'আইডি', 'নম্বর', 'নাম্বার', 'স্ট্যাটাস', 'status'];
+            $hasOrderContext = false;
+            foreach ($orderKeywords as $okw) {
+                if (stripos($msgEn, $okw) !== false) {
+                    $hasOrderContext = true;
+                    break;
+                }
+            }
+            
+            // Extract the first numeric sequence from the message
+            if (preg_match('/\d+/', $msgEn, $numMatches)) {
+                $rawNumber = $numMatches[0];
+                // Standalone 5 digit numbers (like 00015) are always matched.
+                // Other numbers (like 15) are matched if accompanied by order-related keywords.
+                if (strlen($rawNumber) === 5 || $hasOrderContext) {
+                    // Left pad the extracted number to 5 digits (e.g. 15 -> 00015, 125 -> 00125)
+                    $paddedNumber = str_pad($rawNumber, 5, '0', STR_PAD_LEFT);
+                    $orderNumber = 'OID-' . $paddedNumber;
+                    Log::info("Padded raw number {$rawNumber} to order number: {$orderNumber}");
+                }
+            }
         }
 
         if (empty($botResponse) && !empty($orderNumber)) {
