@@ -515,9 +515,24 @@ class FacebookWebhookController extends Controller
             $matchingProducts = collect();
             $totalMatchingCount = 0;
 
-            if (!empty($expandedKeywords)) {
-                $allMatches = Product::published()->where(function($q) use ($expandedKeywords) {
-                    foreach ($expandedKeywords as $word) {
+            // Alphanumeric sub-term splitting:
+            // If keywords contain hyphenated alphanumeric codes (e.g. jr-l002),
+            // split them and add sub-terms so SQL LIKE doesn't fail on punctuation variances.
+            $searchTerms = $expandedKeywords;
+            foreach ($expandedKeywords as $kw) {
+                if (strpos($kw, '-') !== false) {
+                    $parts = explode('-', $kw);
+                    $noHyphen = str_replace('-', '', $kw);
+                    $searchTerms[] = $noHyphen;
+                    $searchTerms = array_merge($searchTerms, $parts);
+                }
+            }
+            $searchTerms = array_values(array_unique(array_filter($searchTerms)));
+
+            if (!empty($searchTerms)) {
+                $allMatches = Product::published()->where(function($q) use ($searchTerms) {
+                    foreach ($searchTerms as $word) {
+                        if (strlen($word) < 2) continue;
                         $q->orWhere('name', 'LIKE', "%{$word}%")
                           ->orWhere('summary', 'LIKE', "%{$word}%")
                           ->orWhere('meta_description', 'LIKE', "%{$word}%");
