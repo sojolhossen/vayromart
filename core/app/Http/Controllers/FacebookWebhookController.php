@@ -582,9 +582,9 @@ class FacebookWebhookController extends Controller
                     return $product;
                 });
 
-                // Filter matches: require either at least 1 keyword hit or > 40% fuzzy similarity
+                // Filter matches: require at least 1 keyword hit (score >= 3)
                 $filtered = $scored->filter(function($p) {
-                    return $p->match_score >= 3 || $p->similarity_pct >= 40;
+                    return $p->match_score >= 3;
                 })->sortByDesc('match_score')->take(10);
 
                 $matchingProducts = $filtered;
