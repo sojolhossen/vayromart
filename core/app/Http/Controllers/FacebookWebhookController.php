@@ -109,6 +109,7 @@ class FacebookWebhookController extends Controller
         $botResponse = '';
         $databaseContext = '';
         $pendingOrderCheckKey = "fb_pending_order_check_{$senderId}";
+        $matchingProducts = null;
 
         // 3. Check for Cache-based Order OTP verification state
         if (Cache::has($pendingOrderCheckKey)) {
@@ -353,6 +354,9 @@ Current website details:
 
                 // Strip reasoning thinking tags (<think>...</think>) just in case they leak from NVIDIA endpoint
                 $botResponse = preg_replace('/<think>.*?<\/think>/is', '', $botResponse);
+
+                // Fix any clean-slugged or hallucinated product links
+                $botResponse = $this->fixProductLinks($botResponse, $matchingProducts);
 
                 // Intercept and process placed order command if present
                 $botResponse = $this->processPlacedOrder($botResponse, $conversation->id, $senderId);
@@ -711,5 +715,41 @@ Current website details:
 
         Http::timeout(5)->post($url, $payload);
         return true;
+    }
+
+    /**
+     * Fix any product links in the bot response that might have been clean-slugged or hallucinated by the AI
+     */
+    private function fixProductLinks($botResponse, $matchingProducts = null)
+    {
+        // Match any product details URLs: https://domain.com/product/some-slug
+        $pattern = '/(https?:\/\/[^\/\s]+(?:\/[^\/\s]+)*\/product\/)([a-zA-Z0-9\-_]+)/i';
+        
+        return preg_replace_callback($pattern, function($matches) use ($matchingProducts) {
+            $basePath = $matches[1]; // e.g. 'https://vayromart.com/product/'
+            $slug = $matches[2];     // e.g. 'colmi-p73-bt-calling-smart-watch-orange'
+            
+            // 1. Check if the slug is already correct
+            if (Product::where('slug', $slug)->exists()) {
+                return $basePath . $slug;
+            }
+            
+            // 2. Try to find a product matching this slug prefix in matching products first
+            if ($matchingProducts) {
+                foreach ($matchingProducts as $prod) {
+                    if (stripos($prod->slug, $slug) !== false || stripos($slug, $prod->slug) !== false) {
+                        return $basePath . $prod->slug;
+                    }
+                }
+            }
+            
+            // 3. Fallback: Query the database for a product starting with this slug
+            $matched = Product::where('slug', 'LIKE', $slug . '%')->first();
+            if ($matched) {
+                return $basePath . $matched->slug;
+            }
+            
+            return $basePath . $slug;
+        }, $botResponse);
     }
 }
