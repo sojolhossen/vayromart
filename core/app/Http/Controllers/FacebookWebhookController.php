@@ -518,18 +518,10 @@ class FacebookWebhookController extends Controller
                     return $product;
                 });
 
-                // Filter matches: require either at least 1 keyword hit or > 30% fuzzy similarity
+                // Filter matches: require either at least 1 keyword hit or > 40% fuzzy similarity
                 $filtered = $scored->filter(function($p) {
-                    return $p->match_score > 0 || $p->similarity_pct >= 30;
+                    return $p->match_score >= 3 || $p->similarity_pct >= 40;
                 })->sortByDesc('match_score')->take(10);
-
-                if ($filtered->isEmpty() && $allMatches->isNotEmpty()) {
-                    $filtered = $allMatches->take(10)->map(function($p) { 
-                        $p->match_score = 1; 
-                        $p->similarity_pct = 0; 
-                        return $p; 
-                    });
-                }
 
                 $matchingProducts = $filtered;
                 $totalMatchingCount = $matchingProducts->count();
@@ -539,7 +531,7 @@ class FacebookWebhookController extends Controller
                 }
             }
 
-            // Load context from cache if no new match found
+            // Load context from cache if no new high-quality match found (session memory fallback)
             if ($matchingProducts->isEmpty() && Cache::has($lastProductIdKey)) {
                 $lastProductId = Cache::get($lastProductIdKey);
                 $sessionProduct = Product::published()->find($lastProductId);
