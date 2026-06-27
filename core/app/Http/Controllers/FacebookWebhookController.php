@@ -810,6 +810,18 @@ Current website details:
             }
         }
 
+        // 4.5 Delivery & Shipping Charges (Real-time from Database)
+        try {
+            $shippingMethods = \App\Models\ShippingMethod::all();
+            if ($shippingMethods->count() > 0) {
+                $context .= "Store Delivery / Shipping Charges & Timelines:\n";
+                foreach ($shippingMethods as $method) {
+                    $context .= "- {$method->name}: Charge is {$method->charge} BDT. Shipping/Delivery Time: {$method->deliver_in}.\n";
+                }
+                $context .= "\nUse these exact charges to inform the customer when they ask about delivery cost (e.g. Inside Dhaka or Outside Dhaka delivery charge).\n\n";
+            }
+        } catch (\Exception $e) {}
+
         // 5. Product Categories & Brands
         try {
             $categories = \App\Models\Category::pluck('name')->implode(', ');
