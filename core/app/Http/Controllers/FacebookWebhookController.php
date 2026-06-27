@@ -53,10 +53,12 @@ class FacebookWebhookController extends Controller
                 foreach ($entry['messaging'] as $messaging) {
                     // Ignore echo events (messages sent by the Facebook page itself)
                     if (isset($messaging['message']['is_echo']) && $messaging['message']['is_echo']) {
-                        // Admin replied manually! Pause chatbot for 24 hours to prevent AI conflict
+                        // Admin replied manually! Pause chatbot for 10 minutes ONLY for THIS specific customer.
+                        // Other customers are completely unaffected - their agent stays active.
                         $recipientId = $messaging['recipient']['id'] ?? null;
                         if ($recipientId) {
-                            Cache::put("fb_chat_paused_{$recipientId}", true, now()->addHours(24));
+                            Cache::put("fb_chat_paused_{$recipientId}", true, now()->addMinutes(10));
+                            Log::info("Chatbot paused 10min for customer {$recipientId} (admin manual reply detected).");
                         }
                         continue;
                     }
@@ -106,11 +108,12 @@ class FacebookWebhookController extends Controller
             return;
         }
 
-        // B. Chatbot Pause check (Human Handoff in action)
+        // B. Chatbot Pause check — per-customer isolation
+        // Each customer has their own pause key. Pausing one customer does NOT affect any other customer.
         $pausedKey = "fb_chat_paused_{$senderId}";
         if (Cache::has($pausedKey)) {
-            // Check if user wants to reactivate the bot manually
-            $unpauseKeywords = ['unpause', 'start bot', 'এআই চালু করুন', 'start chatbot'];
+            // Allow customer to manually resume the bot
+            $unpauseKeywords = ['unpause', 'start bot', 'এআই চালু করুন', 'start chatbot', 'bot chalu', 'ai on'];
             $shouldUnpause = false;
             foreach ($unpauseKeywords as $kw) {
                 if (stripos($messageText, $kw) !== false) {
@@ -120,13 +123,18 @@ class FacebookWebhookController extends Controller
             }
             if ($shouldUnpause) {
                 Cache::forget($pausedKey);
-                $this->sendFacebookMessage($senderId, "🤖 এআই চ্যাটবট আবার চালু করা হয়েছে! আমি আপনাকে কীভাবে সাহায্য করতে পারি?");
+                $this->sendFacebookMessage($senderId, "🤖 এআই চ্যাটবট আবার চালু করা হয়েছে! আমি আপনাকে কীভাবে সাহায্য করতে পারি?");
             }
-            return; // Chatbot is paused
+            return; // Chatbot paused for this customer only
         }
 
         // C. Customer requesting human handoff manually
-        $handoffKeywords = ['human', 'live agent', 'talk to agent', 'agent', 'kotha bolte chai', 'kotha bolbo', 'kotha bolte', 'admin', 'অ্যাডমিন', 'এজেন্ট', 'লাইভ এজেন্ট', 'কথা বলতে চাই', 'কথা বলতে', 'মানুষের সাথে', 'মানুষ'];
+        // IMPORTANT: Do NOT include single word 'agent' here - it causes false positives on many messages.
+        // Only exact multi-word phrases or clearly intentional Bengali handoff phrases trigger handoff.
+        $handoffKeywords = [
+            'human', 'live agent', 'talk to human', 'live support', 'real agent', 'human support',
+            'অ্যাডমিন', 'লাইভ এজেন্ট', 'লাইভ সাপোর্ট', 'কথা বলতে চাই', 'মানুষের সাথে কথা',
+        ];
         $wantsHandoff = false;
         foreach ($handoffKeywords as $hk) {
             if (stripos($messageText, $hk) !== false) {
@@ -136,8 +144,10 @@ class FacebookWebhookController extends Controller
         }
 
         if ($wantsHandoff) {
-            Cache::put($pausedKey, true, now()->addHours(24));
-            $botResponse = "🤖 আমি আপনার চ্যাটটি আমাদের লাইভ কাস্টমার সাপোর্ট এজেন্টের কাছে ট্রান্সফার করছি। পরবর্তী ২৪ ঘণ্টার জন্য চ্যাটবটটি সাময়িকভাবে বন্ধ থাকবে। আমাদের লাইভ এজেন্ট খুব দ্রুত আপনার সাথে যোগাযোগ করবেন। ধন্যবাদ!";
+            // Pause ONLY this specific customer's chat for 10 minutes.
+            // Every other customer's chatbot continues running normally.
+            Cache::put($pausedKey, true, now()->addMinutes(10));
+            $botResponse = "🤖 ঠিক আছে! আমি এখনই আমাদের লাইভ সাপোর্ট টিমকে জানাচ্ছি। পরবর্তী ১০ মিনিটের জন্য এই চ্যাটে চ্যাটবট বিরতিতে থাকবে। আমাদের টিম শীঘ্রই আপনার সাথে যোগাযোগ করবেন। ধন্যবাদ!";
             
             $sessionKey = "facebook_{$senderId}";
             $conversation = ChatbotConversation::where('session_id', $sessionKey)->first();
