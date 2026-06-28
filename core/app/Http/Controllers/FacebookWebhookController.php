@@ -783,10 +783,13 @@ class FacebookWebhookController extends Controller
             }
 
             if ($matchingProducts->isEmpty() && !empty($matchedCategory)) {
+                // Detect if user wants the FULL list ("সব লিস্ট", "সব দেখাও", "কতগুলো আছে", "list daw" etc.)
+                $wantsFullList = preg_match('/সব|সকল|লিস্ট|list|সবগুলো|সবকটি|কয়টি|কতগুলো|কত রকম|কত ধরন|দেখাও|show all|all product/ui', $messageText);
+                $categoryLimit = $wantsFullList ? 20 : 8;
                 // Query active products under category name or containing category keywords in name
                 $matchingProducts = Product::published()
                     ->where('name', 'LIKE', "%{$matchedCategory}%")
-                    ->limit(5)
+                    ->limit($categoryLimit)
                     ->get();
                 $totalMatchingCount = $matchingProducts->count();
             }
@@ -805,7 +808,9 @@ class FacebookWebhookController extends Controller
             }
 
             if ($matchingProducts->isEmpty() && $isGeneralProductQuery) {
-                $matchingProducts = Product::published()->limit(4)->get();
+                $wantsFullList = preg_match('/সব|সকল|লিস্ট|list|সবগুলো|সবকটি|কয়টি|কতগুলো|কত রকম|কত ধরন|দেখাও|show all|all product/ui', $messageText);
+                $generalLimit = $wantsFullList ? 20 : 6;
+                $matchingProducts = Product::published()->limit($generalLimit)->get();
                 $totalMatchingCount = Product::published()->count();
             }
 
@@ -843,7 +848,7 @@ class FacebookWebhookController extends Controller
                             foreach ($reviews as $rev) {
                                 $rStrings[] = "\"{$rev->review}\" (Rating: {$rev->rating}/5 by {$rev->user->fullname})";
                             }
-$databaseContext .= "  Top Customer Reviews: " . implode(" | ", $rStrings) . "\n";
+                            $databaseContext .= "  Top Customer Reviews: " . implode(" | ", $rStrings) . "\n";
                         }
                     } catch (\Exception $e) {}
 
@@ -912,11 +917,11 @@ Your goals:
 - Speak like a friendly, consultative human sales representative who understands the customer's needs and recommends the absolute best products across all categories — tech, fashion, lifestyle, and more.
 - SHORT & EFFECTIVE RESPONSE RULE (MANDATORY):
   1. Keep every reply SHORT, PUNCHY, and CONVERSATIONAL — like a real human sales agent chatting on Facebook Messenger. Do NOT write long paragraphs or essays.
-  2. Maximum 4-6 lines per response. If recommending products, list max 2-3 items with name, price, and link — no more.
+  2. Maximum 4-6 lines per response. If recommending products casually, list max 2-3 items with name, price, and link. EXCEPTION: If the customer EXPLICITLY asks for a full list (e.g. all smartwatch list, sob list dao, list daw, sob dekhao, show all, kotogulo ache), you MUST list ALL products from the search results provided in the context — do not hide or skip any.
   3. Avoid repeating the customer's question back to them. Go straight to the answer or solution.
   4. Do NOT add unnecessary filler phrases like \"আপনার প্রশ্নটি সত্যিই গুরুত্বপূর্ণ\" or \"আমি আপনাকে সাহায্য করতে পেরে খুশি\"। Cut the fluff.
   5. One strong call-to-action at the end (e.g. \"অর্ডার করতে নাম ও ঠিকানা দিন\" or \"দেখতে চান?\") — never two or three CTAs at once.
-  6. If multiple products match, show the TOP 2 picks only with a short reason why. Do not list everything.
+  6. SMART LIST RULE: If the customer just asks for a recommendation (konota valo, which is best), show TOP 2-3 best picks. But if they explicitly say show all / list all / sob dekhao / list dao / kotogulo ache — list ALL items from the context with name, price, and link.
 - ALWAYS respond in natural, friendly, and correct Bengali (বাংলা) with standard spelling. Ensure standard Bangla font rendering by avoiding overly complex or archaic conjunct characters (যুক্তবর্ণ). Use simple, clean, and modern words.
 - SMART CUSTOMER PROFILING & GENDER INTELLIGENCE (CRITICAL RULE):
   You MUST read the full conversation context intelligently and infer the customer's profile BEFORE recommending any product. Use the following signals:
