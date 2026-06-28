@@ -202,16 +202,19 @@ class AdminChatbotController extends Controller
                 // Read database rows based on selected tables
                 if ($table === 'products') {
                     $records = \App\Models\Product::published()
-                        ->get(['id', 'name', 'sale_price', 'regular_price', 'in_stock', 'summary', 'meta_description', 'slug'])
+                        ->get(['id', 'name', 'sale_price', 'regular_price', 'in_stock', 'summary', 'description', 'meta_description', 'slug'])
                         ->map(function($p) {
                             $price = $p->sale_price ?: $p->regular_price;
                             $p->url = route('product.detail', $p->slug);
+                            $cleanSummary = strip_tags(html_entity_decode($p->summary ?? ''));
+                            $cleanDesc = strip_tags(html_entity_decode($p->description ?? $p->meta_description ?? ''));
                             return [
                                 'id' => $p->id,
                                 'name' => $p->name,
                                 'price' => $price . ' BDT',
                                 'stock' => $p->in_stock > 0 ? "{$p->in_stock} items in stock" : "Out of stock",
-                                'summary' => strip_tags(html_entity_decode($p->summary ?? $p->meta_description ?? '')),
+                                'summary' => trim($cleanSummary),
+                                'description' => trim($cleanDesc),
                                 'link' => $p->url
                             ];
                         })->toArray();
