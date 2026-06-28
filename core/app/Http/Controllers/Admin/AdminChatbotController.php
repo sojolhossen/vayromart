@@ -7,6 +7,7 @@ use App\Models\ChatbotConversation;
 use App\Models\ChatbotMessage;
 use App\Models\ChatbotKnowledge;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class AdminChatbotController extends Controller
 {
