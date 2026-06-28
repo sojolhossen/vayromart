@@ -124,7 +124,13 @@ class FacebookWebhookController extends Controller
                                 $apiKey = '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';
 
                                 // Describe image
-                                $identifiedProduct = \App\Lib\AiService::describeImage($imageUrl, $apiKey);
+                                try {
+                                    $identifiedProduct = \App\Lib\AiService::describeImage($imageUrl, $apiKey);
+                                } catch (\Exception $visionEx) {
+                                    Log::error("Vision API Crash inside webhook: " . $visionEx->getMessage());
+                                    $identifiedProduct = '';
+                                }
+
                                 if (!empty($identifiedProduct)) {
                                     // Treat identified product name as adProductContext to force catalog match
                                     $adProductContext = $identifiedProduct;
@@ -135,6 +141,13 @@ class FacebookWebhookController extends Controller
                                         $messageText = "এই প্রোডাক্টটির দাম কত?";
                                     }
                                     Log::info("Image processed successfully. Product: {$identifiedProduct}. Query set to: {$messageText}");
+                                } else {
+                                    // If image identification failed completely and no text was sent, set fallback prompt
+                                    if (empty($messageText)) {
+                                        $messageText = "[SYSTEM EVENT: User sent an image but the Vision AI could not identify the product. Politely ask the customer to type the product name or tell you what product they are looking for so you can help them.]";
+                                        $adProductContext = 'Unidentified Image';
+                                    }
+                                    Log::warning("Image identification failed. Fallback system message set.");
                                 }
                                 break;
                             }
