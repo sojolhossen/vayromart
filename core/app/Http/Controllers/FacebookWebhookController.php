@@ -647,36 +647,36 @@ class FacebookWebhookController extends Controller
                 }
             } else {
                 // Database fallback search if JSON match yielded no results
-                if (!empty($searchTerms)) {
-                    $hasLongKeywords = false;
-                    foreach ($searchTerms as $word) {
-                        if (strlen($word) >= 4) {
-                            $hasLongKeywords = true;
-                            break;
-                        }
-                    }
-
-                    $allMatches = Product::published()->where(function($q) use ($searchTerms, $hasLongKeywords) {
-                        foreach ($searchTerms as $word) {
-                            $len = strlen($word);
+                // We combine original words and translated keywords to cover all bases
+                $allSearchWords = array_unique(array_merge($searchTerms, $expandedKeywords));
+                if (!empty($allSearchWords)) {
+                    $allMatches = Product::published()->where(function($q) use ($allSearchWords) {
+                        foreach ($allSearchWords as $word) {
+                            $len = mb_strlen($word);
                             if ($len < 2) continue;
-                            if ($hasLongKeywords && $len <= 3) {
-                                continue;
-                            }
+                            
                             $q->orWhere('name', 'LIKE', "%{$word}%")
-                              ->orWhere('summary', 'LIKE', "%{$word}%");
+                              ->orWhere('summary', 'LIKE', "%{$word}%")
+                              ->orWhere('meta_description', 'LIKE', "%{$word}%");
                         }
-                    })->limit(20)->get();
+                    })->limit(30)->get();
 
                     $queryPhrase = implode(' ', $expandedKeywords);
-                    $scored = $allMatches->map(function($product) use ($expandedKeywords, $queryPhrase) {
+                    $scored = $allMatches->map(function($product) use ($allSearchWords, $queryPhrase) {
                         $hitScore = 0;
                         $nameLower = mb_strtolower($product->name);
-                        foreach ($expandedKeywords as $word) {
-                            if (mb_strpos($nameLower, mb_strtolower($word)) !== false) {
-                                $hitScore += 3;
+                        $summaryLower = mb_strtolower($product->summary ?? '');
+                        
+                        foreach ($allSearchWords as $word) {
+                            $wordLower = mb_strtolower($word);
+                            if (mb_strpos($nameLower, $wordLower) !== false) {
+                                $hitScore += 4;
+                            }
+                            if (mb_strpos($summaryLower, $wordLower) !== false) {
+                                $hitScore += 1;
                             }
                         }
+                        
                         $similarityPercent = 0;
                         similar_text(mb_strtolower($queryPhrase), $nameLower, $similarityPercent);
                         $product->match_score = $hitScore + ($similarityPercent / 10);
