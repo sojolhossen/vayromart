@@ -696,7 +696,34 @@ class FacebookWebhookController extends Controller
                 }
             }
 
-            // Load context from cache if no new high-quality match found (session memory fallback)
+            // Check if user is asking a generic detail/link/buy query (e.g. "link?", "price?", "details please")
+            $isGenericDetailQuery = false;
+            $genericDetailWords = ['link', 'লিংক', 'দাও', 'দেও', 'price', 'দাম', 'কত', 'koto', 'details', 'detials', 'অর্ডার', 'order', 'কিনব', 'kinbo', 'পিক', 'pic', 'ছবি', 'dekhaw', 'দেখাও'];
+            $cleanMsgText = mb_strtolower(trim($messageText));
+            
+            // Check if message only contains generic words
+            $hasSpecificKeyword = false;
+            foreach ($searchTerms as $term) {
+                if (!in_array($term, $genericDetailWords) && mb_strlen($term) >= 3) {
+                    $hasSpecificKeyword = true;
+                    break;
+                }
+            }
+            if (!$hasSpecificKeyword && !empty($cleanMsgText)) {
+                $isGenericDetailQuery = true;
+            }
+
+            // Restore exact list of last recommended products if it's a generic query
+            $lastRecsKey = "fb_last_recs_list_{$senderId}";
+            if ($matchingProducts->isEmpty() && $isGenericDetailQuery && Cache::has($lastRecsKey)) {
+                $lastRecIds = Cache::get($lastRecsKey);
+                if (is_array($lastRecIds) && !empty($lastRecIds)) {
+                    $matchingProducts = Product::published()->whereIn('id', $lastRecIds)->get();
+                    $totalMatchingCount = $matchingProducts->count();
+                }
+            }
+
+            // Load single cache fallback if still empty
             if ($matchingProducts->isEmpty() && Cache::has($lastProductIdKey)) {
                 $lastProductId = Cache::get($lastProductIdKey);
                 $sessionProduct = Product::published()->find($lastProductId);
@@ -704,6 +731,12 @@ class FacebookWebhookController extends Controller
                     $matchingProducts = collect([$sessionProduct]);
                     $totalMatchingCount = 1;
                 }
+            }
+
+            // Store newly matched products in the session memory list
+            if ($matchingProducts->count() > 0) {
+                $newRecIds = $matchingProducts->pluck('id')->toArray();
+                Cache::put($lastRecsKey, $newRecIds, now()->addMinutes(15));
             }
 
             // Fallback: If no products matched, check if the user is asking about a specific category (e.g. power bank, watch)
