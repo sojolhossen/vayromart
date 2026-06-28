@@ -230,9 +230,9 @@ class AiService
                 'top_p' => 0.70
             ];
 
-            // 4. Send request (Set standard timeout of 10 seconds since no secondary fallback is used)
+            // 4. Send request (Set high timeout of 60 seconds to prevent premature timeouts on slow API responses)
             try {
-                $response = Http::timeout(10)
+                $response = Http::timeout(60)
                     ->withHeaders([
                         'Authorization' => "Bearer {$apiKey}",
                         'Content-Type' => 'application/json'
