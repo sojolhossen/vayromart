@@ -180,9 +180,14 @@ class AiService
     public static function describeImage($imageUrl, $apiKey)
     {
         try {
-            // 1. Download image content
-            $imageContent = file_get_contents($imageUrl);
-            if (!$imageContent) {
+            // 1. Download image content using Laravel Http Client to bypass allow_url_fopen restrictions
+            $imageResponse = Http::timeout(20)->get($imageUrl);
+            if (!$imageResponse->successful()) {
+                Log::error("Failed to download Facebook image: Code " . $imageResponse->status());
+                return '';
+            }
+            $imageContent = $imageResponse->body();
+            if (empty($imageContent)) {
                 return '';
             }
 
