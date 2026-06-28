@@ -230,9 +230,9 @@ class AiService
                 'top_p' => 0.70
             ];
 
-            // 4. Send request (Set high timeout of 60 seconds to prevent premature timeouts on slow API responses)
+            // 4. Send request (Set low timeout of 4 seconds to fail fast and let the chatbot send text fallback quickly)
             try {
-                $response = Http::timeout(60)
+                $response = Http::timeout(4)
                     ->withHeaders([
                         'Authorization' => "Bearer {$apiKey}",
                         'Content-Type' => 'application/json'
