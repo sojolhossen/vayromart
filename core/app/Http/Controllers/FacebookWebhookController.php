@@ -664,7 +664,38 @@ class FacebookWebhookController extends Controller
                 }
             }
 
-            // Fallback: If no products matched but user is asking generally about products
+            // Fallback: If no products matched, check if the user is asking about a specific category (e.g. power bank, watch)
+            $categoryMatches = collect();
+            $categoryKeywords = [
+                'power bank' => ['power bank', 'powerbank', 'পাওয়ার ব্যাংক', 'পাওয়ারব্যাংক', 'পাওয়ার ব্যাংক', 'পাওয়ারব্যাংক', 'ব্যাংক'],
+                'watch' => ['watch', 'smartwatch', 'ঘড়ি', 'স্মার্টওয়াচ', 'ওয়াচ'],
+                'charger' => ['charger', 'adapter', 'চার্জার', 'অ্যাডাপ্টার'],
+                'earphone' => ['earphone', 'headphone', 'earbud', 'ইয়ারফোন', 'হেডফোন', 'ইয়ারবাড'],
+                'router' => ['router', 'wi-fi', 'wifi', 'রাউটার', 'ওয়াইফাই', 'ওয়াই-ফাই'],
+                'cable' => ['cable', 'cabel', 'ক্যাবল', 'তার'],
+            ];
+
+            $matchedCategory = null;
+            $msgLower = mb_strtolower($messageText);
+            foreach ($categoryKeywords as $cat => $keywordsList) {
+                foreach ($keywordsList as $kw) {
+                    if (mb_strpos($msgLower, $kw) !== false) {
+                        $matchedCategory = $cat;
+                        break 2;
+                    }
+                }
+            }
+
+            if ($matchingProducts->isEmpty() && !empty($matchedCategory)) {
+                // Query active products under category name or containing category keywords in name
+                $matchingProducts = Product::published()
+                    ->where('name', 'LIKE', "%{$matchedCategory}%")
+                    ->limit(5)
+                    ->get();
+                $totalMatchingCount = $matchingProducts->count();
+            }
+
+            // Global Fallback: If still empty but user is asking generally about products
             $generalProductKeywords = [
                 'product', 'products', 'item', 'items', 'buy', 'purchase', 'popular', 'sell', 'featured', 'show',
                 'dekhaw', 'kinbo', 'প্রোডাক্ট', 'কিনতে', 'নাকি', 'দেখান', 'কী আছে', 'কি আছে', 'দেখাও',
