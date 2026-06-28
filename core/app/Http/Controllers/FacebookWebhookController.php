@@ -101,59 +101,25 @@ class FacebookWebhookController extends Controller
 
                     $adProductContext = '';
 
-                    // ─── IMAGE ATTACHMENT PROCESSING (VISION AI) ───────────────────────────
-                    // If the customer sent an image, extract the URL and analyze it using NVIDIA Vision API
-                    // to recognize the product they uploaded.
-                    if ($hasAttachments) {
-                        foreach ($messaging['message']['attachments'] as $attachment) {
-                            if ($attachment['type'] === 'image' && isset($attachment['payload']['url'])) {
-                                $imageUrl = $attachment['payload']['url'];
-                                Log::info("Received image attachment from {$senderId}. URL: {$imageUrl}");
-
-                                // Show typing indicator
-                                $this->sendFacebookAction($senderId, 'typing_on');
-
-                                // Get NVIDIA API Key from config/env
-                                $general = gs();
-                                $chatbotSettings = [];
-                                if ($general->chatbot_settings) {
-                                    $chatbotSettings = is_string($general->chatbot_settings) 
-                                        ? json_decode($general->chatbot_settings, true) 
-                                        : (array)$general->chatbot_settings;
-                                }
-                                $apiKey = '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';
-
-                                // Describe image
-                                try {
-                                    $identifiedProduct = \App\Lib\AiService::describeImage($imageUrl, $apiKey);
-                                } catch (\Exception $visionEx) {
-                                    Log::error("Vision API Crash inside webhook: " . $visionEx->getMessage());
-                                    $identifiedProduct = '';
-                                }
-
-                                if (!empty($identifiedProduct)) {
-                                    // Treat identified product name as adProductContext to force catalog match
-                                    $adProductContext = $identifiedProduct;
-                                    Cache::put("fb_ad_ref_{$senderId}", $identifiedProduct, now()->addHours(2));
-                                    
-                                    // If text was empty (user sent ONLY an image), set default question to trigger search
-                                    if (empty($messageText)) {
-                                        $messageText = "এই প্রোডাক্টটির দাম কত?";
-                                    }
-                                    Log::info("Image processed successfully. Product: {$identifiedProduct}. Query set to: {$messageText}");
-                                } else {
-                                    // Bypassing slow AI generation when vision is completely offline
-                                    // Send an instant, friendly message to keep the chat active and avoid Messenger drop-outs.
-                                    if (empty($messageText)) {
-                                        $fallbackMsg = "দুঃখিত, ছবিটি আমি স্পষ্ট বুঝতে পারছি না। দয়া করে প্রোডাক্টটির নাম একটু লিখে দিন, আমি এখনই সেটির দাম ও বিস্তারিত জানিয়ে দিচ্ছি।";
-                                        $this->saveBotMessage($conversation->id, $fallbackMsg);
-                                        $this->sendFacebookMessage($senderId, $fallbackMsg);
-                                        return response()->json(['status' => 'EVENT_RECEIVED']);
-                                    }
-                                }
-                                break;
-                            }
+                    // ─── IMAGE ATTACHMENT PROCESSING (VISION AI REMOVED) ───────────────────
+                    // Vision processing is disabled. If user sends ONLY an image with no text, 
+                    // reply instantly asking them to type the product name to prevent silent drops.
+                    if ($hasAttachments && empty($messageText)) {
+                        // Bypassing slow AI generation when vision is completely offline
+                        // 1. Get or Create Conversation Session in DB using sender_id as key
+                        $sessionKey = "facebook_{$senderId}";
+                        $conversation = ChatbotConversation::where('session_id', $sessionKey)->first();
+                        if (!$conversation) {
+                            $conversation = ChatbotConversation::create([
+                                'session_id' => $sessionKey,
+                                'ip_address' => 'facebook_messenger',
+                            ]);
                         }
+
+                        $fallbackMsg = "দয়া করে প্রোডাক্টের নাম বা একটি ছবি দিন, আমি এখনই সেটির দাম ও বিস্তারিত জানিয়ে দিচ্ছি।";
+                        $this->saveBotMessage($conversation->id, $fallbackMsg);
+                        $this->sendFacebookMessage($senderId, $fallbackMsg);
+                        return response()->json(['status' => 'EVENT_RECEIVED']);
                     }
                     // ───────────────────────────────────────────────────────────────────────
 
