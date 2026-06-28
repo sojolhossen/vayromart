@@ -342,6 +342,15 @@ class FacebookWebhookController extends Controller
                     $databaseContext .= "- Payment Status: " . strip_tags($activeOrder->paymentBadge()) . "\n";
                     $databaseContext .= "- Total Amount: {$activeOrder->total_amount} BDT\n";
                     $databaseContext .= "- Items: " . $activeOrder->products->pluck('name')->implode(', ') . "\n";
+                    
+                    if ($activeOrder->deposit && $activeOrder->deposit->id) {
+                        $methodName = $activeOrder->deposit->methodName() ?: 'Online Payment';
+                        $trxId = $activeOrder->deposit->trx ?: 'N/A';
+                        $databaseContext .= "- Payment Method/Gateway: {$methodName}\n";
+                        $databaseContext .= "- Payment Transaction Ref ID (Trx ID): {$trxId}\n";
+                    } else {
+                        $databaseContext .= "- Payment Method/Gateway: Cash on Delivery (COD)\n";
+                    }
                 }
             }
         }
@@ -387,6 +396,16 @@ class FacebookWebhookController extends Controller
                         $databaseContext .= "- Delivery Type: " . ($order->shipping_method_id ? 'Standard Shipping' : 'Default') . "\n";
                         $databaseContext .= "- Items: " . $order->products->pluck('name')->implode(', ') . "\n";
                         $databaseContext .= "- Delivery Address: " . json_encode($order->shipping_address) . "\n";
+                        
+                        if ($order->deposit && $order->deposit->id) {
+                            $methodName = $order->deposit->methodName() ?: 'Online Payment';
+                            $trxId = $order->deposit->trx ?: 'N/A';
+                            $databaseContext .= "- Payment Method/Gateway: {$methodName}\n";
+                            $databaseContext .= "- Payment Transaction Ref ID (Trx ID): {$trxId}\n";
+                        } else {
+                            $databaseContext .= "- Payment Method/Gateway: Cash on Delivery (COD)\n";
+                        }
+                        
                         $databaseContext .= "Acknowledge the verification success and report the status and items details of this order clearly to the user in a friendly format. If they requested cancellation, inform them that they can now proceed with canceling it.";
                     } else {
                         $botResponse = "দুঃখিত, আপনার দেওয়া মোবাইল নাম্বারের শেষ ৪টি ডিজিট বা পূর্ণ নাম্বারটি মিলছে না। অনুগ্রহ করে অর্ডারের সাথে যুক্ত সঠিক নাম্বারটি লিখুন।";
@@ -452,6 +471,16 @@ class FacebookWebhookController extends Controller
                     $databaseContext .= "- Delivery Charge: {$order->shipping_charge} BDT\n";
                     $databaseContext .= "- Items: " . $order->products->pluck('name')->implode(', ') . "\n";
                     $databaseContext .= "- Delivery Address: " . json_encode($order->shipping_address) . "\n";
+                    
+                    // Live Payment Details from Deposit relation
+                    if ($order->deposit && $order->deposit->id) {
+                        $methodName = $order->deposit->methodName() ?: 'Online Payment';
+                        $trxId = $order->deposit->trx ?: 'N/A';
+                        $databaseContext .= "- Payment Method/Gateway: {$methodName}\n";
+                        $databaseContext .= "- Payment Transaction Ref ID (Trx ID): {$trxId}\n";
+                    } else {
+                        $databaseContext .= "- Payment Method/Gateway: Cash on Delivery (COD)\n";
+                    }
                 } else {
                     // Request security verification (last 4 digits of mobile)
                     Cache::put($pendingOrderCheckKey, $order->id, now()->addMinutes(10));
