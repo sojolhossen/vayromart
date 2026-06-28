@@ -742,6 +742,7 @@ function wishlistManager() {
 }
 
 function prepareAttributeValues($attributeValues) {
+    $attributeValues = is_array($attributeValues) ? $attributeValues : [];
     sort($attributeValues);
     $attributes    = array_map('intval', $attributeValues);
     return json_encode($attributes);
