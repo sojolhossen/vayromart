@@ -142,12 +142,14 @@ class FacebookWebhookController extends Controller
                                     }
                                     Log::info("Image processed successfully. Product: {$identifiedProduct}. Query set to: {$messageText}");
                                 } else {
-                                    // If image identification failed completely and no text was sent, set fallback prompt
+                                    // Bypassing slow AI generation when vision is completely offline
+                                    // Send an instant, friendly message to keep the chat active and avoid Messenger drop-outs.
                                     if (empty($messageText)) {
-                                        $messageText = "[SYSTEM EVENT: User sent an image but the Vision AI could not identify the product. Politely ask the customer to type the product name or tell you what product they are looking for so you can help them.]";
-                                        $adProductContext = 'Unidentified Image';
+                                        $fallbackMsg = "দুঃখিত, ছবিটি আমি স্পষ্ট বুঝতে পারছি না। দয়া করে প্রোডাক্টটির নাম একটু লিখে দিন, আমি এখনই সেটির দাম ও বিস্তারিত জানিয়ে দিচ্ছি।";
+                                        $this->saveBotMessage($conversation->id, $fallbackMsg);
+                                        $this->sendFacebookMessage($senderId, $fallbackMsg);
+                                        return response()->json(['status' => 'EVENT_RECEIVED']);
                                     }
-                                    Log::warning("Image identification failed. Fallback system message set.");
                                 }
                                 break;
                             }

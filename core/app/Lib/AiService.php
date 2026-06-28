@@ -228,7 +228,7 @@ class AiService
 
             try {
                 Log::info("Trying Gemini 2.5 Flash Vision...");
-                $response = Http::timeout(4)->post($geminiUrl, $geminiPayload);
+                $response = Http::timeout(2)->post($geminiUrl, $geminiPayload);
                 if ($response->successful()) {
                     $data = $response->json();
                     $resultText = $data['candidates'][0]['content']['parts'][0]['text'] ?? '';
@@ -272,7 +272,7 @@ class AiService
             ];
 
             try {
-                $response = Http::timeout(6)
+                $response = Http::timeout(2)
                     ->withHeaders([
                         'Authorization' => "Bearer {$apiKey}",
                         'Content-Type' => 'application/json'
