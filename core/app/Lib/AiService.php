@@ -206,7 +206,7 @@ class AiService
 
             // 3. Call Gemini 1.5 Flash Vision API directly using the provided free Gemini API Key
             $geminiKey = 'AIzaSyBYPLssQKJpdylMrvcFfnXeBfbgMRRWBD4';
-            $url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key={$geminiKey}";
+            $url = "https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={$geminiKey}";
             
             $payload = [
                 'contents' => [
