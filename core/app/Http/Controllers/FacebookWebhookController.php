@@ -528,7 +528,8 @@ class FacebookWebhookController extends Controller
             // Lets customers search in Bengali and still find English-named products
             $bengaliToEnglish = [
                 'পাওয়ার ব্যাংক' => 'power bank', 'পাওয়ারব্যাংক' => 'power bank',
-                'ঘড়ি' => 'watch', 'স্মার্টওয়াচ' => 'smartwatch', 'ওয়াচ' => 'watch',
+                'পাওয়ার ব্যাংক' => 'power bank', 'পাওয়ারব্যাংক' => 'power bank',
+                'ঘড়ি' => 'watch', 'স্মার্টওয়াচ' => 'smartwatch', 'স্মার্টওয়াচ' => 'smartwatch', 'ওয়াচ' => 'watch', 'ওয়াচ' => 'watch',
                 'চার্জার' => 'charger', 'ইয়ারফোন' => 'earphone', 'হেডফোন' => 'headphone',
                 'ইয়ারবাড' => 'earbud', 'ব্লুটুথ' => 'bluetooth', 'রাউটার' => 'router',
                 'ক্যাবল' => 'cable', 'হোল্ডার' => 'holder', 'স্ট্যান্ড' => 'stand',
