@@ -121,7 +121,7 @@ class FacebookWebhookController extends Controller
                                         ? json_decode($general->chatbot_settings, true) 
                                         : (array)$general->chatbot_settings;
                                 }
-                                $apiKey = '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';
+                                $apiKey = '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';
 
                                 // Describe image
                                 try {
@@ -916,7 +916,7 @@ class FacebookWebhookController extends Controller
             
             // Use custom Nvidia key configured in env, or fallback to database config, or fallback to user new API key
             $activeProvider = 'nvidia';
-            $apiKey = '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';
+            $apiKey = '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';
             $modelName = 'google/diffusiongemma-26b-a4b-it';
             
             $customUrl = 'https://integrate.api.nvidia.com/v1/chat/completions';
