@@ -242,10 +242,46 @@ class AiService
                 $data = $response->json();
                 $resultText = $data['choices'][0]['message']['content'] ?? '';
                 $cleanResult = trim(str_replace(['"', "'", '.', "\n"], '', $resultText));
-                Log::info("NVIDIA Vision Identified product: {$cleanResult}");
-                return $cleanResult;
-            } else {
-                Log::error("NVIDIA Vision API Error: " . $response->body());
+                if (!empty($cleanResult)) {
+                    Log::info("NVIDIA Vision Identified product: {$cleanResult}");
+                    return $cleanResult;
+                }
+            }
+            
+            // --- Fallback: Try Gemini Vision if Nvidia Vision fails ---
+            Log::warning("Nvidia Vision failed or returned empty. Trying Gemini 1.5 Flash Vision...");
+            $geminiKey = env('GEMINI_API_KEY') ?: $apiKey;
+            if (!empty($geminiKey)) {
+                $geminiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={$geminiKey}";
+                $geminiPayload = [
+                    'contents' => [
+                        [
+                            'parts' => [
+                                [
+                                    'text' => 'Identify the product/item shown in this image. Respond with only the product brand and model or item name in 1 to 3 words. Example: "Hoco Power Bank" or "Tp-link Router". Do not write sentences or explanation.'
+                                ],
+                                [
+                                    'inlineData' => [
+                                        'mimeType' => $mimeType,
+                                        'data' => $base64Image
+                                    ]
+                                ]
+                            ]
+                        ]
+                    ]
+                ];
+                $gResponse = Http::timeout(20)->post($geminiUrl, $geminiPayload);
+                if ($gResponse->successful()) {
+                    $gData = $gResponse->json();
+                    $gResult = $gData['candidates'][0]['content']['parts'][0]['text'] ?? '';
+                    $cleanGResult = trim(str_replace(['"', "'", '.', "\n"], '', $gResult));
+                    if (!empty($cleanGResult)) {
+                        Log::info("Gemini Vision Identified product: {$cleanGResult}");
+                        return $cleanGResult;
+                    }
+                } else {
+                    Log::error("Gemini Vision Fallback API Error: " . $gResponse->body());
+                }
             }
         } catch (\Exception $e) {
             Log::error("AiService describeImage Exception: " . $e->getMessage());
