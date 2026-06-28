@@ -230,9 +230,9 @@ class AiService
                 'top_p' => 0.70
             ];
 
-            // 4. Send request (Set low timeout of 3 seconds to fail fast and fallback to Gemini)
+            // 4. Send request (Set standard timeout of 10 seconds since no secondary fallback is used)
             try {
-                $response = Http::timeout(3)
+                $response = Http::timeout(10)
                     ->withHeaders([
                         'Authorization' => "Bearer {$apiKey}",
                         'Content-Type' => 'application/json'
@@ -249,44 +249,7 @@ class AiService
                     }
                 }
             } catch (\Exception $nvEx) {
-                Log::warning("NVIDIA Vision Request failed: " . $nvEx->getMessage() . ". Proceeding to Gemini fallback.");
-            }
-            
-            // --- Fallback: Try Gemini Vision if Nvidia Vision fails ---
-            Log::warning("Nvidia Vision failed or timed out. Trying Gemini 1.5 Flash Vision...");
-            $geminiKey = env('GEMINI_API_KEY') ?: $apiKey;
-            if (!empty($geminiKey)) {
-                $geminiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={$geminiKey}";
-                $geminiPayload = [
-                    'contents' => [
-                        [
-                            'parts' => [
-                                [
-                                    'text' => 'Identify the product/item shown in this image. Respond with only the product brand and model or item name in 1 to 3 words. Example: "Hoco Power Bank" or "Tp-link Router". Do not write sentences or explanation.'
-                                ],
-                                [
-                                    'inlineData' => [
-                                        'mimeType' => $mimeType,
-                                        'data' => $base64Image
-                                    ]
-                                ]
-                            ]
-                        ]
-                    ]
-                ];
-                // Set Gemini timeout to 4 seconds
-                $gResponse = Http::timeout(4)->post($geminiUrl, $geminiPayload);
-                if ($gResponse->successful()) {
-                    $gData = $gResponse->json();
-                    $gResult = $gData['candidates'][0]['content']['parts'][0]['text'] ?? '';
-                    $cleanGResult = trim(str_replace(['"', "'", '.', "\n"], '', $gResult));
-                    if (!empty($cleanGResult)) {
-                        Log::info("Gemini Vision Identified product: {$cleanGResult}");
-                        return $cleanGResult;
-                    }
-                } else {
-                    Log::error("Gemini Vision Fallback API Error: " . $gResponse->body());
-                }
+                Log::error("NVIDIA Vision Request failed: " . $nvEx->getMessage());
             }
         } catch (\Exception $e) {
             Log::error("AiService describeImage Exception: " . $e->getMessage());
