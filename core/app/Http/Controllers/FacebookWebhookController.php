@@ -144,31 +144,43 @@ class FacebookWebhookController extends Controller
 
                     // ─── AD REFERRAL CONTEXT EXTRACTION ─────────────────────────────────────
                     // When a customer clicks on a Messenger Ad, Facebook passes a 'referral'
-                    // object containing properties like 'ref', 'ad_id', or 'source'.
-                    // We extract potential product names/keywords from these fields and
-                    // cache them so the AI knows which product they are viewing.
+                    // object with 'ref', 'ad_id', 'ad_title', 'ads_context_data', etc.
+                    // We extract as much product context as possible and cache it so the AI
+                    // knows exactly which product the customer clicked on.
                     $referralData = $messaging['referral'] ?? $messaging['message']['referral'] ?? null;
                     if ($referralData) {
-                        $refParam = $referralData['ref'] ?? '';
-                        $adId = $referralData['ad_id'] ?? '';
-                        
-                        // Look for product slugs or names in the ref parameter
-                        if (!empty($refParam)) {
-                            // Convert hyphens/underscores to spaces to extract keyword phrases
+                        $refParam   = $referralData['ref'] ?? '';
+                        $adId       = $referralData['ad_id'] ?? '';
+                        $adTitle    = $referralData['ads_context_data']['ad_title'] ?? 
+                                      $referralData['ad_title'] ?? '';
+                        $productId  = $referralData['ads_context_data']['product_id'] ?? '';
+
+                        // Priority 1: Use the human-readable ad title (most useful for AI)
+                        if (!empty($adTitle)) {
+                            $cleanRef = trim($adTitle);
+                            Cache::put("fb_ad_ref_{$senderId}", $cleanRef, now()->addHours(2));
+                            if (empty($adProductContext)) {
+                                $adProductContext = $cleanRef;
+                            }
+                            Log::info("Extracted Ad Title context for {$senderId}: {$cleanRef}");
+                        }
+                        // Priority 2: Use ref param (slug-style like 'window-cleaner-ad')
+                        elseif (!empty($refParam)) {
                             $cleanRef = str_replace(['-', '_'], ' ', $refParam);
                             Cache::put("fb_ad_ref_{$senderId}", $cleanRef, now()->addHours(2));
                             if (empty($adProductContext)) {
                                 $adProductContext = $cleanRef;
                             }
-                            Log::info("Extracted Ad Referral context for {$senderId}: {$cleanRef}");
-                        } elseif (!empty($adId)) {
+                            Log::info("Extracted Ad Referral ref param for {$senderId}: {$cleanRef}");
+                        }
+                        // Priority 3: Store ad_id and product_id for logging/future lookup
+                        if (!empty($adId)) {
                             Cache::put("fb_ad_id_{$senderId}", $adId, now()->addHours(2));
-                            Log::info("Extracted Ad ID for {$senderId}: {$adId}");
+                            Log::info("Extracted Ad ID for {$senderId}: {$adId}" . ($productId ? ", Product ID: {$productId}" : ''));
                         }
                     }
 
-                    // Also extract context if the message text contains common product titles from ads
-                    // (e.g. "This chat contains a reply to...")
+                    // Also extract context from Facebook Story reply (customer replied to a post/ad story)
                     if (isset($messaging['message']['reply_to']['story'])) {
                         $storyText = $messaging['message']['reply_to']['story']['text'] ?? '';
                         if (!empty($storyText)) {
@@ -327,6 +339,15 @@ class FacebookWebhookController extends Controller
         $databaseContext = '';
         $pendingOrderCheckKey = "fb_pending_order_check_{$senderId}";
         $matchingProducts = collect();
+
+        // ─── AD CONTEXT INJECTION INTO AI PROMPT ─────────────────────────────────
+        // If the customer came from a Facebook Ad, inject the ad product context as
+        // a strong SYSTEM NOTE so the AI knows exactly what product they clicked on.
+        // This prevents the AI from giving random/irrelevant product responses.
+        if (!empty($adProductContext)) {
+            $databaseContext .= "[CRITICAL SYSTEM NOTE — Facebook Ad Context]: This customer arrived via a Facebook Advertisement promoting: \"{$adProductContext}\". Their initial question is DIRECTLY related to this advertised product. You MUST treat their question in the context of this specific product. Search the catalog ONLY for this product. Do NOT recommend unrelated products or categories. If they ask 'দাম কত?' or 'price?' or any short question, it refers to THIS ad product: \"{$adProductContext}\".\n\n";
+        }
+        // ─────────────────────────────────────────────────────────────────────────
 
         // Auto load last active order context if verified
         $lastActiveOrderIdKey = "fb_last_active_order_{$senderId}";
