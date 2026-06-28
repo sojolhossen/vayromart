@@ -204,52 +204,39 @@ class AiService
 
             $dataUri = "data:{$mimeType};base64,{$base64Image}";
 
-            // 3. Make request payload for NVIDIA Vision API
-            $url = 'https://integrate.api.nvidia.com/v1/chat/completions';
+            // 3. Call Gemini 1.5 Flash Vision API directly using the provided free Gemini API Key
+            $geminiKey = 'AIzaSyBYPLssQKJpdylMrvcFfnXeBfbgMRRWBD4';
+            $url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={$geminiKey}";
+            
             $payload = [
-                'model' => 'meta/llama-3.2-90b-vision-instruct', // stable meta vision model
-                'messages' => [
+                'contents' => [
                     [
-                        'role' => 'user',
-                        'content' => [
+                        'parts' => [
                             [
-                                'type' => 'text',
                                 'text' => 'Identify the product/item shown in this image. Respond with only the product brand and model or item name in 1 to 3 words. Example: "Hoco Power Bank" or "Tp-link Router". Do not write sentences or explanation.'
                             ],
                             [
-                                'type' => 'image_url',
-                                'image_url' => [
-                                    'url' => $dataUri
+                                'inlineData' => [
+                                    'mimeType' => $mimeType,
+                                    'data' => $base64Image
                                 ]
                             ]
                         ]
                     ]
-                ],
-                'max_tokens' => 50,
-                'temperature' => 0.20,
-                'top_p' => 0.70
+                ]
             ];
 
-            // 4. Send request (Set low timeout of 4 seconds to fail fast and let the chatbot send text fallback quickly)
-            try {
-                $response = Http::timeout(4)
-                    ->withHeaders([
-                        'Authorization' => "Bearer {$apiKey}",
-                        'Content-Type' => 'application/json'
-                    ])
-                    ->post($url, $payload);
-     
-                if ($response->successful()) {
-                    $data = $response->json();
-                    $resultText = $data['choices'][0]['message']['content'] ?? '';
-                    $cleanResult = trim(str_replace(['"', "'", '.', "\n"], '', $resultText));
-                    if (!empty($cleanResult)) {
-                        Log::info("NVIDIA Vision Identified product: {$cleanResult}");
-                        return $cleanResult;
-                    }
+            $response = Http::timeout(6)->post($url, $payload);
+            if ($response->successful()) {
+                $data = $response->json();
+                $resultText = $data['candidates'][0]['content']['parts'][0]['text'] ?? '';
+                $cleanResult = trim(str_replace(['"', "'", '.', "\n"], '', $resultText));
+                if (!empty($cleanResult)) {
+                    Log::info("Gemini Vision Identified product: {$cleanResult}");
+                    return $cleanResult;
                 }
-            } catch (\Exception $nvEx) {
-                Log::error("NVIDIA Vision Request failed: " . $nvEx->getMessage());
+            } else {
+                Log::error("Gemini Vision API Error: " . $response->body());
             }
         } catch (\Exception $e) {
             Log::error("AiService describeImage Exception: " . $e->getMessage());
