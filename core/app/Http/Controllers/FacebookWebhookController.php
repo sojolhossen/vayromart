@@ -121,7 +121,7 @@ class FacebookWebhookController extends Controller
                                         ? json_decode($general->chatbot_settings, true) 
                                         : (array)$general->chatbot_settings;
                                 }
-                                $apiKey = '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';
+                                $apiKey = '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';
 
                                 // Describe image
                                 $identifiedProduct = \App\Lib\AiService::describeImage($imageUrl, $apiKey);
