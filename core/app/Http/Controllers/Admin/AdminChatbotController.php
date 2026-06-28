@@ -275,46 +275,8 @@ class AdminChatbotController extends Controller
                 }
             }
 
-            // Convert to optimization-friendly prompt schema using NVIDIA AI
-            $aiChatApiKey = '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';
-            $url = 'https://integrate.api.nvidia.com/v1/chat/completions';
-            
-            $rawJson = json_encode($exportedData, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
-            
-            // Chunk or format structure using NVIDIA AI if text length isn't too huge
-            $prompt = "Format and structure the following raw e-commerce store catalog/business database tables data into a extremely clean, minified, optimized customer-support-friendly JSON schema. Remove any redundant HTML tags, clean up whitespaces, and preserve all critical details like brand name, model numbers, pricing, and links. Output ONLY the raw minified JSON string. Do not enclose it in markdown blocks, explanations, thoughts, or metadata.\n\nDatabase Raw Data:\n" . substr($rawJson, 0, 8000);
-
-            $payload = [
-                'model' => 'google/diffusiongemma-26b-a4b-it',
-                'messages' => [
-                    [
-                        'role' => 'user',
-                        'content' => $prompt
-                    ]
-                ],
-                'max_tokens' => 4096,
-                'temperature' => 0.10,
-                'top_p' => 0.70,
-                'chat_template_kwargs' => ['enable_thinking' => false]
-            ];
-
-            $response = \Illuminate\Support\Facades\Http::timeout(60)
-                ->withHeaders([
-                    'Authorization' => "Bearer {$aiChatApiKey}",
-                    'Content-Type' => 'application/json'
-                ])
-                ->post($url, $payload);
-
-            $finalJsonContent = '';
-            if ($response->successful()) {
-                $data = $response->json();
-                $aiOutput = trim($data['choices'][0]['message']['content'] ?? '');
-                // strip markdown if AI enclosed it
-                $finalJsonContent = preg_replace('/^```(json)?|```$/i', '', $aiOutput);
-            } else {
-                Log::warning("AI formatting failed during export: " . $response->body() . ". Saving raw JSON instead.");
-                $finalJsonContent = $rawJson;
-            }
+            // Direct pure PHP JSON encoding to ensure 100% of rows are saved without truncation
+            $finalJsonContent = json_encode($exportedData, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
 
             // Save JSON to storage path
             $storageDir = storage_path('app/chatbot');
@@ -326,7 +288,7 @@ class AdminChatbotController extends Controller
             
             return response()->json([
                 'success' => true,
-                'message' => 'Chatbot JSON context file generated and saved successfully!',
+                'message' => 'Chatbot JSON context file generated and saved successfully! All selected records exported.',
                 'file_path' => 'storage/app/chatbot/data.json'
             ]);
 
