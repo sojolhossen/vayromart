@@ -793,7 +793,7 @@ class FacebookWebhookController extends Controller
                 foreach ($matchingProducts as $product) {
                     $stockStatus = $product->in_stock > 0 ? "In Stock ({$product->in_stock} items)" : "Out of Stock";
                     $price = $product->sale_price ? $product->sale_price : $product->regular_price;
-                    $summary = strip_tags(html_entity_decode($product->summary ?? $product->meta_description ?? ''));
+                    $summary = strip_tags(html_entity_decode($product->description ?? $product->summary ?? $product->meta_description ?? ''));
                     $databaseContext .= "- Product ID: {$product->id}\n";
                     $databaseContext .= "  Product Name: {$product->name}\n";
                     $databaseContext .= "  Price: {$price} BDT\n";
