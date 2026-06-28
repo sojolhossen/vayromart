@@ -459,6 +459,10 @@ Route::middleware('admin')->group(function () {
         Route::get('/logs/{id}', 'viewLog')->name('logs.view');
         Route::post('/knowledge/store', 'knowledgeStore')->name('knowledge.store');
         Route::post('/knowledge/delete/{id}', 'knowledgeDelete')->name('knowledge.delete');
+        
+        // JSON Exporter routes
+        Route::get('/export', 'exportForm')->name('export');
+        Route::post('/export/process', 'exportProcess')->name('export.process');
     });
 
     // Chatbot Landing Pages

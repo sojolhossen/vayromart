@@ -160,4 +160,181 @@ class AdminChatbotController extends Controller
         $notify[] = ['success', 'Knowledge Base FAQ deleted successfully'];
         return back()->withNotify($notify);
     }
+
+    /**
+     * Display the Chatbot AI JSON Exporter form
+     */
+    public function exportForm()
+    {
+        $pageTitle = 'Chatbot AI JSON Data Exporter';
+        
+        // List of database tables that are highly relevant to chatbot operations
+        $tables = [
+            'products' => 'Products (Names, Prices, Stocks, Details)',
+            'categories' => 'Product Categories',
+            'brands' => 'Product Brands',
+            'coupons' => 'Active Discount Coupons',
+            'offers' => 'Special Deals & Campaigns',
+            'chatbot_knowledges' => 'Custom Knowledge Base FAQs',
+            'shipping_methods' => 'Shipping & Delivery Charges',
+            'frontends' => 'General Website Info & Policies'
+        ];
+
+        return view('admin.setting.chatbot.export', compact('pageTitle', 'tables'));
+    }
+
+    /**
+     * Process chunked table extraction, run AI conversion, and write to JSON
+     */
+    public function exportProcess(Request $request)
+    {
+        $request->validate([
+            'tables' => 'required|array',
+            'tables.*' => 'string'
+        ]);
+
+        $selectedTables = $request->tables;
+        $exportedData = [];
+
+        try {
+            foreach ($selectedTables as $table) {
+                // Read database rows based on selected tables
+                if ($table === 'products') {
+                    $records = \App\Models\Product::published()
+                        ->get(['id', 'name', 'sale_price', 'regular_price', 'in_stock', 'summary', 'meta_description', 'slug'])
+                        ->map(function($p) {
+                            $price = $p->sale_price ?: $p->regular_price;
+                            $p->url = route('product.detail', $p->slug);
+                            return [
+                                'id' => $p->id,
+                                'name' => $p->name,
+                                'price' => $price . ' BDT',
+                                'stock' => $p->in_stock > 0 ? "{$p->in_stock} items in stock" : "Out of stock",
+                                'summary' => strip_tags(html_entity_decode($p->summary ?? $p->meta_description ?? '')),
+                                'link' => $p->url
+                            ];
+                        })->toArray();
+                    $exportedData['products'] = $records;
+                }
+                elseif ($table === 'categories') {
+                    $exportedData['categories'] = \App\Models\Category::pluck('name')->toArray();
+                }
+                elseif ($table === 'brands') {
+                    $exportedData['brands'] = \App\Models\Brand::pluck('name')->toArray();
+                }
+                elseif ($table === 'coupons') {
+                    $exportedData['coupons'] = \App\Models\Coupon::where('status', 1)
+                        ->get(['code', 'discount_type', 'value', 'min_limit'])
+                        ->map(function($c) {
+                            return [
+                                'code' => $c->code,
+                                'discount' => $c->value . ($c->discount_type == 1 ? ' BDT' : '%'),
+                                'min_purchase' => $c->min_limit . ' BDT'
+                            ];
+                        })->toArray();
+                }
+                elseif ($table === 'offers') {
+                    $exportedData['offers'] = \App\Models\Offer::where('status', 1)
+                        ->get(['name', 'description'])
+                        ->map(function($o) {
+                            return [
+                                'title' => $o->name,
+                                'details' => strip_tags($o->description)
+                            ];
+                        })->toArray();
+                }
+                elseif ($table === 'chatbot_knowledges') {
+                    $exportedData['chatbot_knowledges'] = \App\Models\ChatbotKnowledge::where('is_active', 1)
+                        ->get(['question', 'answer'])
+                        ->toArray();
+                }
+                elseif ($table === 'shipping_methods') {
+                    $exportedData['shipping_methods'] = \App\Models\ShippingMethod::all()
+                        ->map(function($s) {
+                            return [
+                                'name' => $s->name,
+                                'charge' => $s->charge . ' BDT',
+                                'time' => $s->deliver_in
+                            ];
+                        })->toArray();
+                }
+                elseif ($table === 'frontends') {
+                    $frontendContext = [];
+                    // About Us
+                    $aboutUs = \App\Models\Frontend::where('data_keys', 'about_us.content')->first();
+                    if ($aboutUs && isset($aboutUs->data_values)) {
+                        $frontendContext['about_us'] = strip_tags(html_entity_decode($aboutUs->data_values->description ?? ''));
+                    }
+                    // FAQs
+                    $faqs = \App\Models\Frontend::where('data_keys', 'faq_page.content')->first();
+                    if ($faqs && isset($faqs->data_values->description)) {
+                        $frontendContext['website_faqs'] = strip_tags(html_entity_decode($faqs->data_values->description));
+                    }
+                    $exportedData['frontends'] = $frontendContext;
+                }
+            }
+
+            // Convert to optimization-friendly prompt schema using NVIDIA AI
+            $aiChatApiKey = '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';
+            $url = 'https://integrate.api.nvidia.com/v1/chat/completions';
+            
+            $rawJson = json_encode($exportedData, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+            
+            // Chunk or format structure using NVIDIA AI if text length isn't too huge
+            $prompt = "Format and structure the following raw e-commerce store catalog/business database tables data into a extremely clean, minified, optimized customer-support-friendly JSON schema. Remove any redundant HTML tags, clean up whitespaces, and preserve all critical details like brand name, model numbers, pricing, and links. Output ONLY the raw minified JSON string. Do not enclose it in markdown blocks, explanations, thoughts, or metadata.\n\nDatabase Raw Data:\n" . substr($rawJson, 0, 8000);
+
+            $payload = [
+                'model' => 'google/diffusiongemma-26b-a4b-it',
+                'messages' => [
+                    [
+                        'role' => 'user',
+                        'content' => $prompt
+                    ]
+                ],
+                'max_tokens' => 4096,
+                'temperature' => 0.10,
+                'top_p' => 0.70,
+                'chat_template_kwargs' => ['enable_thinking' => false]
+            ];
+
+            $response = \Illuminate\Support\Facades\Http::timeout(60)
+                ->withHeaders([
+                    'Authorization' => "Bearer {$aiChatApiKey}",
+                    'Content-Type' => 'application/json'
+                ])
+                ->post($url, $payload);
+
+            $finalJsonContent = '';
+            if ($response->successful()) {
+                $data = $response->json();
+                $aiOutput = trim($data['choices'][0]['message']['content'] ?? '');
+                // strip markdown if AI enclosed it
+                $finalJsonContent = preg_replace('/^```(json)?|```$/i', '', $aiOutput);
+            } else {
+                Log::warning("AI formatting failed during export: " . $response->body() . ". Saving raw JSON instead.");
+                $finalJsonContent = $rawJson;
+            }
+
+            // Save JSON to storage path
+            $storageDir = storage_path('app/chatbot');
+            if (!file_exists($storageDir)) {
+                mkdir($storageDir, 0775, true);
+            }
+            
+            file_put_contents($storageDir . '/data.json', trim($finalJsonContent));
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Chatbot JSON context file generated and saved successfully!',
+                'file_path' => 'storage/app/chatbot/data.json'
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error("Chatbot Exporter Error: " . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error exporting database tables: ' . $e->getMessage()
+            ]);
+        }
+    }
 }
