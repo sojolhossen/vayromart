@@ -248,7 +248,7 @@ class AiService
             Log::info("Gemini Vision failed/unavailable. Falling back to NVIDIA Vision API...");
             $url = 'https://integrate.api.nvidia.com/v1/chat/completions';
             $payload = [
-                'model' => 'meta/llama-3.2-90b-vision-instruct',
+                'model' => 'nvidia/neva-22b',
                 'messages' => [
                     [
                         'role' => 'user',
