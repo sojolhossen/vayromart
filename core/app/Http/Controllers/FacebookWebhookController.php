@@ -588,69 +588,110 @@ class FacebookWebhookController extends Controller
             }
             $searchTerms = array_values(array_unique(array_filter($searchTerms)));
 
-            if (!empty($searchTerms)) {
-                // Determine if we have high-quality specific keywords (length >= 4)
-                $hasLongKeywords = false;
-                foreach ($searchTerms as $word) {
-                    if (strlen($word) >= 4) {
-                        $hasLongKeywords = true;
-                        break;
-                    }
-                }
-
-                $allMatches = Product::published()->where(function($q) use ($searchTerms, $hasLongKeywords) {
-                    foreach ($searchTerms as $word) {
-                        $len = strlen($word);
-                        if ($len < 2) continue;
+            // Real-time lookup from Chatbot Exporter JSON context
+            $matchedProductIds = [];
+            $jsonFilePath = storage_path('app/chatbot/data.json');
+            
+            if (file_exists($jsonFilePath)) {
+                $jsonData = json_decode(file_get_contents($jsonFilePath), true);
+                if (is_array($jsonData) && !empty($jsonData['products'])) {
+                    $queryPhrase = implode(' ', $expandedKeywords);
+                    $queryLower = mb_strtolower($queryPhrase);
+                    
+                    $scoredJsonProducts = [];
+                    foreach ($jsonData['products'] as $p) {
+                        $nameLower = mb_strtolower($p['name'] ?? '');
+                        $summaryLower = mb_strtolower($p['summary'] ?? '');
                         
-                        // If we have specific longer keywords, ignore generic 2-3 character terms (like "jr", "in", "to") in the SQL query
-                        if ($hasLongKeywords && $len <= 3) {
-                            continue;
+                        $hitScore = 0;
+                        // Keyword Matching
+                        foreach ($searchTerms as $word) {
+                            $wordLower = mb_strtolower($word);
+                            if (mb_strpos($nameLower, $wordLower) !== false) {
+                                $hitScore += 5; // Strong match weight
+                            }
+                            if (mb_strpos($summaryLower, $wordLower) !== false) {
+                                $hitScore += 2;
+                            }
                         }
-
-                        $q->orWhere('name', 'LIKE', "%{$word}%")
-                          ->orWhere('summary', 'LIKE', "%{$word}%")
-                          ->orWhere('meta_description', 'LIKE', "%{$word}%");
-                    }
-                })->limit(40)->get();
-
-                // Fuzzy Matching & Levenshtein Scoring:
-                // We count exact keyword hits and calculate similarity percentage between the query phrase and product name.
-                $queryPhrase = implode(' ', $expandedKeywords);
-                
-                $scored = $allMatches->map(function($product) use ($expandedKeywords, $queryPhrase) {
-                    $hitScore = 0;
-                    $nameLower = mb_strtolower($product->name);
-                    
-                    // 1. Keyword hits score
-                    foreach ($expandedKeywords as $word) {
-                        if (mb_strpos($nameLower, mb_strtolower($word)) !== false) {
-                            $hitScore += 3; // high weight for keyword match
+                        
+                        // Fuzzy similarity match
+                        $similarityPercent = 0;
+                        similar_text($queryLower, $nameLower, $similarityPercent);
+                        $hitScore += ($similarityPercent / 10);
+                        
+                        if ($hitScore >= 3) {
+                            $scoredJsonProducts[] = [
+                                'id' => $p['id'],
+                                'score' => $hitScore
+                            ];
                         }
                     }
-
-                    // 2. Levenshtein & similar_text fuzzy score
-                    $similarityPercent = 0;
-                    similar_text(mb_strtolower($queryPhrase), $nameLower, $similarityPercent);
                     
-                    // Add similarity bonus to score
-                    $fuzzyBonus = $similarityPercent / 10; // e.g. 80% similarity = 8 points bonus
+                    // Sort matched products by score and take top 5
+                    usort($scoredJsonProducts, function($a, $b) {
+                        return $b['score'] <=> $a['score'];
+                    });
                     
-                    $product->match_score = $hitScore + $fuzzyBonus;
-                    $product->similarity_pct = $similarityPercent;
-                    return $product;
-                });
+                    $matchedProductIds = array_column(array_slice($scoredJsonProducts, 0, 5), 'id');
+                }
+            }
 
-                // Filter matches: require at least 1 keyword hit (score >= 3)
-                $filtered = $scored->filter(function($p) {
-                    return $p->match_score >= 3;
-                })->sortByDesc('match_score')->take(10);
-
-                $matchingProducts = $filtered;
+            if (!empty($matchedProductIds)) {
+                $matchingProducts = Product::published()->whereIn('id', $matchedProductIds)->get();
                 $totalMatchingCount = $matchingProducts->count();
-
+                
                 if ($matchingProducts->count() > 0) {
                     Cache::put($lastProductIdKey, $matchingProducts->first()->id, now()->addMinutes(30));
+                }
+            } else {
+                // Database fallback search if JSON match yielded no results
+                if (!empty($searchTerms)) {
+                    $hasLongKeywords = false;
+                    foreach ($searchTerms as $word) {
+                        if (strlen($word) >= 4) {
+                            $hasLongKeywords = true;
+                            break;
+                        }
+                    }
+
+                    $allMatches = Product::published()->where(function($q) use ($searchTerms, $hasLongKeywords) {
+                        foreach ($searchTerms as $word) {
+                            $len = strlen($word);
+                            if ($len < 2) continue;
+                            if ($hasLongKeywords && $len <= 3) {
+                                continue;
+                            }
+                            $q->orWhere('name', 'LIKE', "%{$word}%")
+                              ->orWhere('summary', 'LIKE', "%{$word}%");
+                        }
+                    })->limit(20)->get();
+
+                    $queryPhrase = implode(' ', $expandedKeywords);
+                    $scored = $allMatches->map(function($product) use ($expandedKeywords, $queryPhrase) {
+                        $hitScore = 0;
+                        $nameLower = mb_strtolower($product->name);
+                        foreach ($expandedKeywords as $word) {
+                            if (mb_strpos($nameLower, mb_strtolower($word)) !== false) {
+                                $hitScore += 3;
+                            }
+                        }
+                        $similarityPercent = 0;
+                        similar_text(mb_strtolower($queryPhrase), $nameLower, $similarityPercent);
+                        $product->match_score = $hitScore + ($similarityPercent / 10);
+                        return $product;
+                    });
+
+                    $filtered = $scored->filter(function($p) {
+                        return $p->match_score >= 3;
+                    })->sortByDesc('match_score')->take(5);
+
+                    $matchingProducts = $filtered;
+                    $totalMatchingCount = $matchingProducts->count();
+
+                    if ($matchingProducts->count() > 0) {
+                        Cache::put($lastProductIdKey, $matchingProducts->first()->id, now()->addMinutes(30));
+                    }
                 }
             }
 
