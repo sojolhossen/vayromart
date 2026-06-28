@@ -500,13 +500,13 @@ class FacebookWebhookController extends Controller
         $lastProductIdKey = "fb_last_product_id_{$senderId}";
         if (empty($botResponse)) {
             // First attempt: Ask AI to extract clean product brand/model query from user message
-            $aiChatApiKey = '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';
+            $aiChatApiKey = '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';
             
             // Bengali → English keyword translation map
             $bengaliToEnglish = [
                 'পাওয়ার ব্যাংক' => 'power bank', 'পাওয়ারব্যাংক' => 'power bank',
                 'পাওয়ার ব্যাংক' => 'power bank', 'পাওয়ারব্যাংক' => 'power bank',
-                'ঘড়ি' => 'watch', 'স্মার্টওয়াচ' => 'smartwatch', 'স্মার্টওয়াচ' => 'smartwatch', 'ওয়াচ' => 'watch', 'ওয়াচ' => 'watch',
+                'ঘড়ি' => 'watch smartwatch', 'ঘড়ি' => 'watch smartwatch', 'স্মার্টওয়াচ' => 'smartwatch watch', 'স্মার্টওয়াচ' => 'smartwatch watch', 'ওয়াচ' => 'watch', 'ওয়াচ' => 'watch',
                 'চার্জার' => 'charger', 'ইয়ারফোন' => 'earphone', 'হেডফোন' => 'headphone',
                 'ইয়ারবাড' => 'earbud', 'ব্লুটুথ' => 'bluetooth', 'রাউটার' => 'router',
                 'ক্যাবল' => 'cable', 'হোল্ডার' => 'holder', 'স্ট্যান্ড' => 'stand',
