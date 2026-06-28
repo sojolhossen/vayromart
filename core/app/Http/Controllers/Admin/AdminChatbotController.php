@@ -225,12 +225,12 @@ class AdminChatbotController extends Controller
                 }
                 elseif ($table === 'coupons') {
                     $exportedData['coupons'] = \App\Models\Coupon::where('status', 1)
-                        ->get(['code', 'discount_type', 'value', 'min_limit'])
+                        ->get(['coupon_code', 'discount_type', 'coupon_amount', 'minimum_spend'])
                         ->map(function($c) {
                             return [
-                                'code' => $c->code,
-                                'discount' => $c->value . ($c->discount_type == 1 ? ' BDT' : '%'),
-                                'min_purchase' => $c->min_limit . ' BDT'
+                                'code' => $c->coupon_code,
+                                'discount' => $c->coupon_amount . ($c->discount_type == 1 ? ' BDT' : '%'),
+                                'min_purchase' => $c->minimum_spend . ' BDT'
                             ];
                         })->toArray();
                 }
