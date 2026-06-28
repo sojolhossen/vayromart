@@ -236,11 +236,11 @@ class AdminChatbotController extends Controller
                 }
                 elseif ($table === 'offers') {
                     $exportedData['offers'] = \App\Models\Offer::where('status', 1)
-                        ->get(['name', 'description'])
+                        ->get(['name', 'amount', 'discount_type'])
                         ->map(function($o) {
                             return [
                                 'title' => $o->name,
-                                'details' => strip_tags($o->description)
+                                'discount' => $o->amount . ($o->discount_type == 1 ? ' BDT' : '%')
                             ];
                         })->toArray();
                 }
