@@ -501,6 +501,23 @@ class FacebookWebhookController extends Controller
         if (empty($botResponse)) {
             // First attempt: Ask AI to extract clean product brand/model query from user message
             $aiChatApiKey = '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';
+            
+            // Bengali → English keyword translation map
+            $bengaliToEnglish = [
+                'পাওয়ার ব্যাংক' => 'power bank', 'পাওয়ারব্যাংক' => 'power bank',
+                'পাওয়ার ব্যাংক' => 'power bank', 'পাওয়ারব্যাংক' => 'power bank',
+                'ঘড়ি' => 'watch', 'স্মার্টওয়াচ' => 'smartwatch', 'স্মার্টওয়াচ' => 'smartwatch', 'ওয়াচ' => 'watch', 'ওয়াচ' => 'watch',
+                'চার্জার' => 'charger', 'ইয়ারফোন' => 'earphone', 'হেডফোন' => 'headphone',
+                'ইয়ারবাড' => 'earbud', 'ব্লুটুথ' => 'bluetooth', 'রাউটার' => 'router',
+                'ক্যাবল' => 'cable', 'হোল্ডার' => 'holder', 'স্ট্যান্ড' => 'stand',
+                'কেস' => 'case', 'কভার' => 'cover', 'গ্লাস' => 'glass',
+                'ফোন' => 'phone', 'মোবাইল' => 'mobile', 'স্পিকার' => 'speaker',
+                'ফ্যান' => 'fan', 'ল্যাম্প' => 'lamp', 'লাইট' => 'light',
+                'হাব' => 'hub', 'অ্যাডাপ্টার' => 'adapter', 'কীবোর্ড' => 'keyboard',
+                'মাউস' => 'mouse', 'ব্যাগ' => 'bag', 'ক্যামেরা' => 'camera',
+                'সেলফি স্টিক' => 'selfie stick', 'ট্রাইপড' => 'tripod',
+            ];
+            
             $aiExtractedQuery = \App\Lib\AiService::extractProductQuery($messageText, $aiChatApiKey);
             
             $keywords = [];
@@ -531,7 +548,7 @@ class FacebookWebhookController extends Controller
             $bengaliToEnglish = [
                 'পাওয়ার ব্যাংক' => 'power bank', 'পাওয়ারব্যাংক' => 'power bank',
                 'পাওয়ার ব্যাংক' => 'power bank', 'পাওয়ারব্যাংক' => 'power bank',
-                'ঘড়ি' => 'watch', 'স্মার্টওয়াচ' => 'smartwatch', 'স্মার্টওয়াচ' => 'smartwatch', 'ওয়াচ' => 'watch', 'ওয়াচ' => 'watch',
+                'ঘড়ি' => 'watch smartwatch', 'ঘড়ি' => 'watch smartwatch', 'স্মার্টওয়াচ' => 'smartwatch watch', 'স্মার্টওয়াচ' => 'smartwatch watch', 'ওয়াচ' => 'watch', 'ওয়াচ' => 'watch',
                 'চার্জার' => 'charger', 'ইয়ারফোন' => 'earphone', 'হেডফোন' => 'headphone',
                 'ইয়ারবাড' => 'earbud', 'ব্লুটুথ' => 'bluetooth', 'রাউটার' => 'router',
                 'ক্যাবল' => 'cable', 'হোল্ডার' => 'holder', 'স্ট্যান্ড' => 'stand',
@@ -745,7 +762,7 @@ class FacebookWebhookController extends Controller
             $categoryMatches = collect();
             $categoryKeywords = [
                 'power bank' => ['power bank', 'powerbank', 'পাওয়ার ব্যাংক', 'পাওয়ারব্যাংক', 'পাওয়ার ব্যাংক', 'পাওয়ারব্যাংক', 'ব্যাংক'],
-                'watch' => ['watch', 'smartwatch', 'ঘড়ি', 'স্মার্টওয়াচ', 'ওয়াচ'],
+                'watch' => ['watch', 'smartwatch', 'ঘড়ি', 'ঘড়ি', 'স্মার্টওয়াচ', 'স্মার্টওয়াচ', 'ওয়াচ', 'ওয়াচ'],
                 'charger' => ['charger', 'adapter', 'চার্জার', 'অ্যাডাপ্টার'],
                 'earphone' => ['earphone', 'headphone', 'earbud', 'ইয়ারফোন', 'হেডফোন', 'ইয়ারবাড'],
                 'router' => ['router', 'wi-fi', 'wifi', 'রাউটার', 'ওয়াইফাই', 'ওয়াই-ফাই'],
