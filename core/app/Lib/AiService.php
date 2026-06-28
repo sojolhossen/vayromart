@@ -204,11 +204,11 @@ class AiService
 
             $dataUri = "data:{$mimeType};base64,{$base64Image}";
 
-            // 3. Call Gemini 1.5 Flash Vision API directly using the provided free Gemini API Key
+            // Try Gemini 1.5/2.5 Flash Vision first as it is free and normally very fast
             $geminiKey = 'AIzaSyBYPLssQKJpdylMrvcFfnXeBfbgMRRWBD4';
-            $url = "https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key={$geminiKey}";
+            $geminiUrl = "https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key={$geminiKey}";
             
-            $payload = [
+            $geminiPayload = [
                 'contents' => [
                     [
                         'parts' => [
@@ -226,17 +226,70 @@ class AiService
                 ]
             ];
 
-            $response = Http::timeout(6)->post($url, $payload);
-            if ($response->successful()) {
-                $data = $response->json();
-                $resultText = $data['candidates'][0]['content']['parts'][0]['text'] ?? '';
-                $cleanResult = trim(str_replace(['"', "'", '.', "\n"], '', $resultText));
-                if (!empty($cleanResult)) {
-                    Log::info("Gemini Vision Identified product: {$cleanResult}");
-                    return $cleanResult;
+            try {
+                Log::info("Trying Gemini 2.5 Flash Vision...");
+                $response = Http::timeout(4)->post($geminiUrl, $geminiPayload);
+                if ($response->successful()) {
+                    $data = $response->json();
+                    $resultText = $data['candidates'][0]['content']['parts'][0]['text'] ?? '';
+                    $cleanResult = trim(str_replace(['"', "'", '.', "\n"], '', $resultText));
+                    if (!empty($cleanResult)) {
+                        Log::info("Gemini Vision Identified product: {$cleanResult}");
+                        return $cleanResult;
+                    }
+                } else {
+                    Log::warning("Gemini Vision API returned status " . $response->status() . ": " . $response->body());
                 }
-            } else {
-                Log::error("Gemini Vision API Error: " . $response->body());
+            } catch (\Exception $geminiEx) {
+                Log::warning("Gemini Vision Exception: " . $geminiEx->getMessage());
+            }
+
+            // --- Fallback: Try NVIDIA Vision API if Gemini is unavailable ---
+            Log::info("Gemini Vision failed/unavailable. Falling back to NVIDIA Vision API...");
+            $url = 'https://integrate.api.nvidia.com/v1/chat/completions';
+            $payload = [
+                'model' => 'meta/llama-3.2-90b-vision-instruct',
+                'messages' => [
+                    [
+                        'role' => 'user',
+                        'content' => [
+                            [
+                                'type' => 'text',
+                                'text' => 'Identify the product/item shown in this image. Respond with only the product brand and model or item name in 1 to 3 words. Example: "Hoco Power Bank" or "Tp-link Router". Do not write sentences or explanation.'
+                            ],
+                            [
+                                'type' => 'image_url',
+                                'image_url' => [
+                                    'url' => $dataUri
+                                ]
+                            ]
+                        ]
+                    ]
+                ],
+                'max_tokens' => 50,
+                'temperature' => 0.20,
+                'top_p' => 0.70
+            ];
+
+            try {
+                $response = Http::timeout(6)
+                    ->withHeaders([
+                        'Authorization' => "Bearer {$apiKey}",
+                        'Content-Type' => 'application/json'
+                    ])
+                    ->post($url, $payload);
+     
+                if ($response->successful()) {
+                    $data = $response->json();
+                    $resultText = $data['choices'][0]['message']['content'] ?? '';
+                    $cleanResult = trim(str_replace(['"', "'", '.', "\n"], '', $resultText));
+                    if (!empty($cleanResult)) {
+                        Log::info("NVIDIA Vision Identified product: {$cleanResult}");
+                        return $cleanResult;
+                    }
+                }
+            } catch (\Exception $nvEx) {
+                Log::error("NVIDIA Vision Fallback Request failed: " . $nvEx->getMessage());
             }
         } catch (\Exception $e) {
             Log::error("AiService describeImage Exception: " . $e->getMessage());
