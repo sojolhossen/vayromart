@@ -231,21 +231,25 @@ class AiService
             ];
 
             // 4. Send request (Set low timeout of 3 seconds to fail fast and fallback to Gemini)
-            $response = Http::timeout(3)
-                ->withHeaders([
-                    'Authorization' => "Bearer {$apiKey}",
-                    'Content-Type' => 'application/json'
-                ])
-                ->post($url, $payload);
- 
-            if ($response->successful()) {
-                $data = $response->json();
-                $resultText = $data['choices'][0]['message']['content'] ?? '';
-                $cleanResult = trim(str_replace(['"', "'", '.', "\n"], '', $resultText));
-                if (!empty($cleanResult)) {
-                    Log::info("NVIDIA Vision Identified product: {$cleanResult}");
-                    return $cleanResult;
+            try {
+                $response = Http::timeout(3)
+                    ->withHeaders([
+                        'Authorization' => "Bearer {$apiKey}",
+                        'Content-Type' => 'application/json'
+                    ])
+                    ->post($url, $payload);
+     
+                if ($response->successful()) {
+                    $data = $response->json();
+                    $resultText = $data['choices'][0]['message']['content'] ?? '';
+                    $cleanResult = trim(str_replace(['"', "'", '.', "\n"], '', $resultText));
+                    if (!empty($cleanResult)) {
+                        Log::info("NVIDIA Vision Identified product: {$cleanResult}");
+                        return $cleanResult;
+                    }
                 }
+            } catch (\Exception $nvEx) {
+                Log::warning("NVIDIA Vision Request failed: " . $nvEx->getMessage() . ". Proceeding to Gemini fallback.");
             }
             
             // --- Fallback: Try Gemini Vision if Nvidia Vision fails ---
