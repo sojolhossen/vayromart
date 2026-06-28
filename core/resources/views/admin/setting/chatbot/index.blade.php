@@ -5,23 +5,26 @@
             <!-- Tabs Navigation -->
             <div class="card mb-4">
                 <div class="card-header bg--dark">
-                    <ul class="nav nav-tabs card-header-tabs" id="chatbotTabs" role="tablist">
-                        <li class="nav-item">
-                            <button class="nav-link active text-white" id="config-tab" data-bs-toggle="tab" data-bs-target="#config" type="button" role="tab">
-                                <i class="las la-cog"></i> @lang('AI Configuration')
-                            </button>
-                        </li>
-                        <li class="nav-item">
-                            <button class="nav-link text-white" id="logs-tab" data-bs-toggle="tab" data-bs-target="#logs" type="button" role="tab">
-                                <i class="las la-history"></i> @lang('Chat History Logs')
-                            </button>
-                        </li>
-                        <li class="nav-item">
-                            <button class="nav-link text-white" id="knowledge-tab" data-bs-toggle="tab" data-bs-target="#knowledge" type="button" role="tab">
-                                <i class="las la-brain"></i> @lang('Knowledge Base (Self-Learning)')
-                            </button>
-                        </li>
-                    </ul>
+                    <div class="d-flex justify-content-between align-items-center w-100 flex-wrap gap-2">
+                        <ul class="nav nav-tabs card-header-tabs border-0" id="chatbotTabs" role="tablist">
+                            <li class="nav-item">
+                                <button class="nav-link active text-white" id="config-tab" data-bs-toggle="tab" data-bs-target="#config" type="button" role="tab">
+                                    <i class="las la-cog"></i> @lang('AI Configuration')
+                                </button>
+                            </li>
+                            <li class="nav-item">
+                                <button class="nav-link text-white" id="logs-tab" data-bs-toggle="tab" data-bs-target="#logs" type="button" role="tab">
+                                    <i class="las la-history"></i> @lang('Chat History Logs')
+                                </button>
+                            </li>
+                            <li class="nav-item">
+                                <button class="nav-link text-white" id="knowledge-tab" data-bs-toggle="tab" data-bs-target="#knowledge" type="button" role="tab">
+                                    <i class="las la-brain"></i> @lang('Knowledge Base (Self-Learning)')
+                                </button>
+                            </li>
+                        </ul>
+                        <a href="{{ route('admin.setting.chatbot.export') }}" class="btn btn-sm btn--success text-white me-2"><i class="las la-file-export"></i> @lang('Export JSON Context')</a>
+                    </div>
                 </div>
             </div>
 
