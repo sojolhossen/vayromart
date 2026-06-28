@@ -230,14 +230,14 @@ class AiService
                 'top_p' => 0.70
             ];
 
-            // 4. Send request
-            $response = Http::timeout(30)
+            // 4. Send request (Set low timeout of 3 seconds to fail fast and fallback to Gemini)
+            $response = Http::timeout(3)
                 ->withHeaders([
                     'Authorization' => "Bearer {$apiKey}",
                     'Content-Type' => 'application/json'
                 ])
                 ->post($url, $payload);
-
+ 
             if ($response->successful()) {
                 $data = $response->json();
                 $resultText = $data['choices'][0]['message']['content'] ?? '';
@@ -249,7 +249,7 @@ class AiService
             }
             
             // --- Fallback: Try Gemini Vision if Nvidia Vision fails ---
-            Log::warning("Nvidia Vision failed or returned empty. Trying Gemini 1.5 Flash Vision...");
+            Log::warning("Nvidia Vision failed or timed out. Trying Gemini 1.5 Flash Vision...");
             $geminiKey = env('GEMINI_API_KEY') ?: $apiKey;
             if (!empty($geminiKey)) {
                 $geminiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={$geminiKey}";
@@ -270,7 +270,8 @@ class AiService
                         ]
                     ]
                 ];
-                $gResponse = Http::timeout(20)->post($geminiUrl, $geminiPayload);
+                // Set Gemini timeout to 4 seconds
+                $gResponse = Http::timeout(4)->post($geminiUrl, $geminiPayload);
                 if ($gResponse->successful()) {
                     $gData = $gResponse->json();
                     $gResult = $gData['candidates'][0]['content']['parts'][0]['text'] ?? '';
