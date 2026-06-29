@@ -421,11 +421,56 @@ class FacebookWebhookController extends Controller
             }
         }
 
+        // Convert Bengali numbers (০-৯) to English (0-9) for parser usage
+        $msgEn = strtr($messageText, ['০'=>'0','১'=>'1','২'=>'2','৩'=>'3','৪'=>'4','৫'=>'5','৬'=>'6','৭'=>'7','৮'=>'8','৯'=>'9']);
+
+        // 3.8 Support Ticket Status Lookup
+        $ticketId = null;
+        if (preg_match('/ticket\s*#?(\d+)/i', $msgEn, $matches)) {
+            $ticketId = $matches[1];
+        } elseif (preg_match('/টিকেট\s*#?(\d+)/ui', $messageText, $matches)) {
+            $ticketId = $matches[1];
+        }
+
+        // If the customer is asking generally about ticket/complaint and we have sender phone cached
+        $isTicketQuery = preg_match('/ticket|complaint|টিকেট|অভিযোগ|কমপ্লেন|হেল্প/ui', $messageText);
+        
+        if ($isTicketQuery) {
+            $senderPhone = Cache::get("fb_user_phone_{$senderId}", '');
+            $ticketsQuery = \App\Models\SupportTicket::query();
+            if ($ticketId) {
+                $ticketsQuery->where('ticket', $ticketId);
+            } elseif (!empty($senderPhone)) {
+                // Look for tickets matched with customer phone
+                $ticketsQuery->where('phone', $senderPhone)->orWhere('ticket', 'LIKE', "%{$senderPhone}%");
+            } else {
+                // Otherwise find tickets associated with this sender ID if saved in custom fields or name
+                $ticketsQuery->where('name', 'LIKE', "%{$senderId}%");
+            }
+            
+            $matchedTickets = $ticketsQuery->latest()->limit(3)->get();
+            if ($matchedTickets->count() > 0) {
+                $databaseContext .= "\nReal-time Support Tickets Context for this Customer:\n";
+                foreach ($matchedTickets as $tk) {
+                    $statusName = 'Pending';
+                    if ($tk->status == 0) $statusName = 'Open (Active)';
+                    elseif ($tk->status == 1) $statusName = 'Answered/Replied';
+                    elseif ($tk->status == 2) $statusName = 'Customer Reply';
+                    elseif ($tk->status == 3) $statusName = 'Closed';
+
+                    $databaseContext .= "- Ticket ID: #{$tk->ticket}\n";
+                    $databaseContext .= "  Subject: {$tk->subject}\n";
+                    $databaseContext .= "  Status: {$statusName}\n";
+                    $databaseContext .= "  Priority: " . ($tk->priority == 1 ? 'Low' : ($tk->priority == 2 ? 'Medium' : 'High')) . "\n";
+                    $databaseContext .= "  Created: {$tk->created_at->diffForHumans()}\n";
+                    $databaseContext .= "  Last Message/Reply: " . ($tk->message ?: 'No message') . "\n";
+                }
+                $databaseContext .= "Acknowledge the ticket status to the customer and let them know the support team is reviewing it.\n\n";
+            }
+        }
+
         // 4. Check for new Order status or cancellation query
         $orderNumber = '';
-        
-        // Convert Bengali numbers (০-৯) to English (0-9)
-        $msgEn = strtr($messageText, ['০'=>'0','১'=>'1','২'=>'2','৩'=>'3','৪'=>'4','৫'=>'5','৬'=>'6','৭'=>'7','৮'=>'8','৯'=>'9']);
         
         // Pattern 1: Exact OID-XXXXX match
         if (preg_match('/OID-\d+/i', $msgEn, $matches)) {
@@ -986,13 +1031,21 @@ Your goals:
      e. Never output this tag unless all information is fully collected and the customer has explicitly confirmed to place the order in their latest turn.
 - ORDER CANCELLATION RULES:
   1. Customers can cancel their Cash on Delivery orders if the order status is still 'Pending' in the context.
-  2. If the user requests to cancel their order (e.g. \"order cancel korte chai\", \"cancel my order\", \"cancel please\"):
+  2. If the user requests to cancel their order (e.g. 'order cancel korte chai', 'cancel my order', 'cancel please'):
      a. Ensure the target order has been verified. If not, politely ask them to verify by sending the last 4 digits of the mobile number.
      b. If verified, check the active order status. If it is not 'Pending' (e.g. it is Processing, Dispatched, or Delivered), politely state in Bengali that the order cannot be canceled directly because it is already being processed and advise them to contact support.
-     c. If 'Pending', ask for explicit confirmation (e.g. \"আপনি কি নিশ্চিতভাবে অর্ডারটি বাতিল করতে চান?\").
-     d. ONLY when the customer explicitly confirms to cancel in their latest turn (e.g. writing \"yes\", \"ha\", \"confirm\", \"বাতিল করুন\"), you MUST append/prepend this exact command tag at the very end of your final response:
+     c. If 'Pending', ask for explicit confirmation (e.g. 'আপনি কি নিশ্চিতভাবে অর্ডারটি বাতিল করতে চান?').
+     d. ONLY when the customer explicitly confirms to cancel in their latest turn (e.g. writing 'yes', 'ha', 'confirm', 'বাতিল করুন'), you MUST append/prepend this exact command tag at the very end of your final response:
         [[CANCEL_ORDER:{\"order_id\": <id>}]]
         Replace <id> with the matched numeric Order ID (from the Active/Verified Order Context).
+- SUPPORT TICKET & COMPLAINT CREATION RULES:
+  1. If a customer reports a product issue, damage, delivery delay, refund request, or complains about anything (e.g. 'somossa hoyeche', 'delivery paini', 'refund chai', 'damaged product'):
+     a. Act immediately as an empathetic customer support advisor. Collect their problem details, Name, and Mobile Number if not already available in the chat.
+     b. Once the problem and contact details are collected, inform the customer that you are logging a formal support ticket for our admin team.
+     c. You MUST output this exact ticket creation tag at the very end of your response to register the ticket:
+        [[CREATE_TICKET:{\"subject\": \"<short_subject>\", \"message\": \"<problem_details>\", \"name\": \"<customer_name>\", \"phone\": \"<customer_mobile>\"}]]
+        Replace placeholders with collected info (do not leave angle brackets).
+  2. If they ask about complaint status (e.g. 'amr complaint er ki obostha', 'ticket check koro'), check the 'Real-time Support Tickets Context' in the context (if available). Report the ticket number, priority, and status (e.g., Open, Replied, Closed) to the customer politely.
 ";
 
             // Fetch static info dynamically from Database instead of data.json file
@@ -1077,6 +1130,9 @@ Current website details:
 
                 // Intercept and process placed order command if present
                 $botResponse = $this->processPlacedOrder($botResponse, $conversation->id, $senderId);
+
+                // Intercept and process support ticket creation command if present
+                $botResponse = $this->processCreateTicket($botResponse, $senderId);
 
                 // Save Bot Message in Database
                 $this->saveBotMessage($conversation->id, $botResponse);
@@ -1660,7 +1716,46 @@ Current website details:
                 }
             }
         }
-
         return false;
+    }
+
+    private function processCreateTicket($botResponse, $senderId)
+    {
+        if (preg_match('/\[\[CREATE_TICKET:(.*?)\]\]/is', $botResponse, $matches)) {
+            $jsonStr = trim($matches[1]);
+            $ticketData = json_decode($jsonStr, true);
+
+            if ($ticketData) {
+                $subject = $ticketData['subject'] ?? 'Facebook Support Query';
+                $message = $ticketData['message'] ?? 'Query details not provided.';
+                $name = $ticketData['name'] ?? 'Messenger User';
+                $phone = $ticketData['phone'] ?? Cache::get("fb_user_phone_{$senderId}", '01700000000');
+
+                // Generate unique 6 digit ticket ID
+                $ticketNum = mt_rand(100000, 999999);
+                while (\App\Models\SupportTicket::where('ticket', $ticketNum)->exists()) {
+                    $ticketNum = mt_rand(100000, 999999);
+                }
+
+                // Create the ticket row in DB
+                $ticket = \App\Models\SupportTicket::create([
+                    'ticket' => $ticketNum,
+                    'name' => $name,
+                    'email' => "facebook_{$senderId}@vayromart.com",
+                    'phone' => $phone,
+                    'subject' => $subject,
+                    'status' => 0, // 0 = Open, 1 = Answered, 2 = Customer Reply, 3 = Closed
+                    'priority' => 2, // 1 = Low, 2 = Medium, 3 = High
+                    'message' => $message,
+                ]);
+
+                $successMsg = "\n\n🎫 **আপনার কমপ্লেনটি সফলভাবে নথিভুক্ত করা হয়েছে!**\n";
+                $successMsg .= "👉 **টিকেট নম্বর (Ticket ID): #{$ticketNum}**\n";
+                $successMsg .= "আমাদের কাস্টমার কেয়ার টিম দ্রুত আপনার সমস্যাটি সমাধান করবে। টিকেটের স্ট্যাটাস জানতে এই টিকেট আইডিটি ব্যবহার করুন।";
+
+                return str_replace($matches[0], $successMsg, $botResponse);
+            }
+        }
+        return $botResponse;
     }
 }
