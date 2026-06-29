@@ -1424,7 +1424,7 @@ Current website details:
                 $quantity = isset($jsonData['quantity']) ? intval($jsonData['quantity']) : 1;
                 if ($quantity <= 0) $quantity = 1;
                 $customerName = isset($jsonData['name']) ? trim($jsonData['name']) : '';
-                $customerMobile = isset($jsonData['mobile']) ? trim($jsonData['mobile']) : '';
+                $customerMobile = isset($jsonData['mobile']) ? trim($jsonData['mobile']) : (isset($jsonData['phone']) ? trim($jsonData['phone']) : '');
                 $customerAddress = isset($jsonData['address']) ? trim($jsonData['address']) : '';
                 $variantId = isset($jsonData['variant_id']) ? intval($jsonData['variant_id']) : 0;
 
