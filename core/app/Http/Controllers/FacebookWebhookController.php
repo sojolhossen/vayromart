@@ -1139,7 +1139,7 @@ Your goals:
 
             // 3. Special Campaigns/Offers
             try {
-                $offers = \App\Models\Campaign::where('status', 1)->get(['name', 'discount_percentage'])->toArray();
+                $offers = \DB::table('campaigns')->where('status', 1)->get(['name', 'discount_percentage'])->toArray();
                 if (!empty($offers)) {
                     $staticJsonContext .= "- Campaigns/Offers: " . json_encode($offers, JSON_UNESCAPED_UNICODE) . "\n";
                 }
