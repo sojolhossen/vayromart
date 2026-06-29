@@ -1419,8 +1419,23 @@ Current website details:
     {
         if (preg_match('/\[\[PLACE_ORDER:(.*?)\]\]/s', $botResponse, $matches)) {
             $jsonData = json_decode(trim($matches[1]), true);
-            if ($jsonData && isset($jsonData['product_id'])) {
-                $productId = $jsonData['product_id'];
+            if ($jsonData) {
+                $productId = $jsonData['product_id'] ?? null;
+                
+                // Smart Fallback: If product_id is null or empty, restore it from cache memory
+                if (empty($productId) || $productId === 'null') {
+                    $lastRecsKey = "fb_last_recs_list_{$senderId}";
+                    if (Cache::has($lastRecsKey)) {
+                        $lastRecIds = Cache::get($lastRecsKey);
+                        if (is_array($lastRecIds) && !empty($lastRecIds)) {
+                            $productId = $lastRecIds[0]; // Take the first matched product from cache
+                        }
+                    }
+                    if (empty($productId) && Cache::has("fb_last_active_product_{$senderId}")) {
+                        $productId = Cache::get("fb_last_active_product_{$senderId}");
+                    }
+                }
+
                 $quantity = isset($jsonData['quantity']) ? intval($jsonData['quantity']) : 1;
                 if ($quantity <= 0) $quantity = 1;
                 $customerName = isset($jsonData['name']) ? trim($jsonData['name']) : '';
