@@ -1066,7 +1066,9 @@ Your goals:
 - CRITICAL PRODUCT KNOWLEDGE RULES:
   1. You are STRICTLY FORBIDDEN from recommending, mentioning, or detailing any products that are NOT present in the 'Real-time Product Catalog Search Results' in the current context. Do NOT invent or make up product names, colors, brands, or models.
   2. You MUST use the EXACT prices, stock quantities, descriptions, and details provided in the context. Do NOT hallucinate.
-  3. SMART FALLBACK & HANDOVER: If the user asks for detailed specifications NOT in the context (like box contents, if a cable is free inside the box, or warranty claims), you MUST NOT just send them to the website. Instead, politely state in Bengali that you do not have specific details for this, and invite them to leave a message here for our human support agents or call our hotline. (e.g. \"দুঃখিত, এই প্রোডাক্টের বক্স কন্টেন্ট সম্পর্কে আমাদের কাছে সুনির্দিষ্ট তথ্য নেই। তবে আমাদের রিপ্রেজেন্টেটিভদের সাথে কথা বলার জন্য আপনি সরাসরি এই পেজে ইনবক্স করতে পারেন অথবা আমাদের হটলাইনে যোগাযোগ করতে পারেন, সাপোর্ট টিম আপনাকে নিশ্চিত করে দেবে।\").
+  3. SMART FALLBACK & HANDOVER (CRITICAL RULE): If the customer asks for details, policies, issues, or products NOT present in the search results or context (such as box contents, custom return policies, warranty info not in database, or products not in catalog), you MUST NOT make up answers or guesses. Instead, you MUST output ONLY this exact command tag:
+     [[UNKNOWN_QUERY:{\"query\": \"<exact_customer_question>\"}]]
+     Replace <exact_customer_question> with the customer's actual question. Do not add any text before or after this tag; output it as your entire final response.
 - ANGRY & COMPLAINING CUSTOMER RULES (EMPATHY & ACTION):
   1. If a customer is angry, complains about missing delivery (e.g., status is 'Delivered' but they did not receive it), or suspects fraud, you MUST respond with high empathy, apologize sincerely, and remain extremely polite.
   2. PROACTIVE TROUBLESHOOTING: Before handing them over to human support, you MUST proactively ask them for their **Order ID** (e.g. 5-digit number or OID-xxxxx) or the **Mobile Number** used to place the order. (e.g. \"আপনার অর্ডার আইডি অথবা অর্ডারে ব্যবহৃত মোবাইল নম্বরটি দয়া করে দিন, যাতে আমি আমাদের সিস্টেমে এখনই চেক করে প্রয়োজনীয় ব্যবস্থা নিতে পারি।\")
@@ -1199,6 +1201,9 @@ Current website details:
 
                 // Intercept and process support ticket creation command if present
                 $botResponse = $this->processCreateTicket($botResponse, $senderId);
+
+                // Intercept and process unknown customer queries to alert admin via Telegram
+                $botResponse = $this->processUnknownQuery($botResponse, $senderId);
 
                 // Save Bot Message in Database
                 $this->saveBotMessage($conversation->id, $botResponse);
@@ -1838,5 +1843,63 @@ Current website details:
             }
         }
         return $botResponse;
+    }
+
+    private function processUnknownQuery($botResponse, $senderId)
+    {
+        if (preg_match('/\[\[UNKNOWN_QUERY:(.*?)\]\]/is', $botResponse, $matches)) {
+            $jsonStr = trim($matches[1]);
+            $queryData = json_decode($jsonStr, true);
+            $unknownQueryText = $queryData['query'] ?? 'Unknown customer question';
+
+            // Get customer cached details if available
+            $phone = Cache::get("fb_user_phone_{$senderId}", 'Not Provided');
+            $name = Cache::get("fb_user_name_{$senderId}", 'Facebook Customer');
+
+            // Format Telegram Notification message
+            $telegramMsg = "⚠️ *[Vayromart AI Chatbot Alert]*\n";
+            $telegramMsg .= "👤 *Customer Name:* {$name}\n";
+            $telegramMsg .= "📱 *Phone:* {$phone}\n";
+            $telegramMsg .= "🆔 *FB Sender ID:* `{$senderId}`\n";
+            $telegramMsg .= "❓ *Customer Question:* {$unknownQueryText}\n\n";
+            $telegramMsg .= "⚡ Please check the Inbox and respond to the customer immediately!";
+
+            // Send to Telegram
+            $this->sendTelegramNotification($telegramMsg);
+
+            // Replace with beautiful Bengali response
+            $fallbackReply = "দুঃখিত, এই বিষয়টি আমার সুনির্দিষ্টভাবে জানা নেই। খুব শীঘ্রই আমাদের একজন প্রতিনিধি আপনার সাথে সরাসরি চ্যাটে যোগাযোগ করবেন। ধন্যবাদ!";
+            return str_replace($matches[0], $fallbackReply, $botResponse);
+        }
+        return $botResponse;
+    }
+
+    private function sendTelegramNotification($message)
+    {
+        // Fallback hardcoded values, but prefer environment variables
+        $botToken = env('TELEGRAM_BOT_TOKEN', '7847952681:AAH8N_2fV5O_N_EXAMPLE'); 
+        $chatId = env('TELEGRAM_CHAT_ID', '-1002456789012'); 
+
+        $url = "https://api.telegram.org/bot{$botToken}/sendMessage";
+        $data = [
+            'chat_id' => $chatId,
+            'text' => $message,
+            'parse_mode' => 'Markdown',
+        ];
+
+        try {
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, $url);
+            curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($data));
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 3); // 3 seconds timeout to avoid webhook blocks
+            $response = curl_exec($ch);
+            curl_close($ch);
+            
+            Log::info("Telegram Notification Sent. Response: " . $response);
+        } catch (\Exception $e) {
+            Log::error("Failed to send Telegram Notification: " . $e->getMessage());
+        }
     }
 }
