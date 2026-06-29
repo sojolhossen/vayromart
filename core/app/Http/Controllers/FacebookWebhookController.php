@@ -995,31 +995,36 @@ Your goals:
         Replace <id> with the matched numeric Order ID (from the Active/Verified Order Context).
 ";
 
-            // Read static JSON chatbot context from exporter if exists
-            $staticJsonContext = "";
-            $jsonFilePath = storage_path('app/chatbot/data.json');
-            if (file_exists($jsonFilePath)) {
-                $jsonData = json_decode(file_get_contents($jsonFilePath), true);
-                if (is_array($jsonData)) {
-                    $staticJsonContext .= "\n[Real-time Store Static Info from Exporter JSON]:\n";
-                    // 1. Coupons
-                    if (!empty($jsonData['coupons'])) {
-                        $staticJsonContext .= "- Active Coupons: " . json_encode($jsonData['coupons'], JSON_UNESCAPED_UNICODE) . "\n";
-                    }
-                    // 2. Shipping Charges
-                    if (!empty($jsonData['shipping_methods'])) {
-                        $staticJsonContext .= "- Shipping & Delivery Options: " . json_encode($jsonData['shipping_methods'], JSON_UNESCAPED_UNICODE) . "\n";
-                    }
-                    // 3. Special Offers/Deals
-                    if (!empty($jsonData['offers'])) {
-                        $staticJsonContext .= "- Campaigns/Offers: " . json_encode($jsonData['offers'], JSON_UNESCAPED_UNICODE) . "\n";
-                    }
-                    // 4. Custom FAQs
-                    if (!empty($jsonData['chatbot_knowledges'])) {
-                        $staticJsonContext .= "- Custom Knowledge Base Facts: " . json_encode($jsonData['chatbot_knowledges'], JSON_UNESCAPED_UNICODE) . "\n";
-                    }
+            // Fetch static info dynamically from Database instead of data.json file
+            $staticJsonContext = "\n[Real-time Store Static Info from Database]:\n";
+            
+            // 1. Coupons
+            try {
+                $coupons = \App\Models\Coupon::where('status', 1)
+                    ->get(['coupon_code', 'discount_type', 'coupon_amount', 'minimum_spend'])
+                    ->toArray();
+                if (!empty($coupons)) {
+                    $staticJsonContext .= "- Active Coupons: " . json_encode($coupons, JSON_UNESCAPED_UNICODE) . "\n";
                 }
-            }
+            } catch (\Exception $e) {}
+
+            // 2. Shipping Charges
+            try {
+                $shippingMethods = \App\Models\ShippingMethod::where('status', 1)
+                    ->get(['name', 'charge'])
+                    ->toArray();
+                if (!empty($shippingMethods)) {
+                    $staticJsonContext .= "- Shipping & Delivery Options: " . json_encode($shippingMethods, JSON_UNESCAPED_UNICODE) . "\n";
+                }
+            } catch (\Exception $e) {}
+
+            // 3. Special Campaigns/Offers
+            try {
+                $offers = \App\Models\Campaign::where('status', 1)->get(['name', 'discount_percentage'])->toArray();
+                if (!empty($offers)) {
+                    $staticJsonContext .= "- Campaigns/Offers: " . json_encode($offers, JSON_UNESCAPED_UNICODE) . "\n";
+                }
+            } catch (\Exception $e) {}
 
             $systemInstructions = $systemInstructionsText . "
 Current website details:
