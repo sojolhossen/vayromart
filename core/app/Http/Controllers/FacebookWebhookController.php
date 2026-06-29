@@ -469,6 +469,62 @@ class FacebookWebhookController extends Controller
             }
         }
 
+        // 3.9 Intelligent Product Pagination ("More" or "আরও দেখান" handler)
+        $isMoreQuery = preg_match('/আরও|আরো|আরো|আরও দেখান|aro|more|next|পরের/ui', $messageText);
+        $paginationActive = false;
+        
+        if ($isMoreQuery && Cache::has("fb_last_query_keywords_{$senderId}")) {
+            $cachedQuery = Cache::get("fb_last_query_keywords_{$senderId}");
+            $currentPage = (int)Cache::get("fb_query_page_{$senderId}", 1);
+            $nextPage = $currentPage + 1;
+            Cache::put("fb_query_page_{$senderId}", $nextPage, now()->addMinutes(15));
+            
+            // Re-run original search with offset pagination
+            $offset = ($nextPage - 1) * 5;
+            $allSearchWords = $cachedQuery;
+            
+            if (!empty($allSearchWords)) {
+                $allMatches = Product::published()->where(function($q) use ($allSearchWords) {
+                    foreach ($allSearchWords as $word) {
+                        if (mb_strlen($word) < 2) continue;
+                        $q->orWhere('name', 'LIKE', "%{$word}%")
+                          ->orWhere('summary', 'LIKE', "%{$word}%");
+                    }
+                })->get();
+                
+                $queryPhrase = implode(' ', $allSearchWords);
+                $scored = $allMatches->map(function($product) use ($allSearchWords, $queryPhrase) {
+                    $hitScore = 0;
+                    $nameLower = mb_strtolower($product->name);
+                    $summaryLower = mb_strtolower($product->summary ?? '');
+                    
+                    foreach ($allSearchWords as $word) {
+                        $wordLower = mb_strtolower($word);
+                        if (mb_strpos($nameLower, $wordLower) !== false) $hitScore += 4;
+                        if (mb_strpos($summaryLower, $wordLower) !== false) $hitScore += 1;
+                    }
+                    
+                    $similarityPercent = 0;
+                    similar_text(mb_strtolower($queryPhrase), $nameLower, $similarityPercent);
+                    $product->match_score = $hitScore + ($similarityPercent / 10);
+                    return $product;
+                });
+
+                $filtered = $scored->filter(function($p) {
+                    return $p->match_score >= 3;
+                })->sortByDesc('match_score');
+                
+                // Paginate the collection
+                $matchingProducts = $filtered->slice($offset, 5);
+                $totalMatchingCount = $filtered->count();
+                
+                if ($matchingProducts->count() > 0) {
+                    $paginationActive = true;
+                    Log::info("Pagination active. Showing page {$nextPage} for customer {$senderId}. Count: " . $matchingProducts->count());
+                }
+            }
+        }
+
         // 4. Check for new Order status or cancellation query
         $orderNumber = '';
         
@@ -749,7 +805,7 @@ class FacebookWebhookController extends Controller
 
                     $filtered = $scored->filter(function($p) {
                         return $p->match_score >= 3;
-                    })->sortByDesc('match_score')->take(5);
+                    })->sortByDesc('match_score');
 
                     $matchingProducts = $filtered;
                     $totalMatchingCount = $matchingProducts->count();
@@ -801,6 +857,12 @@ class FacebookWebhookController extends Controller
             if ($matchingProducts->count() > 0) {
                 $newRecIds = $matchingProducts->pluck('id')->toArray();
                 Cache::put($lastRecsKey, $newRecIds, now()->addMinutes(15));
+                
+                // Cache the keywords and reset page count if we are NOT in pagination mode currently
+                if (!$paginationActive && !empty($allSearchWords)) {
+                    Cache::put("fb_last_query_keywords_{$senderId}", $allSearchWords, now()->addMinutes(15));
+                    Cache::put("fb_query_page_{$senderId}", 1, now()->addMinutes(15));
+                }
             }
 
             // Fallback: If no products matched, check if the user is asking about a specific category (e.g. power bank, watch)
@@ -826,7 +888,7 @@ class FacebookWebhookController extends Controller
             }
 
             if ($matchingProducts->isEmpty() && !empty($matchedCategory)) {
-                // Detect if user wants the FULL list ("সব লিস্ট", "সব দেখাও", "কতগুলো আছে", "list daw" etc.)
+                // Detect if user wants the FULL list
                 $wantsFullList = preg_match('/সব|সকল|লিস্ট|list|সবগুলো|সবকটি|কয়টি|কতগুলো|কত রকম|কত ধরন|দেখাও|show all|all product/ui', $messageText);
                 $categoryLimit = $wantsFullList ? 20 : 8;
                 // Query active products under category name or containing category keywords in name
@@ -835,6 +897,10 @@ class FacebookWebhookController extends Controller
                     ->limit($categoryLimit)
                     ->get();
                 $totalMatchingCount = $matchingProducts->count();
+                
+                // Cache category search keywords for pagination
+                Cache::put("fb_last_query_keywords_{$senderId}", [$matchedCategory], now()->addMinutes(15));
+                Cache::put("fb_query_page_{$senderId}", 1, now()->addMinutes(15));
             }
 
             // Global Fallback: If still empty but user is asking generally about products
@@ -897,7 +963,7 @@ class FacebookWebhookController extends Controller
 
                     $databaseContext .= "  Link: " . route('product.detail', $product->slug) . "\n";
                 }
-                $databaseContext .= "\nIf matching products are found, mention them to the user and supply the direct link (e.g. Product Name: URL) on a new line. Do NOT enclose links in parentheses or markdown brackets. Use variants and customer reviews to answer size/rating questions and improve sales trust.\n";
+                $databaseContext .= "\nIf matching products are found, list a maximum of 5 products in your response. Supply the direct link (e.g. Product Name: URL) on a new line for each. Do NOT enclose links in parentheses or markdown brackets. At the end of the product list, always append a friendly Bengali note: 'আরও দেখতে চাইলে \"আরও দেখান\" লিখুন।' (only if the total search results indicated there might be more products). Use variants and customer reviews to answer size/rating questions and improve sales trust.\n";
             }
         }
 
