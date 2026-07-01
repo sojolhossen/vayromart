@@ -425,8 +425,9 @@
         if (buyMatch) {
             costPriceField.value = buyMatch[1];
         } else {
-            if (!costPriceField.value) {
-                costPriceField.value = 0;
+            // Do NOT overwrite with 0 if user has already entered a manual cost price
+            if (!costPriceField.value || costPriceField.value == '0') {
+                costPriceField.value = '';
             }
         }
 
