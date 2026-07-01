@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -12,7 +13,6 @@ class SalesTrackerController extends Controller
     private function getOrders()
     {
         if (!Storage::disk('local')->exists($this->jsonPath)) {
-            // Seed default orders if not exists
             $defaultOrders = $this->getSeedData();
             Storage::disk('local')->put($this->jsonPath, json_encode($defaultOrders, JSON_PRETTY_PRINT));
             return $defaultOrders;
@@ -30,7 +30,6 @@ class SalesTrackerController extends Controller
     {
         $orders = $this->getOrders();
 
-        // Search Filter
         if ($request->filled('search')) {
             $search = strtolower($request->search);
             $orders = array_filter($orders, function ($o) use ($search) {
@@ -42,7 +41,6 @@ class SalesTrackerController extends Controller
             });
         }
 
-        // Status Filter
         if ($request->filled('status') && $request->status !== 'ALL') {
             $status = $request->status;
             $orders = array_filter($orders, function ($o) use ($status) {
@@ -50,7 +48,6 @@ class SalesTrackerController extends Controller
             });
         }
 
-        // Start Date Filter
         if ($request->filled('startDate')) {
             $startDate = $request->startDate;
             $orders = array_filter($orders, function ($o) use ($startDate) {
@@ -58,7 +55,6 @@ class SalesTrackerController extends Controller
             });
         }
 
-        // End Date Filter
         if ($request->filled('endDate')) {
             $endDate = $request->endDate;
             $orders = array_filter($orders, function ($o) use ($endDate) {
@@ -66,12 +62,10 @@ class SalesTrackerController extends Controller
             });
         }
 
-        // Sort orders desc
         usort($orders, function ($a, $b) {
             return strtotime($b['dateTime']) - strtotime($a['dateTime']);
         });
 
-        // Calculate Stats
         $totalOrdersCount = count($orders);
         $totalRevenue = 0;
         $totalProfit = 0;
@@ -91,7 +85,6 @@ class SalesTrackerController extends Controller
             'profitMargin' => number_format($profitMargin, 1, '.', '')
         ];
 
-        // Group by Date
         $grouped = [];
         foreach ($orders as $o) {
             $dateKey = date('F d, Y', strtotime($o['dateTime']));
@@ -234,21 +227,6 @@ class SalesTrackerController extends Controller
                 'otherCost' => 80.00,
                 'profit' => 220.00,
                 'address' => 'Chittagong Sadar, Chittagong'
-            ],
-            [
-                'id' => '3',
-                'orderId' => 'ORD-1003',
-                'dateTime' => date('Y-m-d\T09:00'),
-                'status' => 'Shipment',
-                'customerName' => 'Sabbir Ahmed',
-                'customerNumber' => '01511445566',
-                'productCode' => 'POWERBANK-20K',
-                'productName' => 'Romoss 20000mAh Power Bank Fast Charge',
-                'productPrice' => 1400.00,
-                'productSellPrice' => 2100.00,
-                'otherCost' => 150.00,
-                'profit' => 550.00,
-                'address' => 'Zindabazar, Sylhet'
             ]
         ];
     }
