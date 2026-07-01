@@ -664,6 +664,21 @@
         "route_name": "admin.landing.index",
         "menu_active": "admin.landing.*"
     },
+    "sales_tracker": {
+        "keyword": [
+            "sales",
+            "tracker",
+            "sheet",
+            "revenue",
+            "profit",
+            "dropship",
+            "orders"
+        ],
+        "title": "Sales Tracker",
+        "icon": "las la-chart-bar",
+        "route_name": "admin.sales_tracker.index",
+        "menu_active": "admin.sales_tracker.*"
+    },
     "notification_setting": {
         "keyword": [
             "email configuration",
