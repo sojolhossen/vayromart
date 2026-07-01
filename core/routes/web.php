@@ -208,35 +208,3 @@ Route::controller('LandingPageController')->prefix('landing')->name('landing.')-
     Route::post('/checkout', 'placeOrder')->name('checkout');
 });
 
-// Sales Tracker php reverse proxy
-Route::any('/sales-tracker/{any?}', function ($any = '') {
-    $targetUrl = 'http://localhost:3000/sales-tracker/' . $any;
-    if (!empty($_SERVER['QUERY_STRING'])) {
-        $targetUrl .= '?' . $_SERVER['QUERY_STRING'];
-    }
-
-    $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, $targetUrl);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $_SERVER['REQUEST_METHOD']);
-    
-    $headers = [];
-    foreach (getallheaders() as $name => $value) {
-        if (strtolower($name) !== 'host') {
-            $headers[] = "$name: $value";
-        }
-    }
-    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-
-    if ($_SERVER['REQUEST_METHOD'] === 'POST' || $_SERVER['REQUEST_METHOD'] === 'PUT' || $_SERVER['REQUEST_METHOD'] === 'DELETE') {
-        curl_setopt($ch, CURLOPT_POSTFIELDS, file_get_contents('php://input'));
-    }
-
-    $response = curl_exec($ch);
-    $contentType = curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
-
-    return response($response, $httpCode)->header('Content-Type', $contentType);
-})->where('any', '.*');

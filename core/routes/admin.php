@@ -465,6 +465,14 @@ Route::middleware('admin')->group(function () {
         Route::post('/export/process', 'exportProcess')->name('export.process');
     });
 
+    // Admin Sales Tracker Routes
+    Route::controller('SalesTrackerController')->prefix('setting/sales-tracker')->name('sales_tracker.')->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::post('/store', 'store')->name('store');
+        Route::post('/update/{id}', 'update')->name('update');
+        Route::post('/delete/{id}', 'destroy')->name('destroy');
+    });
+
     // Chatbot Landing Pages
     Route::controller('AdminLandingController')->prefix('landing-page')->name('landing.')->group(function () {
         Route::get('/', 'index')->name('index');
