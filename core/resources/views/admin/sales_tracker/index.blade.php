@@ -419,6 +419,17 @@
         }
 
         // 5. Parse Pricing
+        // Cost Price (Buy Price)
+        let buyMatch = text.match(/buy\s*price\s*:\s*(\d+)/i) || text.match(/buy\s*:\s*(\d+)/i) || text.match(/cost\s*:\s*(\d+)/i) || text.match(/buy\s*price\s*(\d+)/i);
+        let costPriceField = document.getElementById('formProductPrice');
+        if (buyMatch) {
+            costPriceField.value = buyMatch[1];
+        } else {
+            if (!costPriceField.value) {
+                costPriceField.value = 0;
+            }
+        }
+
         // Shipping / Delivery
         let shippingMatch = text.match(/shipping\s*:\s*(\d+)/i) || text.match(/delivery\s*:\s*(\d+)/i);
         if (shippingMatch) {
@@ -429,12 +440,6 @@
         let dueMatch = text.match(/due\s*:\s*(\d+)/i) || text.match(/total\s*:\s*(\d+)/i);
         if (dueMatch) {
             document.getElementById('formProductSellPrice').value = dueMatch[1];
-        }
-
-        // Default Cost Price to 0 if not parsed
-        let costPriceField = document.getElementById('formProductPrice');
-        if (!costPriceField.value) {
-            costPriceField.value = 0;
         }
 
         // 6. Parse Date & Time
