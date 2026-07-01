@@ -316,10 +316,10 @@ export default function SalesDashboard() {
         <div className="glass-card p-5 flex items-center justify-between shadow-sm">
           <div className="space-y-1">
             <span className="text-slate-400 text-xs font-semibold uppercase tracking-wider">Net Revenue</span>
-            <h3 className="font-display font-bold text-2xl tracking-tight">${stats.totalRevenue}</h3>
+            <h3 className="font-display font-bold text-2xl tracking-tight">৳{stats.totalRevenue}</h3>
           </div>
-          <div className="bg-emerald-500/10 p-3 rounded-xl text-emerald-500">
-            <DollarSign className="h-6 w-6" />
+          <div className="bg-emerald-500/10 p-3 rounded-xl text-emerald-500 font-bold flex items-center justify-center text-lg w-12 h-12">
+            ৳
           </div>
         </div>
 
@@ -327,7 +327,7 @@ export default function SalesDashboard() {
           <div className="space-y-1">
             <span className="text-slate-400 text-xs font-semibold uppercase tracking-wider">Net Profit</span>
             <h3 className={`font-display font-bold text-2xl tracking-tight ${Number(stats.totalProfit) >= 0 ? "text-emerald-500" : "text-red-500"}`}>
-              ${stats.totalProfit}
+              ৳{stats.totalProfit}
             </h3>
           </div>
           <div className={`${Number(stats.totalProfit) >= 0 ? "bg-emerald-500/10 text-emerald-500" : "bg-red-500/10 text-red-500"} p-3 rounded-xl`}>
@@ -518,16 +518,16 @@ export default function SalesDashboard() {
                               </span>
                             </td>
                             <td className="py-3.5 px-4 text-right text-slate-500 dark:text-slate-400 font-mono">
-                              ${order.productPrice.toFixed(2)}
+                              ৳{order.productPrice.toFixed(2)}
                             </td>
                             <td className="py-3.5 px-4 text-right font-semibold text-slate-700 dark:text-slate-200 font-mono">
-                              ${order.productSellPrice.toFixed(2)}
+                              ৳{order.productSellPrice.toFixed(2)}
                             </td>
                             <td className="py-3.5 px-4 text-right text-slate-500 dark:text-slate-400 font-mono">
-                              ${order.otherCost.toFixed(2)}
+                              ৳{order.otherCost.toFixed(2)}
                             </td>
                             <td className={`py-3.5 px-4 text-right font-bold font-mono ${order.profit >= 0 ? "text-emerald-500" : "text-red-500"}`}>
-                              ${order.profit.toFixed(2)}
+                              ৳{order.profit.toFixed(2)}
                             </td>
                             <td className="py-3.5 px-4">
                               {/* Ellipsis text with custom CSS tooltip */}
@@ -576,13 +576,13 @@ export default function SalesDashboard() {
                           Orders: {dailyTotalOrders}
                         </td>
                         <td colSpan={2} className="py-3 px-4 text-right font-bold font-mono">
-                          Rev: ${dailyRevenue.toFixed(2)}
+                          Rev: ৳{dailyRevenue.toFixed(2)}
                         </td>
                         <td className="py-3 px-4 text-right text-[10px] text-slate-400">
                           Net Profit
                         </td>
                         <td className={`py-3 px-4 text-right font-black font-mono ${dailyProfit >= 0 ? "text-emerald-500" : "text-red-500"}`}>
-                          ${dailyProfit.toFixed(2)}
+                          ৳{dailyProfit.toFixed(2)}
                         </td>
                         <td colSpan={2} className="py-3 px-4"></td>
                       </tr>
@@ -702,40 +702,40 @@ export default function SalesDashboard() {
 
                 {/* Product Price Cost */}
                 <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Product Price (Cost Price $)</label>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Product Price (Cost Price ৳)</label>
                   <input
                     type="number"
                     step="0.01"
                     value={formProductPrice}
                     onChange={(e) => setFormProductPrice(e.target.value)}
                     placeholder="0.00"
-                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono"
+                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] font-mono"
                   />
                 </div>
 
                 {/* Product Sell Price */}
                 <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Product Sell Price ($)</label>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Product Sell Price (৳)</label>
                   <input
                     type="number"
                     step="0.01"
                     value={formProductSellPrice}
                     onChange={(e) => setFormProductSellPrice(e.target.value)}
                     placeholder="0.00"
-                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono"
+                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] font-mono"
                   />
                 </div>
 
                 {/* Other Cost */}
                 <div className="md:col-span-2">
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Other Cost (Delivery/Packaging $)</label>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Other Cost (Delivery/Packaging ৳)</label>
                   <input
                     type="number"
                     step="0.01"
                     value={formOtherCost}
                     onChange={(e) => setFormOtherCost(e.target.value)}
                     placeholder="0.00"
-                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono"
+                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] font-mono"
                   />
                 </div>
 
