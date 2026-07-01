@@ -285,7 +285,7 @@ export default function SalesDashboard() {
       {/* Title section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="font-display font-extrabold text-3xl tracking-tight bg-gradient-to-r from-indigo-500 to-cyan-500 bg-clip-text text-transparent">
+          <h1 className="font-display font-extrabold text-3xl tracking-tight bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent">
             Sales Dashboard
           </h1>
           <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
@@ -294,7 +294,7 @@ export default function SalesDashboard() {
         </div>
         <button
           onClick={openAddModal}
-          className="flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white font-semibold px-5 py-3 rounded-xl shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/30 transition-all cursor-pointer transform hover:-translate-y-0.5 active:translate-y-0"
+          className="flex items-center justify-center gap-2 bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white font-semibold px-5 py-3 rounded-xl shadow-lg shadow-orange-500/20 hover:shadow-orange-500/30 transition-all cursor-pointer transform hover:-translate-y-0.5 active:translate-y-0"
         >
           <Plus className="h-5 w-5" />
           Add New Order
@@ -308,7 +308,7 @@ export default function SalesDashboard() {
             <span className="text-slate-400 text-xs font-semibold uppercase tracking-wider">Total Orders</span>
             <h3 className="font-display font-bold text-2xl tracking-tight">{stats.totalOrdersCount}</h3>
           </div>
-          <div className="bg-indigo-500/10 p-3 rounded-xl text-indigo-500">
+          <div className="bg-orange-500/10 p-3 rounded-xl text-[var(--primary)]">
             <ShoppingBag className="h-6 w-6" />
           </div>
         </div>
@@ -349,7 +349,7 @@ export default function SalesDashboard() {
       {/* Filter Toolbar */}
       <div className="glass-card p-5 shadow-sm space-y-4">
         <div className="flex items-center gap-2 text-sm font-bold text-slate-600 dark:text-slate-300">
-          <Filter className="h-4 w-4 text-indigo-500" />
+          <Filter className="h-4 w-4 text-[var(--primary)]" />
           <span>Filters & Controls</span>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
@@ -361,7 +361,7 @@ export default function SalesDashboard() {
               placeholder="Search ID, customer, product..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+              className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition-all"
             />
           </div>
 
@@ -370,7 +370,7 @@ export default function SalesDashboard() {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+              className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition-all"
             >
               <option value="ALL">All Statuses</option>
               <option value="Approved">Approved</option>
@@ -388,7 +388,7 @@ export default function SalesDashboard() {
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+              className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition-all"
               title="Start Date"
             />
           </div>
@@ -400,7 +400,7 @@ export default function SalesDashboard() {
               type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
-              className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+              className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition-all"
               title="End Date"
             />
           </div>
@@ -415,7 +415,7 @@ export default function SalesDashboard() {
             </button>
             <button
               onClick={fetchOrders}
-              className="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-indigo-500 p-2.5 rounded-xl transition-all cursor-pointer flex items-center justify-center"
+              className="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-[var(--primary)] p-2.5 rounded-xl transition-all cursor-pointer flex items-center justify-center"
               title="Refresh Data"
             >
               <RefreshCw className="h-4 w-4" />
@@ -489,7 +489,7 @@ export default function SalesDashboard() {
 
                         return (
                           <tr key={order.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/20 transition-colors">
-                            <td className="py-3.5 px-5 font-display font-semibold text-xs tracking-tight text-indigo-500 dark:text-indigo-400">
+                            <td className="py-3.5 px-5 font-display font-semibold text-xs tracking-tight text-[var(--primary)]">
                               {order.orderId}
                             </td>
                             <td className="py-3.5 px-4 text-slate-500 dark:text-slate-400 text-xs">
@@ -537,7 +537,7 @@ export default function SalesDashboard() {
                                 
                                 {/* Tooltip box */}
                                 <div className="hidden group-hover:block absolute bottom-full left-0 mb-2 w-64 bg-slate-900 dark:bg-slate-950 text-white rounded-lg p-2.5 text-xs shadow-xl border border-slate-800 whitespace-normal leading-relaxed z-40 transition-opacity">
-                                  <div className="font-bold text-indigo-400 mb-0.5">Shipping Address:</div>
+                                  <div className="font-bold text-[var(--primary)] mb-0.5">Shipping Address:</div>
                                   {order.address}
                                 </div>
                               </div>
@@ -546,7 +546,7 @@ export default function SalesDashboard() {
                               <div className="flex items-center justify-center gap-2">
                                 <button
                                   onClick={() => openEditModal(order)}
-                                  className="p-1.5 text-slate-400 hover:text-indigo-500 hover:bg-indigo-500/10 rounded-lg transition-colors cursor-pointer"
+                                  className="p-1.5 text-slate-400 hover:text-[var(--primary)] hover:bg-orange-500/10 rounded-lg transition-colors cursor-pointer"
                                   title="Edit Order"
                                 >
                                   <Edit3 className="h-4 w-4" />
@@ -753,14 +753,14 @@ export default function SalesDashboard() {
               </div>
 
               {/* Dynamic Profit preview */}
-              <div className="bg-indigo-500/5 border border-indigo-500/10 rounded-xl p-4 flex items-center justify-between text-sm">
+              <div className="bg-orange-500/5 border border-orange-500/10 rounded-xl p-4 flex items-center justify-between text-sm">
                 <span className="font-semibold text-slate-600 dark:text-slate-300">Estimated Profit Preview:</span>
                 <span className={`font-mono font-bold text-lg ${
                   (parseFloat(formProductSellPrice) || 0) - (parseFloat(formProductPrice) || 0) - (parseFloat(formOtherCost) || 0) >= 0 
                   ? "text-emerald-500" 
                   : "text-red-500"
                 }`}>
-                  $#{((parseFloat(formProductSellPrice) || 0) - (parseFloat(formProductPrice) || 0) - (parseFloat(formOtherCost) || 0)).toFixed(2)}
+                  ${((parseFloat(formProductSellPrice) || 0) - (parseFloat(formProductPrice) || 0) - (parseFloat(formOtherCost) || 0)).toFixed(2)}
                 </span>
               </div>
 
@@ -775,7 +775,7 @@ export default function SalesDashboard() {
                 </button>
                 <button
                   type="submit"
-                  className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white font-semibold px-6 py-2.5 rounded-xl text-sm shadow-md transition-all cursor-pointer"
+                  className="bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white font-semibold px-6 py-2.5 rounded-xl text-sm shadow-md transition-all cursor-pointer"
                 >
                   {modalMode === "ADD" ? "Create Order" : "Save Changes"}
                 </button>

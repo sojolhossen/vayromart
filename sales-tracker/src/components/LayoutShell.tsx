@@ -63,7 +63,7 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
         {/* Brand / Logo */}
         <div className="h-16 flex items-center justify-between px-6 border-b border-[var(--sidebar-border)]">
           <Link href="/" className="flex items-center gap-3">
-            <div className="bg-gradient-to-tr from-[var(--primary)] to-[var(--accent)] p-2 rounded-xl text-white shadow-md shadow-indigo-500/20">
+            <div className="bg-gradient-to-tr from-[var(--primary)] to-[var(--accent)] p-2 rounded-xl text-white shadow-md shadow-orange-500/20">
               <ShoppingBag className="h-5 w-5" />
             </div>
             <span className="font-display font-extrabold text-lg tracking-tight bg-gradient-to-r from-[var(--primary)] to-[var(--accent)] bg-clip-text text-transparent">
@@ -107,7 +107,7 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
         {/* Footer Settings / Dark mode */}
         <div className="p-4 border-t border-[var(--sidebar-border)] flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-full bg-indigo-500/10 flex items-center justify-center text-[var(--primary)] font-bold text-xs">
+            <div className="h-8 w-8 rounded-full bg-orange-500/10 flex items-center justify-center text-[var(--primary)] font-bold text-xs">
               VM
             </div>
             <div className="flex flex-col">
