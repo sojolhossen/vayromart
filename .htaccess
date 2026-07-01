@@ -5,6 +5,10 @@
 
     RewriteEngine On
 
+    # Reverse Proxy /sales-tracker requests to local Next.js node server on port 3000
+    RewriteCond %{REQUEST_URI} ^/sales-tracker [NC]
+    RewriteRule ^sales-tracker/?(.*) http://localhost:3000/sales-tracker/$1 [P,L]
+
     # Block direct access to the core directory and other sensitive files
     RewriteRule ^core/.*$ - [F,L]
     RewriteRule ^\.env$ - [F,L]
