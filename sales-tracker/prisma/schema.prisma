@@ -1,0 +1,32 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Order {
+  id               String   @id @default(uuid())
+  orderId          String   @unique // Human-readable unique order identifier (e.g. ORD-1001)
+  dateTime         DateTime @default(now())
+  status           String   // Approved, Processing, Shipment, Cancelled, Returned
+  customerName     String
+  customerNumber   String   // Customer Phone Number
+  productCode      String
+  productName      String
+  productPrice     Float    // Cost Price
+  productSellPrice Float    // Sell Price
+  otherCost        Float    // Delivery/Packaging etc.
+  profit           Float    // Calculated: Sell Price - Product Price - Other Cost
+  address          String
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([customerNumber])
+  @@index([dateTime])
+}
