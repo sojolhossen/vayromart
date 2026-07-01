@@ -288,13 +288,22 @@
             <form id="orderForm" onsubmit="handleFormSubmit(event)">
                 @csrf
                 <input type="hidden" id="orderId" name="orderId">
-                <div class="modal-body space-y-4">
+                <div class="modal-body">
                     <div class="row g-3">
-                        <div class="col-md-6">
+                        <!-- AI Auto-Fill Textarea -->
+                        <div class="col-12 border-bottom pb-3 mb-2">
+                            <label class="text-primary fw-bold text-xs d-flex align-items-center gap-1">
+                                <i class="la la-magic fs-5"></i> <strong>AI Auto-Fill / Paste Chat Details</strong>
+                            </label>
+                            <textarea id="aiRawText" class="form-control border-primary" rows="4" placeholder="মেসেঞ্জার বা ফেসবুকের পুরো কপি করা টেক্সট এখানে পেস্ট করুন (যেমন: Shaharul Islam, 01949280123, Mirpur 11, Q10 HiFi Ster.. - 3126, Due :1000 etc.)..." oninput="parseRawText(this.value)"></textarea>
+                            <small class="text-muted text-xs d-block mt-1">এখানে মেসেজ পেস্ট করলেই নিচের ফিল্ডগুলো ম্যাজিক্যালি অটো-ফিলাপ হয়ে যাবে!</small>
+                        </div>
+
+                        <div class="col-md-6 mt-3">
                             <label class="text-muted fw-bold text-xs">Date & Time</label>
                             <input type="datetime-local" id="formDateTime" name="dateTime" class="form-control">
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-6 mt-3">
                             <label class="text-muted fw-bold text-xs">Order Status</label>
                             <select id="formStatus" name="status" class="form-select">
                                 <option value="Approved">Approved</option>
@@ -356,6 +365,105 @@
 <script>
     let mode = 'ADD';
 
+    function parseRawText(text) {
+        if (!text.trim()) return;
+
+        // 1. Parse Phone Number
+        let phoneMatch = text.match(/(01\d{9})/);
+        if (phoneMatch) {
+            document.getElementById('formCustomerNumber').value = phoneMatch[0];
+        }
+
+        // 2. Parse Name
+        // Find lines that are non-empty and don't contain order patterns, phone, or price structures
+        let lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+        let nameFound = '';
+        for (let i = 0; i < lines.length; i++) {
+            let line = lines[i];
+            if (line.match(/^[D|O]\d{4,8}/) || line.includes('01') || line.match(/all:/) || line.match(/:/) || line.match(/total/i)) {
+                continue;
+            }
+            if (line.length > 2 && line.length < 35 && isNaN(line)) {
+                nameFound = line;
+                break;
+            }
+        }
+        if (nameFound) {
+            document.getElementById('formCustomerName').value = nameFound;
+        }
+
+        // 3. Parse Address (Lines after phone number, or line containing common address terms)
+        let addressTerms = ['road', 'road', 'block', 'block', 'line', 'line', 'house', 'house', 'dhaka', 'dhaka', 'mirpur', 'chittagong', 'sylhet', 'sector', 'flat', 'floor'];
+        let addressFound = '';
+        for (let line of lines) {
+            let lower = line.toLowerCase();
+            let hasAddressTerm = addressTerms.some(term => lower.includes(term));
+            if (hasAddressTerm && !line.includes('01') && !line.includes(':')) {
+                addressFound = line;
+                break;
+            }
+        }
+        if (addressFound) {
+            document.getElementById('formAddress').value = addressFound;
+        }
+
+        // 4. Parse Product Code and Name
+        // Example: Q10 HiFi Ster.. - 3126
+        for (let line of lines) {
+            if (line.includes(' - ') && line.match(/\d+$/)) {
+                let parts = line.split(' - ');
+                document.getElementById('formProductCode').value = parts[1].trim();
+                document.getElementById('formProductName').value = parts[0].trim();
+                break;
+            }
+        }
+
+        // 5. Parse Pricing
+        // Shipping / Delivery
+        let shippingMatch = text.match(/shipping\s*:\s*(\d+)/i) || text.match(/delivery\s*:\s*(\d+)/i);
+        if (shippingMatch) {
+            document.getElementById('formOtherCost').value = shippingMatch[1];
+        }
+
+        // Sell Price (Due or Total, preferring Due for dropship tracking)
+        let dueMatch = text.match(/due\s*:\s*(\d+)/i) || text.match(/total\s*:\s*(\d+)/i);
+        if (dueMatch) {
+            document.getElementById('formProductSellPrice').value = dueMatch[1];
+        }
+
+        // Default Cost Price to 0 if not parsed
+        let costPriceField = document.getElementById('formProductPrice');
+        if (!costPriceField.value) {
+            costPriceField.value = 0;
+        }
+
+        // 6. Parse Date & Time
+        let dateMatch = text.match(/order date\s*:\s*([\d\-\s\:]+)/i);
+        if (dateMatch) {
+            let rawDate = dateMatch[1].trim();
+            // Convert 'YYYY-MM-DD HH:MM:SS' to 'YYYY-MM-DDTHH:MM'
+            if (rawDate.length >= 16) {
+                let formattedDate = rawDate.substring(0, 10) + 'T' + rawDate.substring(11, 16);
+                document.getElementById('formDateTime').value = formattedDate;
+            }
+        }
+
+        // 7. Parse Status
+        let statusMatch = text.match(/status\s*:\s*([a-zA-Z]+)/i);
+        if (statusMatch) {
+            let statusVal = statusMatch[1].trim();
+            let select = document.getElementById('formStatus');
+            for (let option of select.options) {
+                if (option.value.toLowerCase() === statusVal.toLowerCase()) {
+                    select.value = option.value;
+                    break;
+                }
+            }
+        }
+
+        calculateProfit();
+    }
+
     function calculateProfit() {
         const cost = parseFloat(document.getElementById('formProductPrice').value) || 0;
         const sell = parseFloat(document.getElementById('formProductSellPrice').value) || 0;
@@ -376,6 +484,7 @@
         mode = 'ADD';
         document.getElementById('modalTitle').innerText = 'Add New Sales Order';
         document.getElementById('orderForm').reset();
+        document.getElementById('aiRawText').value = '';
         document.getElementById('orderId').value = '';
         document.getElementById('formDateTime').value = new Date().toISOString().slice(0, 16);
         document.getElementById('profitPreview').innerText = '৳0.00';
@@ -385,6 +494,7 @@
     function openEditModal(order) {
         mode = 'EDIT';
         document.getElementById('modalTitle').innerText = 'Modify Sales Order';
+        document.getElementById('aiRawText').value = '';
         document.getElementById('orderId').value = order.id;
         document.getElementById('formDateTime').value = new Date(order.dateTime).toISOString().slice(0, 16);
         document.getElementById('formStatus').value = order.status;
