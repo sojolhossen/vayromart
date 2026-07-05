@@ -61,38 +61,49 @@ class AdminChatbotController extends Controller
             'custom_url' => 'nullable|url|max:255',
             'facebook_verify_token' => 'nullable|string|max:100',
             'facebook_page_access_token' => 'nullable|string|max:500',
-            'google_sheet_url' => 'nullable|url|max:255',
+            'google_client_id' => 'nullable|string|max:255',
+            'google_client_secret' => 'nullable|string|max:255',
+            'google_spreadsheet_id' => 'nullable|string|max:255',
+            'google_sheet_name' => 'nullable|string|max:100',
             'google_sheet_sync_enabled' => 'nullable|in:0,1',
         ]);
 
         $general = gs();
         $general->chatbot_enabled = $request->chatbot_enabled ? 1 : 0;
 
-        $chatbotSettings = [
-            'bot_name' => $request->bot_name,
-            'welcome_message' => $request->welcome_message,
-            'active_provider' => $request->active_provider,
-            'api_key' => [
-                'gemini' => $request->api_key_gemini,
-                'openai' => $request->api_key_openai,
-                'grok' => $request->api_key_grok,
-                'nvidia' => $request->api_key_nvidia,
-                'custom' => $request->api_key_custom,
-            ],
-            'model_name' => [
-                'gemini' => $request->model_name_gemini ?: 'gemini-1.5-flash',
-                'openai' => $request->model_name_openai ?: 'gpt-4o-mini',
-                'grok' => $request->model_name_grok ?: 'grok-beta',
-                'nvidia' => $request->model_name_nvidia ?: 'nvidia/llama-3.1-nemotron-70b-instruct',
-                'custom' => $request->model_name_custom ?: 'default',
-            ],
-            'custom_url' => $request->custom_url,
-            'system_prompt' => $request->system_prompt,
-            'facebook_verify_token' => $request->facebook_verify_token,
-            'facebook_page_access_token' => $request->facebook_page_access_token,
-            'google_sheet_url' => $request->google_sheet_url,
-            'google_sheet_sync_enabled' => $request->google_sheet_sync_enabled ? 1 : 0,
+        $chatbotSettings = [];
+        if ($general->chatbot_settings) {
+            $chatbotSettings = is_string($general->chatbot_settings) 
+                ? json_decode($general->chatbot_settings, true) 
+                : (array)$general->chatbot_settings;
+        }
+
+        $chatbotSettings['bot_name'] = $request->bot_name;
+        $chatbotSettings['welcome_message'] = $request->welcome_message;
+        $chatbotSettings['active_provider'] = $request->active_provider;
+        $chatbotSettings['api_key'] = [
+            'gemini' => $request->api_key_gemini,
+            'openai' => $request->api_key_openai,
+            'grok' => $request->api_key_grok,
+            'nvidia' => $request->api_key_nvidia,
+            'custom' => $request->api_key_custom,
         ];
+        $chatbotSettings['model_name'] = [
+            'gemini' => $request->model_name_gemini ?: 'gemini-1.5-flash',
+            'openai' => $request->model_name_openai ?: 'gpt-4o-mini',
+            'grok' => $request->model_name_grok ?: 'grok-beta',
+            'nvidia' => $request->model_name_nvidia ?: 'nvidia/llama-3.1-nemotron-70b-instruct',
+            'custom' => $request->model_name_custom ?: 'default',
+        ];
+        $chatbotSettings['custom_url'] = $request->custom_url;
+        $chatbotSettings['system_prompt'] = $request->system_prompt;
+        $chatbotSettings['facebook_verify_token'] = $request->facebook_verify_token;
+        $chatbotSettings['facebook_page_access_token'] = $request->facebook_page_access_token;
+        $chatbotSettings['google_client_id'] = $request->google_client_id;
+        $chatbotSettings['google_client_secret'] = $request->google_client_secret;
+        $chatbotSettings['google_spreadsheet_id'] = $request->google_spreadsheet_id;
+        $chatbotSettings['google_sheet_name'] = $request->google_sheet_name ?: 'Sheet1';
+        $chatbotSettings['google_sheet_sync_enabled'] = $request->google_sheet_sync_enabled ? 1 : 0;
 
         $general->chatbot_settings = $chatbotSettings;
         $general->save();
@@ -317,26 +328,9 @@ class AdminChatbotController extends Controller
      */
     public function syncGoogleSheet()
     {
-        $general = gs();
-        $settings = [];
-        if ($general->chatbot_settings) {
-            $settings = is_string($general->chatbot_settings) 
-                ? json_decode($general->chatbot_settings, true) 
-                : (array)$general->chatbot_settings;
-        }
-
-        $url = $settings['google_sheet_url'] ?? '';
-
-        if (empty($url)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Google Sheet URL is not configured. Please save it first.'
-            ]);
-        }
-
         try {
             $syncService = new \App\Services\GoogleSheetSyncService();
-            $result = $syncService->sync($url);
+            $result = $syncService->sync();
 
             return response()->json([
                 'success' => true,
@@ -349,5 +343,89 @@ class AdminChatbotController extends Controller
                 'message' => 'Sync failed: ' . $e->getMessage()
             ]);
         }
+    }
+
+    /**
+     * Redirect to Google OAuth screen
+     */
+    public function googleRedirect()
+    {
+        $general = gs();
+        $settings = [];
+        if ($general->chatbot_settings) {
+            $settings = is_string($general->chatbot_settings) 
+                ? json_decode($general->chatbot_settings, true) 
+                : (array)$general->chatbot_settings;
+        }
+
+        $clientId = $settings['google_client_id'] ?? '';
+        
+        if (empty($clientId)) {
+            $notify[] = ['error', 'Please configure your Google Client ID first.'];
+            return back()->withNotify($notify);
+        }
+
+        $redirectUri = route('admin.setting.chatbot.google.callback');
+
+        $url = "https://accounts.google.com/o/oauth2/v2/auth?" . http_build_query([
+            'client_id' => $clientId,
+            'redirect_uri' => $redirectUri,
+            'response_type' => 'code',
+            'scope' => 'https://www.googleapis.com/auth/spreadsheets.readonly',
+            'access_type' => 'offline',
+            'prompt' => 'consent'
+        ]);
+
+        return redirect()->away($url);
+    }
+
+    /**
+     * Handle callback authorization redirect from Google
+     */
+    public function googleCallback(Request $request)
+    {
+        $code = $request->query('code');
+        if (empty($code)) {
+            $notify[] = ['error', 'Authorization code not found from Google.'];
+            return redirect()->route('admin.setting.chatbot.index')->withNotify($notify);
+        }
+
+        $general = gs();
+        $settings = [];
+        if ($general->chatbot_settings) {
+            $settings = is_string($general->chatbot_settings) 
+                ? json_decode($general->chatbot_settings, true) 
+                : (array)$general->chatbot_settings;
+        }
+
+        $clientId = $settings['google_client_id'] ?? '';
+        $clientSecret = $settings['google_client_secret'] ?? '';
+
+        $redirectUri = route('admin.setting.chatbot.google.callback');
+
+        $response = \Illuminate\Support\Facades\Http::post('https://oauth2.googleapis.com/token', [
+            'code' => $code,
+            'client_id' => $clientId,
+            'client_secret' => $clientSecret,
+            'redirect_uri' => $redirectUri,
+            'grant_type' => 'authorization_code',
+        ]);
+
+        if (!$response->successful()) {
+            $notify[] = ['error', 'Failed to retrieve access token from Google: ' . ($response->json()['error_description'] ?? $response->body())];
+            return redirect()->route('admin.setting.chatbot.index')->withNotify($notify);
+        }
+
+        $tokenData = $response->json();
+        
+        $settings['google_access_token'] = $tokenData['access_token'] ?? null;
+        $settings['google_refresh_token'] = $tokenData['refresh_token'] ?? ($settings['google_refresh_token'] ?? null);
+        $settings['google_token_expires_at'] = time() + ($tokenData['expires_in'] ?? 3600);
+
+        $general->chatbot_settings = $settings;
+        $general->save();
+
+        $notify[] = ['success', 'Google Account connected successfully! You can now sync your Google Sheet.'];
+        return redirect()->route('admin.setting.chatbot.index')->withNotify($notify);
     }
 }

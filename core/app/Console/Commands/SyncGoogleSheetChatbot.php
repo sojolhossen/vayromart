@@ -38,22 +38,23 @@ class SyncGoogleSheetChatbot extends Command
         }
 
         $enabled = $settings['google_sheet_sync_enabled'] ?? 0;
-        $url = $settings['google_sheet_url'] ?? '';
+        $clientId = $settings['google_client_id'] ?? '';
+        $refreshToken = $settings['google_refresh_token'] ?? '';
 
         if (!$enabled) {
             $this->warn("Google Sheet sync is disabled in settings.");
             return 0;
         }
 
-        if (empty($url)) {
-            $this->error("Google Sheet URL is not configured.");
+        if (empty($clientId) || empty($refreshToken)) {
+            $this->error("Google Sheets integration is not fully authorized.");
             return 1;
         }
 
         $this->info("Starting synchronization...");
         try {
             $syncService = new \App\Services\GoogleSheetSyncService();
-            $result = $syncService->sync($url);
+            $result = $syncService->sync();
             
             $msg = "Successfully synchronized {$result['count']} products from Google Sheet!";
             $this->info($msg);

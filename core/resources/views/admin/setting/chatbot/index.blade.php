@@ -195,34 +195,67 @@
 
                                 <hr>
 
-                                <h6 class="mb-3 text--primary"><i class="las la-table"></i> @lang('Google Sheet Sync Settings')</h6>
+                                <h6 class="mb-3 text--primary"><i class="las la-table"></i> @lang('Google Sheets OAuth Sync Settings')</h6>
                                 <div class="row">
-                                    <div class="col-md-8 mb-3">
+                                    <div class="col-md-6 mb-3">
                                         <div class="form-group">
-                                            <label class="fw-bold">@lang('Google Apps Script Web App URL')</label>
-                                            <input type="url" class="form-control" name="google_sheet_url" id="google_sheet_url" value="{{ $chatbotSettings['google_sheet_url'] ?? '' }}" placeholder="https://script.google.com/macros/s/.../exec">
-                                            <small class="text-muted">@lang('Publish your Apps Script as a web app accessible by "Anyone".')</small>
+                                            <label class="fw-bold">@lang('Google Sheets API Client ID')</label>
+                                            <input type="text" class="form-control" name="google_client_id" value="{{ $chatbotSettings['google_client_id'] ?? '' }}" placeholder="575075009929-....apps.googleusercontent.com">
                                         </div>
                                     </div>
-                                    <div class="col-md-4 mb-3">
+                                    <div class="col-md-6 mb-3">
+                                        <div class="form-group">
+                                            <label class="fw-bold">@lang('Google Sheets API Client Secret')</label>
+                                            <input type="password" class="form-control" name="google_client_secret" value="{{ $chatbotSettings['google_client_secret'] ?? '' }}">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <div class="form-group">
+                                            <label class="fw-bold">@lang('Google Spreadsheet ID / Document URL')</label>
+                                            <input type="text" class="form-control" name="google_spreadsheet_id" value="{{ $chatbotSettings['google_spreadsheet_id'] ?? '' }}" placeholder="Enter spreadsheet ID or full URL">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3 mb-3">
+                                        <div class="form-group">
+                                            <label class="fw-bold">@lang('Sheet Name')</label>
+                                            <input type="text" class="form-control" name="google_sheet_name" value="{{ $chatbotSettings['google_sheet_name'] ?? 'Sheet1' }}" placeholder="Sheet1">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3 mb-3">
                                         <div class="form-group">
                                             <label class="fw-bold">@lang('Enable Google Sheet Sync')</label>
                                             <div class="form-check form-switch mt-2">
                                                 <input class="form-check-input" type="checkbox" name="google_sheet_sync_enabled" id="google_sheet_sync_enabled" value="1" @checked($chatbotSettings['google_sheet_sync_enabled'] ?? false)>
-                                                <label class="form-check-label" for="google_sheet_sync_enabled">@lang('Auto-Sync Catalog')</label>
+                                                <label class="form-check-label" for="google_sheet_sync_enabled">@lang('Auto-Sync')</label>
                                             </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-12 mb-3">
+                                        <div class="alert alert-info">
+                                            <strong>@lang('OAuth Redirect URI (Google Console):')</strong><br>
+                                            <code>{{ route('admin.setting.chatbot.google.callback') }}</code>
                                         </div>
                                     </div>
                                 </div>
 
-                                @if(!empty($chatbotSettings['google_sheet_url']))
-                                    <div class="mb-3">
+                                <div class="mb-3 d-flex align-items-center flex-wrap gap-2">
+                                    @if(empty($chatbotSettings['google_refresh_token']))
+                                        @if(!empty($chatbotSettings['google_client_id']))
+                                            <a href="{{ route('admin.setting.chatbot.google.redirect') }}" class="btn btn-sm btn--warning text-dark">
+                                                <i class="las la-link"></i> @lang('Connect Google Account')
+                                            </a>
+                                        @else
+                                            <span class="text-danger small"><i class="las la-exclamation-triangle"></i> @lang('Enter Client ID and Secret and Save to authenticate.')</span>
+                                        @endif
+                                    @else
+                                        <span class="badge badge--success py-2 px-3"><i class="las la-check-circle"></i> @lang('Google Connected')</span>
+                                        
                                         <button type="button" class="btn btn-sm btn--info text-white" id="sync-sheet-btn">
                                             <i class="las la-sync-alt"></i> @lang('Sync Google Sheet Now')
                                         </button>
-                                        <span id="sync-status" class="ms-2 text-muted"></span>
-                                    </div>
-                                @endif
+                                        <span id="sync-status" class="ms-2 text-muted small"></span>
+                                    @endif
+                                </div>
 
                                 <hr>
 

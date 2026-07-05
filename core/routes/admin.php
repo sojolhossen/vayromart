@@ -460,6 +460,8 @@ Route::middleware('admin')->group(function () {
         Route::post('/knowledge/store', 'knowledgeStore')->name('knowledge.store');
         Route::post('/knowledge/delete/{id}', 'knowledgeDelete')->name('knowledge.delete');
         Route::post('/sync-sheet', 'syncGoogleSheet')->name('sync.sheet');
+        Route::get('/google/redirect', 'googleRedirect')->name('google.redirect');
+        Route::get('/google/callback', 'googleCallback')->name('google.callback');
         
         // JSON Exporter routes
         Route::get('/export', 'exportForm')->name('export');
