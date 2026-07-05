@@ -2250,8 +2250,12 @@ Current website details:
             // Send to Telegram
             $this->sendTelegramNotification($telegramMsg);
 
+            // Pause the chatbot for 10 minutes
+            Cache::put("fb_chat_paused_{$senderId}", true, now()->addMinutes(10));
+            Log::info("Chatbot paused 10min for customer {$senderId} due to UNKNOWN_QUERY.");
+
             // Replace with beautiful Bengali response
-            $fallbackReply = "দুঃখিত, এই বিষয়টি আমার সুনির্দিষ্টভাবে জানা নেই। খুব শীঘ্রই আমাদের একজন প্রতিনিধি আপনার সাথে সরাসরি চ্যাটে যোগাযোগ করবেন। ধন্যবাদ!";
+            $fallbackReply = "আমাদের একজন প্রতিনিধি খুব তাড়াতাড়ি আপনার সাথে যোগাযোগ করবে।";
             return str_replace($matches[0], $fallbackReply, $botResponse);
         }
         return $botResponse;
