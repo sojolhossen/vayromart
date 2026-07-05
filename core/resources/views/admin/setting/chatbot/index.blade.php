@@ -173,8 +173,56 @@
                                                 <input type="url" class="form-control" name="custom_url" value="{{ $chatbotSettings['custom_url'] ?? '' }}" placeholder="https://api.yourprovider.com/v1/chat/completions">
                                             </div>
                                         </div>
+                                </div>
+
+                                <hr>
+
+                                <h6 class="mb-3 text--primary"><i class="lab la-facebook-messenger"></i> @lang('Facebook Webhook Integration')</h6>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <div class="form-group">
+                                            <label class="fw-bold">@lang('Facebook Webhook Verify Token')</label>
+                                            <input type="text" class="form-control" name="facebook_verify_token" value="{{ $chatbotSettings['facebook_verify_token'] ?? '' }}" placeholder="VayromartFBVerifyToken">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <div class="form-group">
+                                            <label class="fw-bold">@lang('Facebook Page Access Token')</label>
+                                            <input type="password" class="form-control" name="facebook_page_access_token" value="{{ $chatbotSettings['facebook_page_access_token'] ?? '' }}">
+                                        </div>
                                     </div>
                                 </div>
+
+                                <hr>
+
+                                <h6 class="mb-3 text--primary"><i class="las la-table"></i> @lang('Google Sheet Sync Settings')</h6>
+                                <div class="row">
+                                    <div class="col-md-8 mb-3">
+                                        <div class="form-group">
+                                            <label class="fw-bold">@lang('Google Apps Script Web App URL')</label>
+                                            <input type="url" class="form-control" name="google_sheet_url" id="google_sheet_url" value="{{ $chatbotSettings['google_sheet_url'] ?? '' }}" placeholder="https://script.google.com/macros/s/.../exec">
+                                            <small class="text-muted">@lang('Publish your Apps Script as a web app accessible by "Anyone".')</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <div class="form-group">
+                                            <label class="fw-bold">@lang('Enable Google Sheet Sync')</label>
+                                            <div class="form-check form-switch mt-2">
+                                                <input class="form-check-input" type="checkbox" name="google_sheet_sync_enabled" id="google_sheet_sync_enabled" value="1" @checked($chatbotSettings['google_sheet_sync_enabled'] ?? false)>
+                                                <label class="form-check-label" for="google_sheet_sync_enabled">@lang('Auto-Sync Catalog')</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                @if(!empty($chatbotSettings['google_sheet_url']))
+                                    <div class="mb-3">
+                                        <button type="button" class="btn btn-sm btn--info text-white" id="sync-sheet-btn">
+                                            <i class="las la-sync-alt"></i> @lang('Sync Google Sheet Now')
+                                        </button>
+                                        <span id="sync-status" class="ms-2 text-muted"></span>
+                                    </div>
+                                @endif
 
                                 <hr>
 
@@ -526,6 +574,50 @@
                     },
                     error: function() {
                         container.html('<div class="alert alert-danger">An error occurred while loading chat history.</div>');
+                    }
+                });
+            });
+
+            // Google Sheet Sync manual trigger
+            $('#sync-sheet-btn').on('click', function() {
+                const btn = $(this);
+                const status = $('#sync-status');
+                
+                btn.prop('disabled', true).find('i').addClass('la-spin');
+                status.text('Synchronizing product database with Google Sheet...').removeClass('text-danger text-success').addClass('text-muted');
+
+                let absoluteUrl = "{{ route('admin.setting.chatbot.sync.sheet') }}";
+                let ajaxUrl = absoluteUrl;
+                if (absoluteUrl.startsWith('http://') || absoluteUrl.startsWith('https://')) {
+                    try {
+                        let parsedUrl = new URL(absoluteUrl);
+                        ajaxUrl = window.location.protocol + '//' + window.location.host + parsedUrl.pathname + parsedUrl.search;
+                    } catch(e) {
+                        ajaxUrl = absoluteUrl.replace(/^https?:\/\/[^\/]+/i, '');
+                    }
+                }
+
+                $.ajax({
+                    url: ajaxUrl,
+                    method: 'POST',
+                    data: {
+                        _token: "{{ csrf_token() }}"
+                    },
+                    dataType: 'json',
+                    success: function(response) {
+                        btn.prop('disabled', false).find('i').removeClass('la-spin');
+                        if (response.success) {
+                            status.text(response.message).removeClass('text-muted').addClass('text-success');
+                            notify('success', response.message);
+                        } else {
+                            status.text(response.message).removeClass('text-muted').addClass('text-danger');
+                            notify('error', response.message);
+                        }
+                    },
+                    error: function() {
+                        btn.prop('disabled', false).find('i').removeClass('la-spin');
+                        status.text('An error occurred during synchronization.').removeClass('text-muted').addClass('text-danger');
+                        notify('error', 'An error occurred during synchronization.');
                     }
                 });
             });

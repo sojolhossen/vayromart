@@ -59,6 +59,10 @@ class AdminChatbotController extends Controller
             'active_provider' => 'required|in:gemini,openai,grok,nvidia,custom',
             'system_prompt' => 'nullable|string|max:2000',
             'custom_url' => 'nullable|url|max:255',
+            'facebook_verify_token' => 'nullable|string|max:100',
+            'facebook_page_access_token' => 'nullable|string|max:500',
+            'google_sheet_url' => 'nullable|url|max:255',
+            'google_sheet_sync_enabled' => 'nullable|in:0,1',
         ]);
 
         $general = gs();
@@ -84,12 +88,16 @@ class AdminChatbotController extends Controller
             ],
             'custom_url' => $request->custom_url,
             'system_prompt' => $request->system_prompt,
+            'facebook_verify_token' => $request->facebook_verify_token,
+            'facebook_page_access_token' => $request->facebook_page_access_token,
+            'google_sheet_url' => $request->google_sheet_url,
+            'google_sheet_sync_enabled' => $request->google_sheet_sync_enabled ? 1 : 0,
         ];
 
         $general->chatbot_settings = $chatbotSettings;
         $general->save();
 
-        $notify[] = ['success', 'AI Chatbot configuration updated successfully'];
+        $notify[] = ['success', 'AI Sales Agent configuration updated successfully'];
         return back()->withNotify($notify);
     }
 
@@ -300,6 +308,45 @@ class AdminChatbotController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Error exporting database tables: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Trigger Google Sheet Sync manually
+     */
+    public function syncGoogleSheet()
+    {
+        $general = gs();
+        $settings = [];
+        if ($general->chatbot_settings) {
+            $settings = is_string($general->chatbot_settings) 
+                ? json_decode($general->chatbot_settings, true) 
+                : (array)$general->chatbot_settings;
+        }
+
+        $url = $settings['google_sheet_url'] ?? '';
+
+        if (empty($url)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Google Sheet URL is not configured. Please save it first.'
+            ]);
+        }
+
+        try {
+            $syncService = new \App\Services\GoogleSheetSyncService();
+            $result = $syncService->sync($url);
+
+            return response()->json([
+                'success' => true,
+                'message' => "Successfully synced {$result['count']} products from Google Sheet!"
+            ]);
+        } catch (\Exception $e) {
+            Log::error("Manual Google Sheet Sync Error: " . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Sync failed: ' . $e->getMessage()
             ]);
         }
     }

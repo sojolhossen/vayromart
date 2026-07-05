@@ -24,7 +24,14 @@ class FacebookWebhookController extends Controller
     {
         // 1. GET request for Verification (used during Facebook Dev Setup)
         if ($request->isMethod('get')) {
-            $verifyToken = env('FACEBOOK_VERIFY_TOKEN') ?: 'VayromartFBVerifyToken';
+            $general = gs();
+            $chatbotSettings = [];
+            if ($general->chatbot_settings) {
+                $chatbotSettings = is_string($general->chatbot_settings) 
+                    ? json_decode($general->chatbot_settings, true) 
+                    : (array)$general->chatbot_settings;
+            }
+            $verifyToken = $chatbotSettings['facebook_verify_token'] ?? env('FACEBOOK_VERIFY_TOKEN') ?: 'VayromartFBVerifyToken';
             
             $mode = $request->query('hub_mode');
             $token = $request->query('hub_verify_token');
@@ -1581,10 +1588,17 @@ Current website details:
      */
     private function sendFacebookMessage($recipientId, $messageText)
     {
-        $pageAccessToken = env('FACEBOOK_PAGE_ACCESS_TOKEN');
+        $general = gs();
+        $chatbotSettings = [];
+        if ($general->chatbot_settings) {
+            $chatbotSettings = is_string($general->chatbot_settings) 
+                ? json_decode($general->chatbot_settings, true) 
+                : (array)$general->chatbot_settings;
+        }
+        $pageAccessToken = $chatbotSettings['facebook_page_access_token'] ?? env('FACEBOOK_PAGE_ACCESS_TOKEN');
         
         if (empty($pageAccessToken)) {
-            Log::error("Facebook Page Access Token is not set in env.");
+            Log::error("Facebook Page Access Token is not set.");
             return false;
         }
 
@@ -1620,7 +1634,14 @@ Current website details:
      */
     private function sendFacebookAction($recipientId, $action)
     {
-        $pageAccessToken = env('FACEBOOK_PAGE_ACCESS_TOKEN');
+        $general = gs();
+        $chatbotSettings = [];
+        if ($general->chatbot_settings) {
+            $chatbotSettings = is_string($general->chatbot_settings) 
+                ? json_decode($general->chatbot_settings, true) 
+                : (array)$general->chatbot_settings;
+        }
+        $pageAccessToken = $chatbotSettings['facebook_page_access_token'] ?? env('FACEBOOK_PAGE_ACCESS_TOKEN');
         if (empty($pageAccessToken)) {
             return false;
         }
