@@ -1466,6 +1466,16 @@ Current website details:
                         }
                     }
 
+                    // Map all columns of this row dynamically with original headers
+                    $rawHeaders = $values[0];
+                    $allColumnsData = [];
+                    foreach ($rawHeaders as $idx => $headerName) {
+                        if (!empty($headerName)) {
+                            $allColumnsData[$headerName] = trim($row[$idx] ?? '');
+                        }
+                    }
+                    $orderData['all_sheet_columns'] = $allColumnsData;
+
                     return $orderData;
                 }
             }
