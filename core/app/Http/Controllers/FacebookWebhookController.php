@@ -395,15 +395,11 @@ class FacebookWebhookController extends Controller
                             $databaseContext .= "\n[SYSTEM: User successfully verified ownership of Order {$orderNum} from Google Sheet by matching the last 4 digits of the mobile number.]\n";
                             $databaseContext .= "Real-time Order Details for {$orderNum} (from Google Sheet):\n";
                             $databaseContext .= "- Order Number: {$orderNum}\n";
-                            $databaseContext .= "- Status: " . ($gsOrder['status'] ?? 'Pending') . "\n";
-                            $databaseContext .= "- Date: " . ($gsOrder['order_date'] ?? 'N/A') . "\n";
-                            $databaseContext .= "- Customer Name: " . ($gsOrder['customer_name'] ?? 'N/A') . "\n";
-                            $databaseContext .= "- Product: " . ($gsOrder['product_name'] ?? 'N/A') . "\n";
-                            $databaseContext .= "- Qty: " . ($gsOrder['quantity'] ?? '1') . "\n";
-                            $databaseContext .= "- Total Amount: " . ($gsOrder['total_amount'] ?? '0') . " BDT\n";
-                            $databaseContext .= "- Shipping Address: " . ($gsOrder['shipping_address'] ?? 'N/A') . "\n";
+                            foreach (($gsOrder['all_sheet_columns'] ?? []) as $colHeader => $colValue) {
+                                $databaseContext .= "- {$colHeader}: {$colValue}\n";
+                            }
                             
-                            $databaseContext .= "Acknowledge the verification success and report the status and items details of this order from Google Sheet clearly to the user in a friendly format.";
+                            $databaseContext .= "Acknowledge the verification success and report the status and items details of this order from Google Sheet clearly to the user in a friendly format. Make sure to present the status and any other details found in the sheet.";
                         } else {
                             $botResponse = "দুঃখিত, আপনার দেওয়া মোবাইল নাম্বারের শেষ ৪টি ডিজিট বা পূর্ণ নাম্বারটি মিলছে না। অনুগ্রহ করে অর্ডারের সাথে যুক্ত সঠিক নাম্বারটি লিখুন।";
                             $this->saveBotMessage($conversation->id, $botResponse);
@@ -618,22 +614,19 @@ class FacebookWebhookController extends Controller
                     : (array)$general->chatbot_settings;
             }
 
-            $gsOrder = $this->getOrderFromGoogleSheets($orderNumber, $settings);
+            $gsResult = $this->getOrderFromGoogleSheets($orderNumber, $settings);
             
-            if ($gsOrder) {
+            if ($gsResult['success'] === true) {
+                $gsOrder = $gsResult['order'];
                 Cache::put("fb_gs_order_{$senderId}_{$orderNumber}", $gsOrder, now()->addMinutes(15));
                 Cache::put("fb_last_active_order_num_{$senderId}", $orderNumber, now()->addHours(2));
 
                 if (Cache::has("fb_gs_order_verified_{$senderId}_{$orderNumber}")) {
                     $databaseContext .= "\nReal-time Order Details for {$orderNumber} (from Google Sheet):\n";
                     $databaseContext .= "- Order Number: {$orderNumber}\n";
-                    $databaseContext .= "- Status: " . ($gsOrder['status'] ?? 'Pending') . "\n";
-                    $databaseContext .= "- Date: " . ($gsOrder['order_date'] ?? 'N/A') . "\n";
-                    $databaseContext .= "- Customer Name: " . ($gsOrder['customer_name'] ?? 'N/A') . "\n";
-                    $databaseContext .= "- Product: " . ($gsOrder['product_name'] ?? 'N/A') . "\n";
-                    $databaseContext .= "- Qty: " . ($gsOrder['quantity'] ?? '1') . "\n";
-                    $databaseContext .= "- Total Amount: " . ($gsOrder['total_amount'] ?? '0') . " BDT\n";
-                    $databaseContext .= "- Shipping Address: " . ($gsOrder['shipping_address'] ?? 'N/A') . "\n";
+                    foreach (($gsOrder['all_sheet_columns'] ?? []) as $colHeader => $colValue) {
+                        $databaseContext .= "- {$colHeader}: {$colValue}\n";
+                    }
                 } else {
                     Cache::put($pendingOrderCheckKey, "gs_" . $orderNumber, now()->addMinutes(10));
                     $botResponse = "আমি দেখতে পাচ্ছি আপনি অর্ডার **{$orderNumber}** সম্পর্কে জানতে চেয়েছেন। নিরাপত্তার স্বার্থে, অনুগ্রহ করে এই অর্ডারের সাথে যুক্ত মোবাইল নাম্বারের শেষ ৪টি ডিজিট টাইপ করে দিন (যেমন: 4567)।";
@@ -642,6 +635,7 @@ class FacebookWebhookController extends Controller
                     return;
                 }
             } else {
+                $databaseContext .= "\n[SYSTEM: Checked Google Sheets for Order '{$orderNumber}' but search was unsuccessful. Info: " . $gsResult['error'] . "]\n";
                 // Fallback to local DB lookup
                 $order = Order::where('order_number', $orderNumber)->first();
 
@@ -1354,7 +1348,7 @@ Current website details:
             $targetSheetName = $settings['google_orders_sheet_name'];
             $mapping = $settings['google_orders_field_mapping'] ?? [];
         } else {
-            return null;
+            return ['success' => false, 'error' => 'Google Sheet integration for orders is disabled or not configured.'];
         }
 
         $clientId = $settings['google_client_id'] ?? '';
@@ -1362,7 +1356,7 @@ Current website details:
         $refreshToken = $settings['google_refresh_token'] ?? '';
 
         if (empty($clientId) || empty($clientSecret) || empty($refreshToken)) {
-            return null;
+            return ['success' => false, 'error' => 'Google account not connected or client credentials missing.'];
         }
 
         try {
@@ -1393,11 +1387,13 @@ Current website details:
                     $general = gs();
                     $general->chatbot_settings = $settings;
                     $general->save();
+                } else {
+                    return ['success' => false, 'error' => 'Failed to refresh Google OAuth token: ' . $tokenRes->body()];
                 }
             }
 
             if (empty($accessToken)) {
-                return null;
+                return ['success' => false, 'error' => 'Google access token is empty.'];
             }
 
             // Fetch sheet values
@@ -1406,14 +1402,14 @@ Current website details:
             );
 
             if (!$response->successful()) {
-                return null;
+                return ['success' => false, 'error' => 'Failed to fetch Google Sheet rows: ' . $response->body()];
             }
 
             $body = $response->json();
             $values = $body['values'] ?? [];
 
             if (empty($values) || count($values) < 2) {
-                return null;
+                return ['success' => false, 'error' => 'Sheet is empty or has no data rows.'];
             }
 
             $headers = array_map(function($h) {
@@ -1431,7 +1427,7 @@ Current website details:
             $orderNumColIdx = ($orderNumColName !== false) ? array_search($orderNumColName, $headers) : false;
 
             if ($orderNumColIdx === false) {
-                return null;
+                return ['success' => false, 'error' => 'Could not find mapped "Order Number" column header in sheet columns list. Mapping: ' . json_encode($mapping) . ' Headers: ' . json_encode($values[0])];
             }
 
             // Search for order row
@@ -1476,14 +1472,15 @@ Current website details:
                     }
                     $orderData['all_sheet_columns'] = $allColumnsData;
 
-                    return $orderData;
+                    return ['success' => true, 'order' => $orderData];
                 }
             }
+
+            return ['success' => false, 'error' => "Order number '{$orderNumber}' not found in any sheet row under column index {$orderNumColIdx}."];
         } catch (\Exception $e) {
             Log::error("Google Sheets getOrder Error: " . $e->getMessage());
+            return ['success' => false, 'error' => 'Exception occurred during sheets fetch: ' . $e->getMessage()];
         }
-
-        return null;
     }
 
     /**
