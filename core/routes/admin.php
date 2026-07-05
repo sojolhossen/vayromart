@@ -471,6 +471,8 @@ Route::middleware('admin')->group(function () {
         Route::post('/update', 'update')->name('update');
         Route::get('/google/redirect', 'googleRedirect')->name('google.redirect');
         Route::get('/google/callback', 'googleCallback')->name('google.callback');
+        Route::get('/google/spreadsheets', 'getGoogleSpreadsheets')->name('google.spreadsheets');
+        Route::get('/google/sheets/{spreadsheetId}', 'getGoogleSheetsList')->name('google.sheets.list');
         Route::post('/sync-sheet', 'syncGoogleSheet')->name('sync.sheet');
     });
 

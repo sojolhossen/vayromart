@@ -95,7 +95,7 @@ class AdminSalesAgentController extends Controller
             'client_id' => $clientId,
             'redirect_uri' => $redirectUri,
             'response_type' => 'code',
-            'scope' => 'https://www.googleapis.com/auth/spreadsheets.readonly',
+            'scope' => 'https://www.googleapis.com/auth/spreadsheets.readonly https://www.googleapis.com/auth/drive.readonly',
             'access_type' => 'offline',
             'prompt' => 'consent'
         ]);
@@ -173,5 +173,142 @@ class AdminSalesAgentController extends Controller
                 'message' => 'Sync failed: ' . $e->getMessage()
             ]);
         }
+    }
+    /**
+     * Fetch list of Google Spreadsheets from user's Google Drive
+     */
+    public function getGoogleSpreadsheets()
+    {
+        $general = gs();
+        $settings = [];
+        if ($general->chatbot_settings) {
+            $settings = is_string($general->chatbot_settings) 
+                ? json_decode($general->chatbot_settings, true) 
+                : (array)$general->chatbot_settings;
+        }
+
+        $clientId = $settings['google_client_id'] ?? '';
+        $clientSecret = $settings['google_client_secret'] ?? '';
+        $refreshToken = $settings['google_refresh_token'] ?? '';
+
+        if (empty($clientId) || empty($refreshToken)) {
+            return response()->json(['success' => false, 'message' => 'Google account is not connected.']);
+        }
+
+        try {
+            $accessToken = $this->getFreshAccessToken($clientId, $clientSecret, $refreshToken, $settings);
+            
+            $response = Http::withToken($accessToken)->timeout(15)->get('https://www.googleapis.com/drive/v3/files', [
+                'q' => "mimeType='application/vnd.google-apps.spreadsheet' and trashed=false",
+                'fields' => 'files(id,name)',
+                'pageSize' => 100
+            ]);
+
+            if (!$response->successful()) {
+                return response()->json(['success' => false, 'message' => 'Failed to fetch files from Google: ' . $response->body()]);
+            }
+
+            $data = $response->json();
+            return response()->json([
+                'success' => true,
+                'files' => $data['files'] ?? []
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Fetch list of sheet tabs inside a specific spreadsheet
+     */
+    public function getGoogleSheetsList($spreadsheetId)
+    {
+        // Extract ID if full URL was passed
+        if (preg_match('/\/d\/([a-zA-Z0-9-_]+)/', $spreadsheetId, $matches)) {
+            $spreadsheetId = $matches[1];
+        }
+
+        $general = gs();
+        $settings = [];
+        if ($general->chatbot_settings) {
+            $settings = is_string($general->chatbot_settings) 
+                ? json_decode($general->chatbot_settings, true) 
+                : (array)$general->chatbot_settings;
+        }
+
+        $clientId = $settings['google_client_id'] ?? '';
+        $clientSecret = $settings['google_client_secret'] ?? '';
+        $refreshToken = $settings['google_refresh_token'] ?? '';
+
+        if (empty($clientId) || empty($refreshToken)) {
+            return response()->json(['success' => false, 'message' => 'Google account is not connected.']);
+        }
+
+        try {
+            $accessToken = $this->getFreshAccessToken($clientId, $clientSecret, $refreshToken, $settings);
+            
+            $response = Http::withToken($accessToken)->timeout(15)->get("https://sheets.googleapis.com/v4/spreadsheets/{$spreadsheetId}", [
+                'fields' => 'sheets.properties(title)'
+            ]);
+
+            if (!$response->successful()) {
+                return response()->json(['success' => false, 'message' => 'Failed to fetch spreadsheet details: ' . $response->body()]);
+            }
+
+            $data = $response->json();
+            $sheets = [];
+            if (isset($data['sheets'])) {
+                foreach ($data['sheets'] as $sheet) {
+                    $title = $sheet['properties']['title'] ?? '';
+                    if (!empty($title)) {
+                        $sheets[] = $title;
+                    }
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'sheets' => $sheets
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Internal helper to refresh token
+     */
+    private function getFreshAccessToken($clientId, $clientSecret, $refreshToken, &$settings)
+    {
+        $accessToken = $settings['google_access_token'] ?? '';
+        $expiresAt = $settings['google_token_expires_at'] ?? 0;
+
+        if (empty($accessToken) || time() >= ($expiresAt - 60)) {
+            $response = Http::post('https://oauth2.googleapis.com/token', [
+                'client_id' => $clientId,
+                'client_secret' => $clientSecret,
+                'refresh_token' => $refreshToken,
+                'grant_type' => 'refresh_token',
+            ]);
+
+            if (!$response->successful()) {
+                throw new \Exception("Failed to refresh access token: " . $response->body());
+            }
+
+            $tokenData = $response->json();
+            $accessToken = $tokenData['access_token'];
+            
+            $settings['google_access_token'] = $accessToken;
+            if (isset($tokenData['refresh_token'])) {
+                $settings['google_refresh_token'] = $tokenData['refresh_token'];
+            }
+            $settings['google_token_expires_at'] = time() + ($tokenData['expires_in'] ?? 3600);
+
+            $general = gs();
+            $general->chatbot_settings = $settings;
+            $general->save();
+        }
+
+        return $accessToken;
     }
 }

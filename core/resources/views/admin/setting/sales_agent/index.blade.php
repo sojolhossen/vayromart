@@ -47,18 +47,37 @@
                                     <input type="password" class="form-control" name="google_client_secret" value="{{ $settings['google_client_secret'] ?? '' }}">
                                 </div>
                             </div>
-                            <div class="col-md-6 mb-3">
-                                <div class="form-group">
-                                    <label class="fw-bold">@lang('Google Spreadsheet ID / Document URL')</label>
-                                    <input type="text" class="form-control" name="google_spreadsheet_id" value="{{ $settings['google_spreadsheet_id'] ?? '' }}" placeholder="Enter spreadsheet ID or full URL">
+                            @if(!empty($settings['google_refresh_token']))
+                                <div class="col-md-6 mb-3">
+                                    <div class="form-group">
+                                        <label class="fw-bold">@lang('Select Google Spreadsheet (Document)')</label>
+                                        <select class="form-control" name="google_spreadsheet_id" id="google_spreadsheet_id" required>
+                                            <option value="">@lang('Loading spreadsheets...')</option>
+                                        </select>
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="col-md-3 mb-3">
-                                <div class="form-group">
-                                    <label class="fw-bold">@lang('Sheet Name')</label>
-                                    <input type="text" class="form-control" name="google_sheet_name" value="{{ $settings['google_sheet_name'] ?? 'Sheet1' }}" placeholder="Sheet1">
+                                <div class="col-md-3 mb-3">
+                                    <div class="form-group">
+                                        <label class="fw-bold">@lang('Select Sheet Tab')</label>
+                                        <select class="form-control" name="google_sheet_name" id="google_sheet_name" required>
+                                            <option value="">@lang('Select Spreadsheet first')</option>
+                                        </select>
+                                    </div>
                                 </div>
-                            </div>
+                            @else
+                                <div class="col-md-6 mb-3">
+                                    <div class="form-group">
+                                        <label class="fw-bold">@lang('Google Spreadsheet ID / Document URL')</label>
+                                        <input type="text" class="form-control" name="google_spreadsheet_id" value="{{ $settings['google_spreadsheet_id'] ?? '' }}" placeholder="Enter spreadsheet ID or full URL">
+                                    </div>
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <div class="form-group">
+                                        <label class="fw-bold">@lang('Sheet Name')</label>
+                                        <input type="text" class="form-control" name="google_sheet_name" value="{{ $settings['google_sheet_name'] ?? 'Sheet1' }}" placeholder="Sheet1">
+                                    </div>
+                                </div>
+                            @endif
                             <div class="col-md-3 mb-3">
                                 <div class="form-group">
                                     <label class="fw-bold">@lang('Enable Google Sheet Sync')</label>
@@ -153,6 +172,106 @@
                     }
                 });
             });
+
+            @if(!empty($settings['google_refresh_token']))
+                // Load spreadsheets list
+                function loadSpreadsheets() {
+                    let absoluteUrl = "{{ route('admin.setting.sales_agent.google.spreadsheets') }}";
+                    let ajaxUrl = absoluteUrl;
+                    if (absoluteUrl.startsWith('http://') || absoluteUrl.startsWith('https://')) {
+                        try {
+                            let parsedUrl = new URL(absoluteUrl);
+                            ajaxUrl = window.location.protocol + '//' + window.location.host + parsedUrl.pathname + parsedUrl.search;
+                        } catch(e) {
+                            ajaxUrl = absoluteUrl.replace(/^https?:\/\/[^\/]+/i, '');
+                        }
+                    }
+
+                    $.ajax({
+                        url: ajaxUrl,
+                        method: 'GET',
+                        dataType: 'json',
+                        success: function(response) {
+                            if (response.success) {
+                                const select = $('#google_spreadsheet_id');
+                                select.empty().append('<option value="">-- @lang("Select Spreadsheet") --</option>');
+                                
+                                const savedId = "{{ $settings['google_spreadsheet_id'] ?? '' }}";
+                                
+                                response.files.forEach(function(file) {
+                                    const selected = (file.id === savedId) ? 'selected' : '';
+                                    select.append(`<option value="${file.id}" ${selected}>${file.name}</option>`);
+                                });
+
+                                // If there was a saved ID, trigger load sheets
+                                if (savedId) {
+                                    loadSheets(savedId);
+                                }
+                            } else {
+                                notify('error', response.message);
+                            }
+                        },
+                        error: function() {
+                            notify('error', 'Failed to load Google Spreadsheets.');
+                        }
+                    });
+                }
+
+                // Load tabs of selected spreadsheet
+                function loadSheets(spreadsheetId) {
+                    const sheetSelect = $('#google_sheet_name');
+                    sheetSelect.empty().append('<option value="">@lang("Loading sheets...")</option>');
+
+                    let absoluteUrl = "{{ route('admin.setting.sales_agent.google.sheets.list', ':id') }}".replace(':id', spreadsheetId).replace('%3Aid', spreadsheetId);
+                    let ajaxUrl = absoluteUrl;
+                    if (absoluteUrl.startsWith('http://') || absoluteUrl.startsWith('https://')) {
+                        try {
+                            let parsedUrl = new URL(absoluteUrl);
+                            ajaxUrl = window.location.protocol + '//' + window.location.host + parsedUrl.pathname + parsedUrl.search;
+                        } catch(e) {
+                            ajaxUrl = absoluteUrl.replace(/^https?:\/\/[^\/]+/i, '');
+                        }
+                    }
+
+                    $.ajax({
+                        url: ajaxUrl,
+                        method: 'GET',
+                        dataType: 'json',
+                        success: function(response) {
+                            if (response.success) {
+                                sheetSelect.empty().append('<option value="">-- @lang("Select Tab") --</option>');
+                                
+                                const savedSheet = "{{ $settings['google_sheet_name'] ?? 'Sheet1' }}";
+                                
+                                response.sheets.forEach(function(sheet) {
+                                    const selected = (sheet === savedSheet) ? 'selected' : '';
+                                    sheetSelect.append(`<option value="${sheet}" ${selected}>${sheet}</option>`);
+                                });
+                            } else {
+                                notify('error', response.message);
+                                sheetSelect.empty().append('<option value="">@lang("Failed to load tabs")</option>');
+                            }
+                        },
+                        error: function() {
+                            notify('error', 'Failed to load sheets list.');
+                            sheetSelect.empty().append('<option value="">@lang("Failed to load tabs")</option>');
+                        }
+                    });
+                }
+
+                // Initial loading
+                loadSpreadsheets();
+
+                // Spreadsheet changed event
+                $('#google_spreadsheet_id').on('change', function() {
+                    const val = $(this).val();
+                    if (val) {
+                        loadSheets(val);
+                    } else {
+                        $('#google_sheet_name').empty().append('<option value="">@lang("Select Spreadsheet first")</option>');
+                    }
+                });
+            @endif
 
         })(jQuery);
     </script>
