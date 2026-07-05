@@ -1690,7 +1690,7 @@ Current website details:
                     if (Cache::has($lastRecsKey)) {
                         $lastRecIds = Cache::get($lastRecsKey);
                         if (is_array($lastRecIds) && !empty($lastRecIds)) {
-                            $productId = $lastRecIds[0]; // Take the first matched product from cache
+                            $productId = $lastRecIds[0];
                         }
                     }
                     if (empty($productId) && Cache::has("fb_last_active_product_{$senderId}")) {
@@ -1705,99 +1705,53 @@ Current website details:
                 $customerAddress = isset($jsonData['address']) ? trim($jsonData['address']) : '';
                 $variantId = isset($jsonData['variant_id']) ? intval($jsonData['variant_id']) : 0;
 
-                // 1. Find the product
-                $product = Product::find($productId);
-                if (!$product) {
-                    return str_replace($matches[0], "\n\n[সিস্টেম নোটিশ: দুঃখিত, প্রোডাক্ট আইডিটি ডাটাবেজে পাওয়া যায়নি। অনুগ্রহ করে আবার চেষ্টা করুন।]", $botResponse);
-                }
+                // 1. Find product in chatbot data.json (Google Sheet synced products)
+                $productName = 'Product';
+                $productPriceText = '0 BDT';
+                $productFound = false;
 
-                // 2. Check stock
-                if ($product->track_inventory) {
-                    $variant = $variantId ? \App\Models\ProductVariant::find($variantId) : null;
-                    $stockQuantity = $product->inStock($variant);
-                    if ($quantity > $stockQuantity) {
-                        return str_replace($matches[0], "\n\n[দুঃখিত, এই প্রোডাক্টটির পর্যাপ্ত স্টক নেই। বর্তমানে স্টক আছে: {$stockQuantity} টি।]", $botResponse);
+                $jsonFilePath = storage_path('app/chatbot/data.json');
+                if (file_exists($jsonFilePath)) {
+                    $jsonData = json_decode(file_get_contents($jsonFilePath), true);
+                    if (is_array($jsonData) && !empty($jsonData['products'])) {
+                        foreach ($jsonData['products'] as $p) {
+                            if (strval($p['id']) == strval($productId)) {
+                                $productName = $p['name'] ?? 'Product';
+                                $productPriceText = $p['price'] ?? '0 BDT';
+                                $productFound = true;
+                                break;
+                            }
+                        }
                     }
                 }
 
-                // 3. Create or find Guest user mapped to Facebook Sender ID
-                $userId = 0;
-                $guestId = null;
-
-                $guestEmail = 'guest_fb_' . $senderId . '@vayromart.local';
-                $guest = \App\Models\Guest::where('mobile', $customerMobile)->first();
-                if (!$guest) {
-                    $guest = new \App\Models\Guest();
-                    $guest->email = $guestEmail;
-                    $guest->mobile = $customerMobile;
-                    $guest->session_id = 'fb_' . $senderId;
-                    $guest->dial_code = '880';
-                    $guest->country_code = 'BD';
-                    $guest->country_name = 'Bangladesh';
-                    $guest->save();
+                // If not found in JSON, search database as fallback
+                if (!$productFound) {
+                    $dbProduct = Product::find($productId);
+                    if ($dbProduct) {
+                        $productName = $dbProduct->name;
+                        $prices = $dbProduct->prices(null);
+                        $productPriceText = $prices->sale_price . ' BDT';
+                    } else {
+                        // Safe fallback using generic name if cached
+                        $productName = Cache::get("fb_ad_ref_{$senderId}", 'Product');
+                    }
                 }
-                $guestId = $guest->id;
 
-                // 4. Calculate pricing
-                $variant = $variantId ? \App\Models\ProductVariant::find($variantId) : null;
-                $prices = $product->prices($variant);
-                $price = $prices->sale_price;
-                $discount = $prices->regular_price - $prices->sale_price;
-
-                $subtotal = $price * $quantity;
+                // 2. Calculate pricing
+                $priceFloat = floatval(preg_replace('/[^0-9.]/', '', $productPriceText));
+                if ($priceFloat <= 0) {
+                    $priceFloat = 0;
+                }
+                
+                $subtotal = $priceFloat * $quantity;
                 $shippingCharge = 80.00; // Standard shipping method charge is 80 TK
                 $totalAmount = $subtotal + $shippingCharge;
 
-                // 5. Generate unique Order Number
-                $prefix = 'OID-';
-                $last = Order::max('id') + 1;
-                $formattedLast = str_pad($last, 5, '0', STR_PAD_LEFT);
-                $orderNumber = $prefix . $formattedLast;
+                // 3. Generate unique Order Number using date timestamp and random string (since we don't query Order DB table)
+                $orderNumber = 'OID-' . date('ymd') . rand(100, 999);
 
-                // 6. Create Order
-                $order = new Order();
-                $order->order_number = $orderNumber;
-                $order->user_id = $userId;
-                $order->guest_id = $guestId;
-                
-                $names = explode(' ', $customerName, 2);
-                $firstName = $names[0] ?? '';
-                $lastName = $names[1] ?? '';
-
-                $shippingAddressObj = [
-                    'firstname' => $firstName,
-                    'lastname' => $lastName,
-                    'mobile' => $customerMobile,
-                    'email' => $guest->email,
-                    'city' => 'Dhaka',
-                    'state' => 'Dhaka',
-                    'zip' => '1000',
-                    'country_code' => 'BD',
-                    'dial_code' => '880',
-                    'country' => 'Bangladesh',
-                    'address' => $customerAddress,
-                ];
-                $order->shipping_address = (object)$shippingAddressObj;
-                $order->shipping_method_id = 1; // Standard Delivery
-                $order->shipping_charge = $shippingCharge;
-                $order->is_cod = 1; // Cash on delivery
-                $order->payment_status = 0; // Not Paid
-                $order->status = 0; // Pending
-                $order->subtotal = $subtotal;
-                $order->total_amount = $totalAmount;
-                $order->save();
-
-                // 7. Create Order Details
-                $orderDetail = new \App\Models\OrderDetail();
-                $orderDetail->order_id = $order->id;
-                $orderDetail->product_id = $productId;
-                $orderDetail->product_variant_id = $variantId;
-                $orderDetail->quantity = $quantity;
-                $orderDetail->price = $price;
-                $orderDetail->discount = $discount;
-                $orderDetail->save();
-
-                // 7.2. Log order to Google Sheets
+                // 4. Log order to Google Sheets
                 try {
                     $general = gs();
                     $settings = [];
@@ -1860,10 +1814,10 @@ Current website details:
                                 // Fields map helper values
                                 $fieldValues = [
                                     'order_date' => date('Y-m-d H:i:s'),
-                                    'order_number' => $order->order_number,
+                                    'order_number' => $orderNumber,
                                     'customer_name' => $customerName,
                                     'customer_mobile' => $customerMobile,
-                                    'product_name' => $product->name,
+                                    'product_name' => $productName,
                                     'quantity' => $quantity,
                                     'total_amount' => $totalAmount,
                                     'shipping_address' => $customerAddress,
@@ -1882,10 +1836,10 @@ Current website details:
                                 // Default fallback positional array
                                 $rowValues = [
                                     date('Y-m-d H:i:s'),
-                                    $order->order_number,
+                                    $orderNumber,
                                     $customerName,
                                     $customerMobile,
-                                    $product->name,
+                                    $productName,
                                     $quantity,
                                     $totalAmount,
                                     $customerAddress,
@@ -1909,32 +1863,12 @@ Current website details:
                     Log::error("Google Sheets Order Logging Error: " . $sheetEx->getMessage());
                 }
 
-                // 8. Deduct stock and update log
-                if ($product->track_inventory) {
-                    $item = $variant ? $variant : $product;
-                    $item->in_stock -= $quantity;
-                    $item->save();
-
-                    $desc = "Sold {$quantity} product(s) via Facebook Messenger AI Agent";
-                    $productManager = new \App\Lib\ProductManager();
-                    $productManager->createStockLog($product, $quantity, $desc, $variant, '-', $order->id);
-                }
-
-                // 9. Send Admin notification
-                try {
-                    $adminNotification = new \App\Models\AdminNotification();
-                    $adminNotification->title = 'New order #' . $order->order_number . ' has been created via Facebook AI Agent';
-                    $adminNotification->click_url = urlPath('admin.order.index') . '?search=' . $order->order_number;
-                    $adminNotification->save();
-                } catch (\Exception $e) {}
-
                 // Replace the command tag in the response text with a clean success message in Bengali (using English digits)
-                $formattedOrderNum = $order->order_number;
                 $successMsg = "\n\n🎉 **আলহামদুলিল্লাহ, আপনার অর্ডারটি সফলভাবে সম্পন্ন হয়েছে!**\n";
-                $successMsg .= "- **অর্ডার নাম্বার:** `{$formattedOrderNum}`\n";
-                $successMsg .= "- **অর্ডারের পণ্যের নাম:** {$product->name}\n";
+                $successMsg .= "- **অর্ডার নাম্বার:** `{$orderNumber}`\n";
+                $successMsg .= "- **অর্ডারের পণ্যের নাম:** {$productName}\n";
                 $successMsg .= "- **পরিমাণ:** {$quantity} টি\n";
-                $successMsg .= "- **মোট মূল্য (ডেলিভারি চার্জসহ):** {$totalAmount} টাকা (ক্যাশ অন ডেলিভারি)\n";
+                $successMsg .= "- **মোট মূল্য (ডেলিভারি চার্জসহ):** {$totalAmount} BDT (ক্যাশ অন ডেলিভারি)\n";
                 $successMsg .= "- **ডেলিভারি ঠিকানা:** {$customerAddress}\n";
                 $successMsg .= "- **মোবাইল নাম্বার:** {$customerMobile}\n\n";
                 $successMsg .= "অর্ডারটি প্রসেস করার পর আমাদের প্রতিনিধি আপনার মোবাইলে যোগাযোগ করবেন। আমাদের সাথে থাকার জন্য ধন্যবাদ! 😊";
