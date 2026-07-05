@@ -636,44 +636,52 @@ class FacebookWebhookController extends Controller
                 }
             } else {
                 $errorMsg = $gsResult['error'] ?? 'Unknown Error';
-                $databaseContext .= "\n[SYSTEM: Checked Google Sheets for Order '{$orderNumber}' but search was unsuccessful. Info: {$errorMsg}. Please inform the user that the order could not be loaded from the Google Sheet and mention the specific error for debugging: '{$errorMsg}']\n";
-                // Fallback to local DB lookup
-                $order = Order::where('order_number', $orderNumber)->first();
+                
+                if ($errorMsg === 'Google Sheet integration for orders is disabled or not configured.') {
+                    // Fallback to local DB lookup
+                    $order = Order::where('order_number', $orderNumber)->first();
 
-                if ($order) {
-                    Cache::put("fb_last_active_order_{$senderId}", $order->id, now()->addHours(2));
-                    
-                    // Check if already verified
-                    if (Cache::has("fb_order_verified_{$senderId}_{$order->id}")) {
-                        $databaseContext .= "\nReal-time Order Details for {$order->order_number}:\n";
-                        $databaseContext .= "- Order ID: {$order->id}\n";
-                        $databaseContext .= "- Order Number: {$order->order_number}\n";
-                        $databaseContext .= "- Status: " . strip_tags($order->statusBadge()) . "\n";
-                        $databaseContext .= "- Payment Status: " . strip_tags($order->paymentBadge()) . "\n";
-                        $databaseContext .= "- Total Amount: {$order->total_amount} BDT\n";
-                        $databaseContext .= "- Delivery Charge: {$order->shipping_charge} BDT\n";
-                        $databaseContext .= "- Items: " . $order->products->pluck('name')->implode(', ') . "\n";
-                        $databaseContext .= "- Delivery Address: " . json_encode($order->shipping_address) . "\n";
+                    if ($order) {
+                        Cache::put("fb_last_active_order_{$senderId}", $order->id, now()->addHours(2));
                         
-                        // Live Payment Details from Deposit relation
-                        if ($order->deposit && $order->deposit->id) {
-                            $methodName = $order->deposit->methodName() ?: 'Online Payment';
-                            $trxId = $order->deposit->trx ?: 'N/A';
-                            $databaseContext .= "- Payment Method/Gateway: {$methodName}\n";
-                            $databaseContext .= "- Payment Transaction Ref ID (Trx ID): {$trxId}\n";
+                        // Check if already verified
+                        if (Cache::has("fb_order_verified_{$senderId}_{$order->id}")) {
+                            $databaseContext .= "\nReal-time Order Details for {$order->order_number}:\n";
+                            $databaseContext .= "- Order ID: {$order->id}\n";
+                            $databaseContext .= "- Order Number: {$order->order_number}\n";
+                            $databaseContext .= "- Status: " . strip_tags($order->statusBadge()) . "\n";
+                            $databaseContext .= "- Payment Status: " . strip_tags($order->paymentBadge()) . "\n";
+                            $databaseContext .= "- Total Amount: {$order->total_amount} BDT\n";
+                            $databaseContext .= "- Delivery Charge: {$order->shipping_charge} BDT\n";
+                            $databaseContext .= "- Items: " . $order->products->pluck('name')->implode(', ') . "\n";
+                            $databaseContext .= "- Delivery Address: " . json_encode($order->shipping_address) . "\n";
+                            
+                            // Live Payment Details from Deposit relation
+                            if ($order->deposit && $order->deposit->id) {
+                                $methodName = $order->deposit->methodName() ?: 'Online Payment';
+                                $trxId = $order->deposit->trx ?: 'N/A';
+                                $databaseContext .= "- Payment Method/Gateway: {$methodName}\n";
+                                $databaseContext .= "- Payment Transaction Ref ID (Trx ID): {$trxId}\n";
+                            } else {
+                                $databaseContext .= "- Payment Method/Gateway: Cash on Delivery (COD)\n";
+                            }
                         } else {
-                            $databaseContext .= "- Payment Method/Gateway: Cash on Delivery (COD)\n";
+                            // Request security verification (last 4 digits of mobile)
+                            Cache::put($pendingOrderCheckKey, $order->id, now()->addMinutes(10));
+                            $botResponse = "আমি দেখতে পাচ্ছি আপনি অর্ডার **{$order->order_number}** সম্পর্কে জানতে চেয়েছেন। নিরাপত্তার স্বার্থে, অনুগ্রহ করে এই অর্ডারের সাথে যুক্ত মোবাইল নাম্বারের শেষ ৪টি ডিজিট টাইপ করে দিন (যেমন: 4567)।";
+                            $this->saveBotMessage($conversation->id, $botResponse);
+                            $this->sendFacebookMessage($senderId, $botResponse);
+                            return;
                         }
                     } else {
-                        // Request security verification (last 4 digits of mobile)
-                        Cache::put($pendingOrderCheckKey, $order->id, now()->addMinutes(10));
-                        $botResponse = "আমি দেখতে পাচ্ছি আপনি অর্ডার **{$order->order_number}** সম্পর্কে জানতে চেয়েছেন। নিরাপত্তার স্বার্থে, অনুগ্রহ করে এই অর্ডারের সাথে যুক্ত মোবাইল নাম্বারের শেষ ৪টি ডিজিট টাইপ করে দিন (যেমন: 4567)।";
-                        $this->saveBotMessage($conversation->id, $botResponse);
-                        $this->sendFacebookMessage($senderId, $botResponse);
-                        return;
+                        $databaseContext .= "\n[SYSTEM: Order {$orderNumber} was not found in our database. Inform the user to double check the order number.]\n";
                     }
                 } else {
-                    $databaseContext .= "\n[SYSTEM: Order {$orderNumber} was not found in our database. Inform the user to double check the order number.]\n";
+                    // Show sheet lookup error directly for troubleshooting
+                    $botResponse = "গুগল শিট থেকে অর্ডার '{$orderNumber}' এর তথ্য খোঁজার সময় ত্রুটি ঘটেছে। ত্রুটি: {$errorMsg}";
+                    $this->saveBotMessage($conversation->id, $botResponse);
+                    $this->sendFacebookMessage($senderId, $botResponse);
+                    return;
                 }
             }
         }
