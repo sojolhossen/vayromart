@@ -44,6 +44,10 @@ class AdminSalesAgentController extends Controller
             'google_orders_sheet_name' => 'nullable|string|max:100',
             'google_orders_sync_enabled' => 'nullable|in:0,1',
             'google_orders_field_mapping' => 'nullable|array',
+            'google_lookup_spreadsheet_id' => 'nullable|string|max:255',
+            'google_lookup_sheet_name' => 'nullable|string|max:100',
+            'google_lookup_sync_enabled' => 'nullable|in:0,1',
+            'google_lookup_field_mapping' => 'nullable|array',
         ]);
 
         $general = gs();
@@ -73,6 +77,12 @@ class AdminSalesAgentController extends Controller
 
         // Save dynamic field mapping
         $settings['google_orders_field_mapping'] = $request->google_orders_field_mapping ?: [];
+
+        // Update Google lookup sheets keys
+        $settings['google_lookup_spreadsheet_id'] = $request->google_lookup_spreadsheet_id;
+        $settings['google_lookup_sheet_name'] = $request->google_lookup_sheet_name ?: 'Sheet1';
+        $settings['google_lookup_sync_enabled'] = $request->google_lookup_sync_enabled ? 1 : 0;
+        $settings['google_lookup_field_mapping'] = $request->google_lookup_field_mapping ?: [];
 
         $general->chatbot_settings = $settings;
         $general->save();

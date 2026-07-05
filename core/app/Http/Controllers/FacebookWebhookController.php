@@ -1338,21 +1338,37 @@ Current website details:
      */
     private function getOrderFromGoogleSheets($orderNumber, $settings)
     {
+        $lookupEnabled = $settings['google_lookup_sync_enabled'] ?? 0;
         $postEnabled = $settings['google_orders_sync_enabled'] ?? 0;
-        $ordersSpreadsheetId = $settings['google_orders_spreadsheet_id'] ?? '';
-        $ordersSheetName = $settings['google_orders_sheet_name'] ?? '';
+        
+        $targetSpreadsheetId = '';
+        $targetSheetName = '';
+        $mapping = [];
+
+        if ($lookupEnabled && !empty($settings['google_lookup_spreadsheet_id']) && !empty($settings['google_lookup_sheet_name'])) {
+            $targetSpreadsheetId = $settings['google_lookup_spreadsheet_id'];
+            $targetSheetName = $settings['google_lookup_sheet_name'];
+            $mapping = $settings['google_lookup_field_mapping'] ?? [];
+        } elseif ($postEnabled && !empty($settings['google_orders_spreadsheet_id']) && !empty($settings['google_orders_sheet_name'])) {
+            $targetSpreadsheetId = $settings['google_orders_spreadsheet_id'];
+            $targetSheetName = $settings['google_orders_sheet_name'];
+            $mapping = $settings['google_orders_field_mapping'] ?? [];
+        } else {
+            return null;
+        }
+
         $clientId = $settings['google_client_id'] ?? '';
         $clientSecret = $settings['google_client_secret'] ?? '';
         $refreshToken = $settings['google_refresh_token'] ?? '';
 
-        if (!$postEnabled || empty($ordersSpreadsheetId) || empty($ordersSheetName) || empty($clientId) || empty($refreshToken)) {
+        if (empty($clientId) || empty($clientSecret) || empty($refreshToken)) {
             return null;
         }
 
         try {
             // Extract spreadsheet ID if full URL
-            if (preg_match('/\/d\/([a-zA-Z0-9-_]+)/', $ordersSpreadsheetId, $urlMatches)) {
-                $ordersSpreadsheetId = $urlMatches[1];
+            if (preg_match('/\/d\/([a-zA-Z0-9-_]+)/', $targetSpreadsheetId, $urlMatches)) {
+                $targetSpreadsheetId = $urlMatches[1];
             }
 
             // Refresh access token
@@ -1386,7 +1402,7 @@ Current website details:
 
             // Fetch sheet values
             $response = Http::withToken($accessToken)->timeout(15)->get(
-                "https://sheets.googleapis.com/v4/spreadsheets/{$ordersSpreadsheetId}/values/{$ordersSheetName}!A:Z"
+                "https://sheets.googleapis.com/v4/spreadsheets/{$targetSpreadsheetId}/values/{$targetSheetName}!A:Z"
             );
 
             if (!$response->successful()) {
@@ -1401,7 +1417,6 @@ Current website details:
             }
 
             $headers = $values[0];
-            $mapping = $settings['google_orders_field_mapping'] ?? [];
 
             // Find mapping column index
             $orderNumColName = array_search('order_number', $mapping);
