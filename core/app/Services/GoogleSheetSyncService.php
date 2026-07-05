@@ -100,6 +100,7 @@ class GoogleSheetSyncService
             $summary = $rowData['summary'] ?? $rowData['short description'] ?? '';
             $description = $rowData['description'] ?? $rowData['details'] ?? $rowData['specification'] ?? '';
             $link = $rowData['link'] ?? $rowData['url'] ?? $rowData['product link'] ?? '';
+            $adIdVal = $rowData['ad id'] ?? $rowData['ads id'] ?? $rowData['fb ad id'] ?? $rowData['ad_id'] ?? '';
 
             $formattedProducts[] = [
                 'id' => $id,
@@ -108,7 +109,8 @@ class GoogleSheetSyncService
                 'stock' => $stock,
                 'summary' => trim(strip_tags(html_entity_decode($summary))),
                 'description' => trim(strip_tags(html_entity_decode($description))),
-                'link' => trim($link)
+                'link' => trim($link),
+                'ad_id' => trim($adIdVal)
             ];
         }
 

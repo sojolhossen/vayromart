@@ -808,12 +808,23 @@ class FacebookWebhookController extends Controller
                     $queryPhrase = implode(' ', $expandedKeywords);
                     $queryLower = mb_strtolower($queryPhrase);
                     
+                    $cachedAdId = Cache::get("fb_ad_id_{$senderId}");
+                    
                     $scoredJsonProducts = [];
                     foreach ($jsonData['products'] as $p) {
                         $nameLower = mb_strtolower($p['name'] ?? '');
                         $summaryLower = mb_strtolower($p['summary'] ?? '');
                         
                         $hitScore = 0;
+
+                        // Check Ad ID match
+                        if (!empty($cachedAdId) && isset($p['ad_id']) && !empty($p['ad_id'])) {
+                            $sheetAdIds = array_map('trim', explode(',', $p['ad_id']));
+                            if (in_array(trim($cachedAdId), $sheetAdIds)) {
+                                $hitScore += 1000;
+                            }
+                        }
+
                         // Keyword Matching
                         foreach ($searchTerms as $word) {
                             $wordLower = mb_strtolower($word);
