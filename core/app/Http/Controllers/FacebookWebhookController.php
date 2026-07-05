@@ -371,59 +371,103 @@ class FacebookWebhookController extends Controller
             
             if (strlen($cleanInput) === 4 || strlen($cleanInput) === 11 || strlen($cleanInput) === 13 || strlen($cleanInput) === 14) {
                 $orderId = Cache::get($pendingOrderCheckKey);
-                $order = Order::find($orderId);
-
-                if ($order) {
-                    $mobile = $this->getOrderMobileNumber($order);
-                    $cleanMobile = preg_replace('/[^0-9]/', '', $mobile);
-                    
-                    $last4 = substr($cleanMobile, -4);
-                    
-                    $isMatch = false;
-                    if (strlen($cleanInput) === 4) {
-                        // 4-digit match
-                        $isMatch = ($last4 === $cleanInput);
-                    } else {
-                        // Full mobile match (compare last 11 digits to handle country code differences)
-                        $isMatch = (substr($cleanMobile, -11) === substr($cleanInput, -11));
-                    }
-
-                    if ($isMatch) {
-                        // Success - forget verification state
-                        Cache::forget($pendingOrderCheckKey);
-                        Cache::put("fb_order_verified_{$senderId}_{$order->id}", true, now()->addHours(2));
-                        Cache::put("fb_last_active_order_{$senderId}", $order->id, now()->addHours(2));
+                
+                if (is_string($orderId) && str_starts_with($orderId, 'gs_')) {
+                    $orderNum = substr($orderId, 3);
+                    $gsOrder = Cache::get("fb_gs_order_{$senderId}_{$orderNum}");
+                    if ($gsOrder) {
+                        $mobile = $gsOrder['mobile'] ?? '';
+                        $cleanMobile = preg_replace('/[^0-9]/', '', $mobile);
+                        $last4 = substr($cleanMobile, -4);
                         
-                        $databaseContext .= "\n[SYSTEM: User successfully verified ownership of Order {$order->order_number} by matching the last 4 digits of the mobile number.]\n";
-                        $databaseContext .= "Real-time Order Details for {$order->order_number}:\n";
-                        $databaseContext .= "- Order ID: {$order->id}\n";
-                        $databaseContext .= "- Order Number: {$order->order_number}\n";
-                        $databaseContext .= "- Status: " . strip_tags($order->statusBadge()) . "\n";
-                        $databaseContext .= "- Payment Status: " . strip_tags($order->paymentBadge()) . "\n";
-                        $databaseContext .= "- Total Amount: {$order->total_amount} BDT\n";
-                        $databaseContext .= "- Delivery Charge: {$order->shipping_charge} BDT\n";
-                        $databaseContext .= "- Delivery Type: " . ($order->shipping_method_id ? 'Standard Shipping' : 'Default') . "\n";
-                        $databaseContext .= "- Items: " . $order->products->pluck('name')->implode(', ') . "\n";
-                        $databaseContext .= "- Delivery Address: " . json_encode($order->shipping_address) . "\n";
-                        
-                        if ($order->deposit && $order->deposit->id) {
-                            $methodName = $order->deposit->methodName() ?: 'Online Payment';
-                            $trxId = $order->deposit->trx ?: 'N/A';
-                            $databaseContext .= "- Payment Method/Gateway: {$methodName}\n";
-                            $databaseContext .= "- Payment Transaction Ref ID (Trx ID): {$trxId}\n";
+                        $isMatch = false;
+                        if (strlen($cleanInput) === 4) {
+                            $isMatch = ($last4 === $cleanInput);
                         } else {
-                            $databaseContext .= "- Payment Method/Gateway: Cash on Delivery (COD)\n";
+                            $isMatch = (substr($cleanMobile, -11) === substr($cleanInput, -11));
                         }
-                        
-                        $databaseContext .= "Acknowledge the verification success and report the status and items details of this order clearly to the user in a friendly format. If they requested cancellation, inform them that they can now proceed with canceling it.";
+
+                        if ($isMatch) {
+                            Cache::forget($pendingOrderCheckKey);
+                            Cache::put("fb_gs_order_verified_{$senderId}_{$orderNum}", true, now()->addHours(2));
+                            Cache::put("fb_last_active_order_num_{$senderId}", $orderNum, now()->addHours(2));
+                            
+                            $databaseContext .= "\n[SYSTEM: User successfully verified ownership of Order {$orderNum} from Google Sheet by matching the last 4 digits of the mobile number.]\n";
+                            $databaseContext .= "Real-time Order Details for {$orderNum} (from Google Sheet):\n";
+                            $databaseContext .= "- Order Number: {$orderNum}\n";
+                            $databaseContext .= "- Status: " . ($gsOrder['status'] ?? 'Pending') . "\n";
+                            $databaseContext .= "- Date: " . ($gsOrder['order_date'] ?? 'N/A') . "\n";
+                            $databaseContext .= "- Customer Name: " . ($gsOrder['customer_name'] ?? 'N/A') . "\n";
+                            $databaseContext .= "- Product: " . ($gsOrder['product_name'] ?? 'N/A') . "\n";
+                            $databaseContext .= "- Qty: " . ($gsOrder['quantity'] ?? '1') . "\n";
+                            $databaseContext .= "- Total Amount: " . ($gsOrder['total_amount'] ?? '0') . " BDT\n";
+                            $databaseContext .= "- Shipping Address: " . ($gsOrder['shipping_address'] ?? 'N/A') . "\n";
+                            
+                            $databaseContext .= "Acknowledge the verification success and report the status and items details of this order from Google Sheet clearly to the user in a friendly format.";
+                        } else {
+                            $botResponse = "দুঃখিত, আপনার দেওয়া মোবাইল নাম্বারের শেষ ৪টি ডিজিট বা পূর্ণ নাম্বারটি মিলছে না। অনুগ্রহ করে অর্ডারের সাথে যুক্ত সঠিক নাম্বারটি লিখুন।";
+                            $this->saveBotMessage($conversation->id, $botResponse);
+                            $this->sendFacebookMessage($senderId, $botResponse);
+                            return;
+                        }
                     } else {
-                        $botResponse = "দুঃখিত, আপনার দেওয়া মোবাইল নাম্বারের শেষ ৪টি ডিজিট বা পূর্ণ নাম্বারটি মিলছে না। অনুগ্রহ করে অর্ডারের সাথে যুক্ত সঠিক নাম্বারটি লিখুন।";
-                        $this->saveBotMessage($conversation->id, $botResponse);
-                        $this->sendFacebookMessage($senderId, $botResponse);
-                        return;
+                        Cache::forget($pendingOrderCheckKey);
                     }
                 } else {
-                    Cache::forget($pendingOrderCheckKey);
+                    $order = Order::find($orderId);
+
+                    if ($order) {
+                        $mobile = $this->getOrderMobileNumber($order);
+                        $cleanMobile = preg_replace('/[^0-9]/', '', $mobile);
+                        
+                        $last4 = substr($cleanMobile, -4);
+                        
+                        $isMatch = false;
+                        if (strlen($cleanInput) === 4) {
+                            // 4-digit match
+                            $isMatch = ($last4 === $cleanInput);
+                        } else {
+                            // Full mobile match (compare last 11 digits to handle country code differences)
+                            $isMatch = (substr($cleanMobile, -11) === substr($cleanInput, -11));
+                        }
+
+                        if ($isMatch) {
+                            // Success - forget verification state
+                            Cache::forget($pendingOrderCheckKey);
+                            Cache::put("fb_order_verified_{$senderId}_{$order->id}", true, now()->addHours(2));
+                            Cache::put("fb_last_active_order_{$senderId}", $order->id, now()->addHours(2));
+                            
+                            $databaseContext .= "\n[SYSTEM: User successfully verified ownership of Order {$order->order_number} by matching the last 4 digits of the mobile number.]\n";
+                            $databaseContext .= "Real-time Order Details for {$order->order_number}:\n";
+                            $databaseContext .= "- Order ID: {$order->id}\n";
+                            $databaseContext .= "- Order Number: {$order->order_number}\n";
+                            $databaseContext .= "- Status: " . strip_tags($order->statusBadge()) . "\n";
+                            $databaseContext .= "- Payment Status: " . strip_tags($order->paymentBadge()) . "\n";
+                            $databaseContext .= "- Total Amount: {$order->total_amount} BDT\n";
+                            $databaseContext .= "- Delivery Charge: {$order->shipping_charge} BDT\n";
+                            $databaseContext .= "- Delivery Type: " . ($order->shipping_method_id ? 'Standard Shipping' : 'Default') . "\n";
+                            $databaseContext .= "- Items: " . $order->products->pluck('name')->implode(', ') . "\n";
+                            $databaseContext .= "- Delivery Address: " . json_encode($order->shipping_address) . "\n";
+                            
+                            if ($order->deposit && $order->deposit->id) {
+                                $methodName = $order->deposit->methodName() ?: 'Online Payment';
+                                $trxId = $order->deposit->trx ?: 'N/A';
+                                $databaseContext .= "- Payment Method/Gateway: {$methodName}\n";
+                                $databaseContext .= "- Payment Transaction Ref ID (Trx ID): {$trxId}\n";
+                            } else {
+                                $databaseContext .= "- Payment Method/Gateway: Cash on Delivery (COD)\n";
+                            }
+                            
+                            $databaseContext .= "Acknowledge the verification success and report the status and items details of this order clearly to the user in a friendly format. If they requested cancellation, inform them that they can now proceed with canceling it.";
+                        } else {
+                            $botResponse = "দুঃখিত, আপনার দেওয়া মোবাইল নাম্বারের শেষ ৪টি ডিজিট বা পূর্ণ নাম্বারটি মিলছে না। অনুগ্রহ করে অর্ডারের সাথে যুক্ত সঠিক নাম্বারটি লিখুন।";
+                            $this->saveBotMessage($conversation->id, $botResponse);
+                            $this->sendFacebookMessage($senderId, $botResponse);
+                            return;
+                        }
+                    } else {
+                        Cache::forget($pendingOrderCheckKey);
+                    }
                 }
             }
         }
@@ -565,42 +609,77 @@ class FacebookWebhookController extends Controller
         }
 
         if (empty($botResponse) && !empty($orderNumber)) {
-            $order = Order::where('order_number', $orderNumber)->first();
+            // First check Google Sheets if order logging is enabled
+            $general = gs();
+            $settings = [];
+            if ($general->chatbot_settings) {
+                $settings = is_string($general->chatbot_settings) 
+                    ? json_decode($general->chatbot_settings, true) 
+                    : (array)$general->chatbot_settings;
+            }
 
-            if ($order) {
-                Cache::put("fb_last_active_order_{$senderId}", $order->id, now()->addHours(2));
-                
-                // Check if already verified
-                if (Cache::has("fb_order_verified_{$senderId}_{$order->id}")) {
-                    $databaseContext .= "\nReal-time Order Details for {$order->order_number}:\n";
-                    $databaseContext .= "- Order ID: {$order->id}\n";
-                    $databaseContext .= "- Order Number: {$order->order_number}\n";
-                    $databaseContext .= "- Status: " . strip_tags($order->statusBadge()) . "\n";
-                    $databaseContext .= "- Payment Status: " . strip_tags($order->paymentBadge()) . "\n";
-                    $databaseContext .= "- Total Amount: {$order->total_amount} BDT\n";
-                    $databaseContext .= "- Delivery Charge: {$order->shipping_charge} BDT\n";
-                    $databaseContext .= "- Items: " . $order->products->pluck('name')->implode(', ') . "\n";
-                    $databaseContext .= "- Delivery Address: " . json_encode($order->shipping_address) . "\n";
-                    
-                    // Live Payment Details from Deposit relation
-                    if ($order->deposit && $order->deposit->id) {
-                        $methodName = $order->deposit->methodName() ?: 'Online Payment';
-                        $trxId = $order->deposit->trx ?: 'N/A';
-                        $databaseContext .= "- Payment Method/Gateway: {$methodName}\n";
-                        $databaseContext .= "- Payment Transaction Ref ID (Trx ID): {$trxId}\n";
-                    } else {
-                        $databaseContext .= "- Payment Method/Gateway: Cash on Delivery (COD)\n";
-                    }
+            $gsOrder = $this->getOrderFromGoogleSheets($orderNumber, $settings);
+            
+            if ($gsOrder) {
+                Cache::put("fb_gs_order_{$senderId}_{$orderNumber}", $gsOrder, now()->addMinutes(15));
+                Cache::put("fb_last_active_order_num_{$senderId}", $orderNumber, now()->addHours(2));
+
+                if (Cache::has("fb_gs_order_verified_{$senderId}_{$orderNumber}")) {
+                    $databaseContext .= "\nReal-time Order Details for {$orderNumber} (from Google Sheet):\n";
+                    $databaseContext .= "- Order Number: {$orderNumber}\n";
+                    $databaseContext .= "- Status: " . ($gsOrder['status'] ?? 'Pending') . "\n";
+                    $databaseContext .= "- Date: " . ($gsOrder['order_date'] ?? 'N/A') . "\n";
+                    $databaseContext .= "- Customer Name: " . ($gsOrder['customer_name'] ?? 'N/A') . "\n";
+                    $databaseContext .= "- Product: " . ($gsOrder['product_name'] ?? 'N/A') . "\n";
+                    $databaseContext .= "- Qty: " . ($gsOrder['quantity'] ?? '1') . "\n";
+                    $databaseContext .= "- Total Amount: " . ($gsOrder['total_amount'] ?? '0') . " BDT\n";
+                    $databaseContext .= "- Shipping Address: " . ($gsOrder['shipping_address'] ?? 'N/A') . "\n";
                 } else {
-                    // Request security verification (last 4 digits of mobile)
-                    Cache::put($pendingOrderCheckKey, $order->id, now()->addMinutes(10));
-                    $botResponse = "আমি দেখতে পাচ্ছি আপনি অর্ডার **{$order->order_number}** সম্পর্কে জানতে চেয়েছেন। নিরাপত্তার স্বার্থে, অনুগ্রহ করে এই অর্ডারের সাথে যুক্ত মোবাইল নাম্বারের শেষ ৪টি ডিজিট টাইপ করে দিন (যেমন: 4567)।";
+                    Cache::put($pendingOrderCheckKey, "gs_" . $orderNumber, now()->addMinutes(10));
+                    $botResponse = "আমি দেখতে পাচ্ছি আপনি অর্ডার **{$orderNumber}** সম্পর্কে জানতে চেয়েছেন। নিরাপত্তার স্বার্থে, অনুগ্রহ করে এই অর্ডারের সাথে যুক্ত মোবাইল নাম্বারের শেষ ৪টি ডিজিট টাইপ করে দিন (যেমন: 4567)।";
                     $this->saveBotMessage($conversation->id, $botResponse);
                     $this->sendFacebookMessage($senderId, $botResponse);
                     return;
                 }
             } else {
-                $databaseContext .= "\n[SYSTEM: Order {$orderNumber} was not found in our database. Inform the user to double check the order number.]\n";
+                // Fallback to local DB lookup
+                $order = Order::where('order_number', $orderNumber)->first();
+
+                if ($order) {
+                    Cache::put("fb_last_active_order_{$senderId}", $order->id, now()->addHours(2));
+                    
+                    // Check if already verified
+                    if (Cache::has("fb_order_verified_{$senderId}_{$order->id}")) {
+                        $databaseContext .= "\nReal-time Order Details for {$order->order_number}:\n";
+                        $databaseContext .= "- Order ID: {$order->id}\n";
+                        $databaseContext .= "- Order Number: {$order->order_number}\n";
+                        $databaseContext .= "- Status: " . strip_tags($order->statusBadge()) . "\n";
+                        $databaseContext .= "- Payment Status: " . strip_tags($order->paymentBadge()) . "\n";
+                        $databaseContext .= "- Total Amount: {$order->total_amount} BDT\n";
+                        $databaseContext .= "- Delivery Charge: {$order->shipping_charge} BDT\n";
+                        $databaseContext .= "- Items: " . $order->products->pluck('name')->implode(', ') . "\n";
+                        $databaseContext .= "- Delivery Address: " . json_encode($order->shipping_address) . "\n";
+                        
+                        // Live Payment Details from Deposit relation
+                        if ($order->deposit && $order->deposit->id) {
+                            $methodName = $order->deposit->methodName() ?: 'Online Payment';
+                            $trxId = $order->deposit->trx ?: 'N/A';
+                            $databaseContext .= "- Payment Method/Gateway: {$methodName}\n";
+                            $databaseContext .= "- Payment Transaction Ref ID (Trx ID): {$trxId}\n";
+                        } else {
+                            $databaseContext .= "- Payment Method/Gateway: Cash on Delivery (COD)\n";
+                        }
+                    } else {
+                        // Request security verification (last 4 digits of mobile)
+                        Cache::put($pendingOrderCheckKey, $order->id, now()->addMinutes(10));
+                        $botResponse = "আমি দেখতে পাচ্ছি আপনি অর্ডার **{$order->order_number}** সম্পর্কে জানতে চেয়েছেন। নিরাপত্তার স্বার্থে, অনুগ্রহ করে এই অর্ডারের সাথে যুক্ত মোবাইল নাম্বারের শেষ ৪টি ডিজিট টাইপ করে দিন (যেমন: 4567)।";
+                        $this->saveBotMessage($conversation->id, $botResponse);
+                        $this->sendFacebookMessage($senderId, $botResponse);
+                        return;
+                    }
+                } else {
+                    $databaseContext .= "\n[SYSTEM: Order {$orderNumber} was not found in our database. Inform the user to double check the order number.]\n";
+                }
             }
         }
 
@@ -1252,6 +1331,126 @@ Current website details:
             return $order->guest->mobile;
         }
         return '';
+    }
+
+    /**
+     * Fetch order details by order number directly from Google Sheets
+     */
+    private function getOrderFromGoogleSheets($orderNumber, $settings)
+    {
+        $postEnabled = $settings['google_orders_sync_enabled'] ?? 0;
+        $ordersSpreadsheetId = $settings['google_orders_spreadsheet_id'] ?? '';
+        $ordersSheetName = $settings['google_orders_sheet_name'] ?? '';
+        $clientId = $settings['google_client_id'] ?? '';
+        $clientSecret = $settings['google_client_secret'] ?? '';
+        $refreshToken = $settings['google_refresh_token'] ?? '';
+
+        if (!$postEnabled || empty($ordersSpreadsheetId) || empty($ordersSheetName) || empty($clientId) || empty($refreshToken)) {
+            return null;
+        }
+
+        try {
+            // Extract spreadsheet ID if full URL
+            if (preg_match('/\/d\/([a-zA-Z0-9-_]+)/', $ordersSpreadsheetId, $urlMatches)) {
+                $ordersSpreadsheetId = $urlMatches[1];
+            }
+
+            // Refresh access token
+            $accessToken = $settings['google_access_token'] ?? '';
+            $expiresAt = $settings['google_token_expires_at'] ?? 0;
+            if (empty($accessToken) || time() >= ($expiresAt - 60)) {
+                $tokenRes = Http::post('https://oauth2.googleapis.com/token', [
+                    'client_id' => $clientId,
+                    'client_secret' => $clientSecret,
+                    'refresh_token' => $refreshToken,
+                    'grant_type' => 'refresh_token',
+                ]);
+                if ($tokenRes->successful()) {
+                    $tokenData = $tokenRes->json();
+                    $accessToken = $tokenData['access_token'];
+                    $settings['google_access_token'] = $accessToken;
+                    if (isset($tokenData['refresh_token'])) {
+                        $settings['google_refresh_token'] = $tokenData['refresh_token'];
+                    }
+                    $settings['google_token_expires_at'] = time() + ($tokenData['expires_in'] ?? 3600);
+                    
+                    $general = gs();
+                    $general->chatbot_settings = $settings;
+                    $general->save();
+                }
+            }
+
+            if (empty($accessToken)) {
+                return null;
+            }
+
+            // Fetch sheet values
+            $response = Http::withToken($accessToken)->timeout(15)->get(
+                "https://sheets.googleapis.com/v4/spreadsheets/{$ordersSpreadsheetId}/values/{$ordersSheetName}!A:Z"
+            );
+
+            if (!$response->successful()) {
+                return null;
+            }
+
+            $body = $response->json();
+            $values = $body['values'] ?? [];
+
+            if (empty($values) || count($values) < 2) {
+                return null;
+            }
+
+            $headers = $values[0];
+            $mapping = $settings['google_orders_field_mapping'] ?? [];
+
+            // Find mapping column index
+            $orderNumColName = array_search('order_number', $mapping);
+            $orderNumColIdx = ($orderNumColName !== false) ? array_search($orderNumColName, $headers) : false;
+
+            if ($orderNumColIdx === false) {
+                return null;
+            }
+
+            // Search for order row
+            for ($i = 1; $i < count($values); $i++) {
+                $row = $values[$i];
+                if (empty($row)) continue;
+
+                $rowOrderNum = strtoupper(trim($row[$orderNumColIdx] ?? ''));
+                if ($rowOrderNum === $orderNumber) {
+                    // Match found! Map row back
+                    $orderData = [];
+                    
+                    $fieldKeys = [
+                        'order_date' => 'order_date',
+                        'order_number' => 'order_number',
+                        'customer_name' => 'customer_name',
+                        'customer_mobile' => 'mobile',
+                        'product_name' => 'product_name',
+                        'quantity' => 'quantity',
+                        'total_amount' => 'total_amount',
+                        'shipping_address' => 'shipping_address',
+                        'order_status' => 'status',
+                    ];
+
+                    foreach ($fieldKeys as $apiKey => $fieldKey) {
+                        $colName = array_search($apiKey, $mapping);
+                        if ($colName !== false) {
+                            $idx = array_search($colName, $headers);
+                            if ($idx !== false) {
+                                $orderData[$fieldKey] = trim($row[$idx] ?? '');
+                            }
+                        }
+                    }
+
+                    return $orderData;
+                }
+            }
+        } catch (\Exception $e) {
+            Log::error("Google Sheets getOrder Error: " . $e->getMessage());
+        }
+
+        return null;
     }
 
     /**
