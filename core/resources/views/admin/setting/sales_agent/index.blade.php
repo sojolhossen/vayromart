@@ -138,8 +138,40 @@
                                         <label class="form-check-label" for="google_orders_sync_enabled">@lang('Post Orders')</label>
                                     </div>
                                 </div>
-                            </div>
                         </div>
+
+                        <div class="row mt-3" id="mapping-container" style="display: none;">
+                            <div class="col-12">
+                                <h6 class="mb-3 text--warning"><i class="las la-project-diagram"></i> @lang('Google Sheet Column Mapping')</h6>
+                                <p class="text-muted small">@lang('Select which column in your Google Sheet maps to each order field. The headers list is automatically fetched from the selected sheet tab.')</p>
+                            </div>
+                            
+                            @php
+                                $mappings = [
+                                    'mapping_date' => __('Order Date/Time'),
+                                    'mapping_order_number' => __('Order Number'),
+                                    'mapping_customer_name' => __('Customer Name'),
+                                    'mapping_customer_mobile' => __('Customer Mobile/Phone'),
+                                    'mapping_product_name' => __('Product Name'),
+                                    'mapping_quantity' => __('Quantity'),
+                                    'mapping_total_amount' => __('Total Amount'),
+                                    'mapping_shipping_address' => __('Shipping Address'),
+                                    'mapping_order_status' => __('Order Status'),
+                                ];
+                            @endphp
+
+                            @foreach($mappings as $key => $label)
+                                <div class="col-md-4 mb-3">
+                                    <div class="form-group">
+                                        <label class="fw-bold">{{ $label }}</label>
+                                        <select class="form-control mapping-dropdown" name="{{ $key }}" id="{{ $key }}" data-saved="{{ $settings[$key] ?? '' }}">
+                                            <option value="">-- @lang('Do not sync this field') --</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+
 
                         <div class="mb-3 d-flex align-items-center flex-wrap gap-2">
                             @if(empty($settings['google_refresh_token']))
@@ -309,6 +341,10 @@
                                     const selected = (sheet === savedValue) ? 'selected' : '';
                                     sheetSelect.append(`<option value="${sheet}" ${selected}>${sheet}</option>`);
                                 });
+
+                                if (targetSelectId === 'google_orders_sheet_name' && savedValue) {
+                                    loadSheetHeaders(spreadsheetId, savedValue);
+                                }
                             } else {
                                 notify('error', response.message);
                                 sheetSelect.empty().append('<option value="">@lang("Failed to load tabs")</option>');
@@ -317,6 +353,55 @@
                         error: function() {
                             notify('error', 'Failed to load sheets list.');
                             sheetSelect.empty().append('<option value="">@lang("Failed to load tabs")</option>');
+                        }
+                    });
+                }
+
+                // Load headers list for column mapping
+                function loadSheetHeaders(spreadsheetId, sheetName) {
+                    const container = $('#mapping-container');
+                    
+                    // Clear previous options from all mapping dropdowns
+                    $('.mapping-dropdown').empty().append('<option value="">-- @lang("Do not sync this field") --</option>');
+
+                    let absoluteUrl = "{{ route('admin.setting.sales_agent.google.sheets.headers', [':id', ':sheet']) }}"
+                        .replace(':id', spreadsheetId).replace('%3Aid', spreadsheetId)
+                        .replace(':sheet', sheetName).replace('%3Asheet', sheetName);
+                    
+                    let ajaxUrl = absoluteUrl;
+                    if (absoluteUrl.startsWith('http://') || absoluteUrl.startsWith('https://')) {
+                        try {
+                            let parsedUrl = new URL(absoluteUrl);
+                            ajaxUrl = window.location.protocol + '//' + window.location.host + parsedUrl.pathname + parsedUrl.search;
+                        } catch(e) {
+                            ajaxUrl = absoluteUrl.replace(/^https?:\/\/[^\/]+/i, '');
+                        }
+                    }
+
+                    $.ajax({
+                        url: ajaxUrl,
+                        method: 'GET',
+                        dataType: 'json',
+                        success: function(response) {
+                            if (response.success) {
+                                container.show();
+                                
+                                response.headers.forEach(function(header) {
+                                    $('.mapping-dropdown').each(function() {
+                                        const dropdown = $(this);
+                                        const savedValue = dropdown.data('saved');
+                                        const selected = (header === savedValue) ? 'selected' : '';
+                                        dropdown.append(`<option value="${header}" ${selected}>${header}</option>`);
+                                    });
+                                });
+                            } else {
+                                container.hide();
+                                notify('error', response.message);
+                            }
+                        },
+                        error: function() {
+                            container.hide();
+                            notify('error', 'Failed to load sheet column headers.');
                         }
                     });
                 }
@@ -341,6 +426,18 @@
                         loadSheets(val, 'google_orders_sheet_name', '');
                     } else {
                         $('#google_orders_sheet_name').empty().append('<option value="">@lang("Select Spreadsheet first")</option>');
+                        $('#mapping-container').hide();
+                    }
+                });
+
+                // Orders sheet tab changed event
+                $('#google_orders_sheet_name').on('change', function() {
+                    const spreadsheetId = $('#google_orders_spreadsheet_id').val();
+                    const sheetName = $(this).val();
+                    if (spreadsheetId && sheetName) {
+                        loadSheetHeaders(spreadsheetId, sheetName);
+                    } else {
+                        $('#mapping-container').hide();
                     }
                 });
             @endif

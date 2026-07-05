@@ -1593,18 +1593,56 @@ Current website details:
                         }
 
                         if (!empty($accessToken)) {
-                            // Format rows to append: Date, Order Number, Customer Name, Mobile, Product, Qty, Total BDT, Address, Status
-                            $rowValues = [
-                                date('Y-m-d H:i:s'),
-                                $order->order_number,
-                                $customerName,
-                                $customerMobile,
-                                $product->name,
-                                $quantity,
-                                $totalAmount,
-                                $customerAddress,
-                                'Pending'
-                            ];
+                            // Fetch sheet headers first row (A1:Z1)
+                            $headersRes = Http::withToken($accessToken)->get(
+                                "https://sheets.googleapis.com/v4/spreadsheets/{$ordersSpreadsheetId}/values/{$ordersSheetName}!A1:Z1"
+                            );
+                            
+                            $headers = [];
+                            if ($headersRes->successful()) {
+                                $headersData = $headersRes->json();
+                                $headers = $headersData['values'][0] ?? [];
+                            }
+
+                            if (!empty($headers)) {
+                                $rowValues = array_fill(0, count($headers), '');
+                                
+                                // Fields map helper values
+                                $fieldValues = [
+                                    'mapping_date' => date('Y-m-d H:i:s'),
+                                    'mapping_order_number' => $order->order_number,
+                                    'mapping_customer_name' => $customerName,
+                                    'mapping_customer_mobile' => $customerMobile,
+                                    'mapping_product_name' => $product->name,
+                                    'mapping_quantity' => $quantity,
+                                    'mapping_total_amount' => $totalAmount,
+                                    'mapping_shipping_address' => $customerAddress,
+                                    'mapping_order_status' => 'Pending',
+                                ];
+
+                                foreach ($fieldValues as $mapKey => $value) {
+                                    $targetHeader = $settings[$mapKey] ?? '';
+                                    if (!empty($targetHeader)) {
+                                        $idx = array_search($targetHeader, $headers);
+                                        if ($idx !== false) {
+                                            $rowValues[$idx] = $value;
+                                        }
+                                    }
+                                }
+                            } else {
+                                // Default fallback positional array
+                                $rowValues = [
+                                    date('Y-m-d H:i:s'),
+                                    $order->order_number,
+                                    $customerName,
+                                    $customerMobile,
+                                    $product->name,
+                                    $quantity,
+                                    $totalAmount,
+                                    $customerAddress,
+                                    'Pending'
+                                ];
+                            }
 
                             Http::withToken($accessToken)->post(
                                 "https://sheets.googleapis.com/v4/spreadsheets/{$ordersSpreadsheetId}/values/{$ordersSheetName}:append",

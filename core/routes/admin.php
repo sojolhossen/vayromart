@@ -473,6 +473,7 @@ Route::middleware('admin')->group(function () {
         Route::get('/google/callback', 'googleCallback')->name('google.callback');
         Route::get('/google/spreadsheets', 'getGoogleSpreadsheets')->name('google.spreadsheets');
         Route::get('/google/sheets/{spreadsheetId}', 'getGoogleSheetsList')->name('google.sheets.list');
+        Route::get('/google/sheets/{spreadsheetId}/{sheetName}/headers', 'getSheetHeaders')->name('google.sheets.headers');
         Route::post('/sync-sheet', 'syncGoogleSheet')->name('sync.sheet');
     });
 

@@ -43,6 +43,15 @@ class AdminSalesAgentController extends Controller
             'google_orders_spreadsheet_id' => 'nullable|string|max:255',
             'google_orders_sheet_name' => 'nullable|string|max:100',
             'google_orders_sync_enabled' => 'nullable|in:0,1',
+            'mapping_date' => 'nullable|string|max:255',
+            'mapping_order_number' => 'nullable|string|max:255',
+            'mapping_customer_name' => 'nullable|string|max:255',
+            'mapping_customer_mobile' => 'nullable|string|max:255',
+            'mapping_product_name' => 'nullable|string|max:255',
+            'mapping_quantity' => 'nullable|string|max:255',
+            'mapping_total_amount' => 'nullable|string|max:255',
+            'mapping_shipping_address' => 'nullable|string|max:255',
+            'mapping_order_status' => 'nullable|string|max:255',
         ]);
 
         $general = gs();
@@ -69,6 +78,17 @@ class AdminSalesAgentController extends Controller
         $settings['google_orders_spreadsheet_id'] = $request->google_orders_spreadsheet_id;
         $settings['google_orders_sheet_name'] = $request->google_orders_sheet_name ?: 'Sheet1';
         $settings['google_orders_sync_enabled'] = $request->google_orders_sync_enabled ? 1 : 0;
+
+        // Update mappings
+        $settings['mapping_date'] = $request->mapping_date;
+        $settings['mapping_order_number'] = $request->mapping_order_number;
+        $settings['mapping_customer_name'] = $request->mapping_customer_name;
+        $settings['mapping_customer_mobile'] = $request->mapping_customer_mobile;
+        $settings['mapping_product_name'] = $request->mapping_product_name;
+        $settings['mapping_quantity'] = $request->mapping_quantity;
+        $settings['mapping_total_amount'] = $request->mapping_total_amount;
+        $settings['mapping_shipping_address'] = $request->mapping_shipping_address;
+        $settings['mapping_order_status'] = $request->mapping_order_status;
 
         $general->chatbot_settings = $settings;
         $general->save();
@@ -318,5 +338,55 @@ class AdminSalesAgentController extends Controller
         }
 
         return $accessToken;
+    }
+
+    /**
+     * Fetch first row column headers of a selected sheet tab
+     */
+    public function getSheetHeaders($spreadsheetId, $sheetName)
+    {
+        // Extract ID if full URL
+        if (preg_match('/\/d\/([a-zA-Z0-9-_]+)/', $spreadsheetId, $matches)) {
+            $spreadsheetId = $matches[1];
+        }
+
+        $general = gs();
+        $settings = [];
+        if ($general->chatbot_settings) {
+            $settings = is_string($general->chatbot_settings) 
+                ? json_decode($general->chatbot_settings, true) 
+                : (array)$general->chatbot_settings;
+        }
+
+        $clientId = $settings['google_client_id'] ?? '';
+        $clientSecret = $settings['google_client_secret'] ?? '';
+        $refreshToken = $settings['google_refresh_token'] ?? '';
+
+        if (empty($clientId) || empty($refreshToken)) {
+            return response()->json(['success' => false, 'message' => 'Google account is not connected.']);
+        }
+
+        try {
+            $accessToken = $this->getFreshAccessToken($clientId, $clientSecret, $refreshToken, $settings);
+            
+            // Query first row range A1:Z1 (Google Sheets API v4)
+            $response = Http::withToken($accessToken)->timeout(15)->get(
+                "https://sheets.googleapis.com/v4/spreadsheets/{$spreadsheetId}/values/{$sheetName}!A1:Z1"
+            );
+
+            if (!$response->successful()) {
+                return response()->json(['success' => false, 'message' => 'Failed to fetch spreadsheet headers: ' . $response->body()]);
+            }
+
+            $data = $response->json();
+            $headers = $data['values'][0] ?? [];
+
+            return response()->json([
+                'success' => true,
+                'headers' => $headers
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()]);
+        }
     }
 }
