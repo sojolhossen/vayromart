@@ -143,33 +143,13 @@
                         <div class="row mt-3" id="mapping-container" style="display: none;">
                             <div class="col-12">
                                 <h6 class="mb-3 text--warning"><i class="las la-project-diagram"></i> @lang('Google Sheet Column Mapping')</h6>
-                                <p class="text-muted small">@lang('Select which column in your Google Sheet maps to each order field. The headers list is automatically fetched from the selected sheet tab.')</p>
+                                <p class="text-muted small">@lang('For each column found in your Google Sheet, select the corresponding Vayromart order attribute to populate it.')</p>
                             </div>
-                            
-                            @php
-                                $mappings = [
-                                    'mapping_date' => __('Order Date/Time'),
-                                    'mapping_order_number' => __('Order Number'),
-                                    'mapping_customer_name' => __('Customer Name'),
-                                    'mapping_customer_mobile' => __('Customer Mobile/Phone'),
-                                    'mapping_product_name' => __('Product Name'),
-                                    'mapping_quantity' => __('Quantity'),
-                                    'mapping_total_amount' => __('Total Amount'),
-                                    'mapping_shipping_address' => __('Shipping Address'),
-                                    'mapping_order_status' => __('Order Status'),
-                                ];
-                            @endphp
-
-                            @foreach($mappings as $key => $label)
-                                <div class="col-md-4 mb-3">
-                                    <div class="form-group">
-                                        <label class="fw-bold">{{ $label }}</label>
-                                        <select class="form-control mapping-dropdown" name="{{ $key }}" id="{{ $key }}" data-saved="{{ $settings[$key] ?? '' }}">
-                                            <option value="">-- @lang('Do not sync this field') --</option>
-                                        </select>
-                                    </div>
+                            <div class="col-12">
+                                <div class="row" id="dynamic-mappings-list">
+                                    <!-- Populated dynamically via JS -->
                                 </div>
-                            @endforeach
+                            </div>
                         </div>
 
 
@@ -360,9 +340,9 @@
                 // Load headers list for column mapping
                 function loadSheetHeaders(spreadsheetId, sheetName) {
                     const container = $('#mapping-container');
+                    const listContainer = $('#dynamic-mappings-list');
                     
-                    // Clear previous options from all mapping dropdowns
-                    $('.mapping-dropdown').empty().append('<option value="">-- @lang("Do not sync this field") --</option>');
+                    listContainer.empty().append('<div class="col-12 text-center p-3 text-muted"><i class="las la-spinner la-spin"></i> @lang("Fetching columns from sheet...")</div>');
 
                     let absoluteUrl = "{{ route('admin.setting.sales_agent.google.sheets.headers', [':id', ':sheet']) }}"
                         .replace(':id', spreadsheetId).replace('%3Aid', spreadsheetId)
@@ -385,14 +365,50 @@
                         success: function(response) {
                             if (response.success) {
                                 container.show();
-                                
+                                listContainer.empty();
+
+                                if (response.headers.length === 0) {
+                                    listContainer.append('<div class="col-12 text-center p-3 text-danger"><i class="las la-exclamation-triangle"></i> @lang("No columns found in the first row of this sheet. Please add some column headers first.")</div>');
+                                    return;
+                                }
+
+                                const savedMappings = @json($settings['google_orders_field_mapping'] ?? []);
+
+                                const availableOptions = {
+                                    '': '-- @lang("Do not fill this column") --',
+                                    'order_date': '@lang("Order Date/Time")',
+                                    'order_number': '@lang("Order Number")',
+                                    'customer_name': '@lang("Customer Name")',
+                                    'customer_mobile': '@lang("Customer Mobile/Phone")',
+                                    'product_name': '@lang("Product Name")',
+                                    'quantity': '@lang("Quantity")',
+                                    'total_amount': '@lang("Total Amount")',
+                                    'shipping_address': '@lang("Shipping Address")',
+                                    'order_status': '@lang("Order Status")'
+                                };
+
                                 response.headers.forEach(function(header) {
-                                    $('.mapping-dropdown').each(function() {
-                                        const dropdown = $(this);
-                                        const savedValue = dropdown.data('saved');
-                                        const selected = (header === savedValue) ? 'selected' : '';
-                                        dropdown.append(`<option value="${header}" ${selected}>${header}</option>`);
+                                    if (!header || header.trim() === '') return;
+
+                                    const savedValue = savedMappings[header] || '';
+                                    
+                                    let selectOptionsHtml = '';
+                                    Object.keys(availableOptions).forEach(function(key) {
+                                        const selected = (key === savedValue) ? 'selected' : '';
+                                        selectOptionsHtml += `<option value="${key}" ${selected}>${availableOptions[key]}</option>`;
                                     });
+
+                                    const fieldHtml = `
+                                        <div class="col-md-4 mb-3">
+                                            <div class="form-group">
+                                                <label class="fw-bold text--primary">${header}</label>
+                                                <select class="form-control" name="google_orders_field_mapping[${header}]">
+                                                    ${selectOptionsHtml}
+                                                </select>
+                                            </div>
+                                        </div>
+                                    `;
+                                    listContainer.append(fieldHtml);
                                 });
                             } else {
                                 container.hide();

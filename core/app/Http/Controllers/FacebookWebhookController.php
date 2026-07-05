@@ -1609,24 +1609,23 @@ Current website details:
                                 
                                 // Fields map helper values
                                 $fieldValues = [
-                                    'mapping_date' => date('Y-m-d H:i:s'),
-                                    'mapping_order_number' => $order->order_number,
-                                    'mapping_customer_name' => $customerName,
-                                    'mapping_customer_mobile' => $customerMobile,
-                                    'mapping_product_name' => $product->name,
-                                    'mapping_quantity' => $quantity,
-                                    'mapping_total_amount' => $totalAmount,
-                                    'mapping_shipping_address' => $customerAddress,
-                                    'mapping_order_status' => 'Pending',
+                                    'order_date' => date('Y-m-d H:i:s'),
+                                    'order_number' => $order->order_number,
+                                    'customer_name' => $customerName,
+                                    'customer_mobile' => $customerMobile,
+                                    'product_name' => $product->name,
+                                    'quantity' => $quantity,
+                                    'total_amount' => $totalAmount,
+                                    'shipping_address' => $customerAddress,
+                                    'order_status' => 'Pending',
                                 ];
 
-                                foreach ($fieldValues as $mapKey => $value) {
-                                    $targetHeader = $settings[$mapKey] ?? '';
-                                    if (!empty($targetHeader)) {
-                                        $idx = array_search($targetHeader, $headers);
-                                        if ($idx !== false) {
-                                            $rowValues[$idx] = $value;
-                                        }
+                                $mapping = $settings['google_orders_field_mapping'] ?? [];
+
+                                foreach ($headers as $idx => $headerName) {
+                                    $mappedAttr = $mapping[$headerName] ?? '';
+                                    if (!empty($mappedAttr) && isset($fieldValues[$mappedAttr])) {
+                                        $rowValues[$idx] = $fieldValues[$mappedAttr];
                                     }
                                 }
                             } else {

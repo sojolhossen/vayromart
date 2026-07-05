@@ -43,15 +43,7 @@ class AdminSalesAgentController extends Controller
             'google_orders_spreadsheet_id' => 'nullable|string|max:255',
             'google_orders_sheet_name' => 'nullable|string|max:100',
             'google_orders_sync_enabled' => 'nullable|in:0,1',
-            'mapping_date' => 'nullable|string|max:255',
-            'mapping_order_number' => 'nullable|string|max:255',
-            'mapping_customer_name' => 'nullable|string|max:255',
-            'mapping_customer_mobile' => 'nullable|string|max:255',
-            'mapping_product_name' => 'nullable|string|max:255',
-            'mapping_quantity' => 'nullable|string|max:255',
-            'mapping_total_amount' => 'nullable|string|max:255',
-            'mapping_shipping_address' => 'nullable|string|max:255',
-            'mapping_order_status' => 'nullable|string|max:255',
+            'google_orders_field_mapping' => 'nullable|array',
         ]);
 
         $general = gs();
@@ -79,16 +71,8 @@ class AdminSalesAgentController extends Controller
         $settings['google_orders_sheet_name'] = $request->google_orders_sheet_name ?: 'Sheet1';
         $settings['google_orders_sync_enabled'] = $request->google_orders_sync_enabled ? 1 : 0;
 
-        // Update mappings
-        $settings['mapping_date'] = $request->mapping_date;
-        $settings['mapping_order_number'] = $request->mapping_order_number;
-        $settings['mapping_customer_name'] = $request->mapping_customer_name;
-        $settings['mapping_customer_mobile'] = $request->mapping_customer_mobile;
-        $settings['mapping_product_name'] = $request->mapping_product_name;
-        $settings['mapping_quantity'] = $request->mapping_quantity;
-        $settings['mapping_total_amount'] = $request->mapping_total_amount;
-        $settings['mapping_shipping_address'] = $request->mapping_shipping_address;
-        $settings['mapping_order_status'] = $request->mapping_order_status;
+        // Save dynamic field mapping
+        $settings['google_orders_field_mapping'] = $request->google_orders_field_mapping ?: [];
 
         $general->chatbot_settings = $settings;
         $general->save();
