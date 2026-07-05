@@ -595,7 +595,7 @@ class FacebookWebhookController extends Controller
                 $rawNumber = $numMatches[0];
                 // Standalone 5 digit numbers (like 00015) are always matched.
                 // Other numbers (like 15) are matched if accompanied by order-related keywords.
-                if (strlen($rawNumber) === 5 || $hasOrderContext) {
+                if ((strlen($rawNumber) === 5 || $hasOrderContext) && strlen($rawNumber) < 9) {
                     // Left pad the extracted number to 5 digits (e.g. 15 -> 00015, 125 -> 00125)
                     $paddedNumber = str_pad($rawNumber, 5, '0', STR_PAD_LEFT);
                     $orderNumber = 'OID-' . $paddedNumber;
@@ -635,7 +635,8 @@ class FacebookWebhookController extends Controller
                     return;
                 }
             } else {
-                $databaseContext .= "\n[SYSTEM: Checked Google Sheets for Order '{$orderNumber}' but search was unsuccessful. Info: " . $gsResult['error'] . "]\n";
+                $errorMsg = $gsResult['error'] ?? 'Unknown Error';
+                $databaseContext .= "\n[SYSTEM: Checked Google Sheets for Order '{$orderNumber}' but search was unsuccessful. Info: {$errorMsg}. Please inform the user that the order could not be loaded from the Google Sheet and mention the specific error for debugging: '{$errorMsg}']\n";
                 // Fallback to local DB lookup
                 $order = Order::where('order_number', $orderNumber)->first();
 
