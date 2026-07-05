@@ -1547,6 +1547,81 @@ Current website details:
                 $orderDetail->discount = $discount;
                 $orderDetail->save();
 
+                // 7.2. Log order to Google Sheets
+                try {
+                    $general = gs();
+                    $settings = [];
+                    if ($general->chatbot_settings) {
+                        $settings = is_string($general->chatbot_settings) 
+                            ? json_decode($general->chatbot_settings, true) 
+                            : (array)$general->chatbot_settings;
+                    }
+                    $postEnabled = $settings['google_orders_sync_enabled'] ?? 0;
+                    $ordersSpreadsheetId = $settings['google_orders_spreadsheet_id'] ?? '';
+                    $ordersSheetName = $settings['google_orders_sheet_name'] ?? '';
+                    $clientId = $settings['google_client_id'] ?? '';
+                    $clientSecret = $settings['google_client_secret'] ?? '';
+                    $refreshToken = $settings['google_refresh_token'] ?? '';
+
+                    if ($postEnabled && !empty($ordersSpreadsheetId) && !empty($ordersSheetName) && !empty($clientId) && !empty($refreshToken)) {
+                        // Extract spreadsheet ID if full URL
+                        if (preg_match('/\/d\/([a-zA-Z0-9-_]+)/', $ordersSpreadsheetId, $urlMatches)) {
+                            $ordersSpreadsheetId = $urlMatches[1];
+                        }
+
+                        // Refresh access token
+                        $accessToken = $settings['google_access_token'] ?? '';
+                        $expiresAt = $settings['google_token_expires_at'] ?? 0;
+                        if (empty($accessToken) || time() >= ($expiresAt - 60)) {
+                            $tokenRes = Http::post('https://oauth2.googleapis.com/token', [
+                                'client_id' => $clientId,
+                                'client_secret' => $clientSecret,
+                                'refresh_token' => $refreshToken,
+                                'grant_type' => 'refresh_token',
+                            ]);
+                            if ($tokenRes->successful()) {
+                                $tokenData = $tokenRes->json();
+                                $accessToken = $tokenData['access_token'];
+                                $settings['google_access_token'] = $accessToken;
+                                if (isset($tokenData['refresh_token'])) {
+                                    $settings['google_refresh_token'] = $tokenData['refresh_token'];
+                                }
+                                $settings['google_token_expires_at'] = time() + ($tokenData['expires_in'] ?? 3600);
+                                $general->chatbot_settings = $settings;
+                                $general->save();
+                            }
+                        }
+
+                        if (!empty($accessToken)) {
+                            // Format rows to append: Date, Order Number, Customer Name, Mobile, Product, Qty, Total BDT, Address, Status
+                            $rowValues = [
+                                date('Y-m-d H:i:s'),
+                                $order->order_number,
+                                $customerName,
+                                $customerMobile,
+                                $product->name,
+                                $quantity,
+                                $totalAmount,
+                                $customerAddress,
+                                'Pending'
+                            ];
+
+                            Http::withToken($accessToken)->post(
+                                "https://sheets.googleapis.com/v4/spreadsheets/{$ordersSpreadsheetId}/values/{$ordersSheetName}:append",
+                                [
+                                    'valueInputOption' => 'USER_ENTERED',
+                                    'insertDataOption' => 'INSERT_ROWS',
+                                    'range' => $ordersSheetName,
+                                    'majorDimension' => 'ROWS',
+                                    'values' => [$rowValues]
+                                ]
+                            );
+                        }
+                    }
+                } catch (\Exception $sheetEx) {
+                    Log::error("Google Sheets Order Logging Error: " . $sheetEx->getMessage());
+                }
+
                 // 8. Deduct stock and update log
                 if ($product->track_inventory) {
                     $item = $variant ? $variant : $product;

@@ -95,6 +95,52 @@
                             </div>
                         </div>
 
+                        <hr>
+
+                        <h6 class="mb-3 text--primary"><i class="las la-shopping-cart"></i> @lang('Google Sheets Orders Posting Settings')</h6>
+                        <div class="row">
+                            @if(!empty($settings['google_refresh_token']))
+                                <div class="col-md-6 mb-3">
+                                    <div class="form-group">
+                                        <label class="fw-bold">@lang('Select Google Spreadsheet for Orders')</label>
+                                        <select class="form-control" name="google_orders_spreadsheet_id" id="google_orders_spreadsheet_id" required>
+                                            <option value="">@lang('Loading spreadsheets...')</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <div class="form-group">
+                                        <label class="fw-bold">@lang('Select Orders Sheet Tab')</label>
+                                        <select class="form-control" name="google_orders_sheet_name" id="google_orders_sheet_name" required>
+                                            <option value="">@lang('Select Spreadsheet first')</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            @else
+                                <div class="col-md-6 mb-3">
+                                    <div class="form-group">
+                                        <label class="fw-bold">@lang('Google Spreadsheet ID / Document URL for Orders')</label>
+                                        <input type="text" class="form-control" name="google_orders_spreadsheet_id" value="{{ $settings['google_orders_spreadsheet_id'] ?? '' }}" placeholder="Enter spreadsheet ID or full URL">
+                                    </div>
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <div class="form-group">
+                                        <label class="fw-bold">@lang('Orders Sheet Name')</label>
+                                        <input type="text" class="form-control" name="google_orders_sheet_name" value="{{ $settings['google_orders_sheet_name'] ?? 'Sheet1' }}" placeholder="Sheet1">
+                                    </div>
+                                </div>
+                            @endif
+                            <div class="col-md-3 mb-3">
+                                <div class="form-group">
+                                    <label class="fw-bold">@lang('Enable Order Posting')</label>
+                                    <div class="form-check form-switch mt-2">
+                                        <input class="form-check-input" type="checkbox" name="google_orders_sync_enabled" id="google_orders_sync_enabled" value="1" @checked($settings['google_orders_sync_enabled'] ?? false)>
+                                        <label class="form-check-label" for="google_orders_sync_enabled">@lang('Post Orders')</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="mb-3 d-flex align-items-center flex-wrap gap-2">
                             @if(empty($settings['google_refresh_token']))
                                 @if(!empty($settings['google_client_id']))
@@ -197,19 +243,34 @@
                         dataType: 'json',
                         success: function(response) {
                             if (response.success) {
+                                // Products Select
                                 const select = $('#google_spreadsheet_id');
                                 select.empty().append('<option value="">-- @lang("Select Spreadsheet") --</option>');
-                                
                                 const savedId = "{{ $settings['google_spreadsheet_id'] ?? '' }}";
                                 
+                                // Orders Select
+                                const ordersSelect = $('#google_orders_spreadsheet_id');
+                                if (ordersSelect.length) {
+                                    ordersSelect.empty().append('<option value="">-- @lang("Select Spreadsheet") --</option>');
+                                }
+                                const savedOrdersId = "{{ $settings['google_orders_spreadsheet_id'] ?? '' }}";
+
                                 response.files.forEach(function(file) {
                                     const selected = (file.id === savedId) ? 'selected' : '';
                                     select.append(`<option value="${file.id}" ${selected}>${file.name}</option>`);
+
+                                    if (ordersSelect.length) {
+                                        const orderSelected = (file.id === savedOrdersId) ? 'selected' : '';
+                                        ordersSelect.append(`<option value="${file.id}" ${orderSelected}>${file.name}</option>`);
+                                    }
                                 });
 
-                                // If there was a saved ID, trigger load sheets
+                                // Trigger load sheets
                                 if (savedId) {
-                                    loadSheets(savedId);
+                                    loadSheets(savedId, 'google_sheet_name', "{{ $settings['google_sheet_name'] ?? 'Sheet1' }}");
+                                }
+                                if (savedOrdersId && ordersSelect.length) {
+                                    loadSheets(savedOrdersId, 'google_orders_sheet_name', "{{ $settings['google_orders_sheet_name'] ?? 'Sheet1' }}");
                                 }
                             } else {
                                 notify('error', response.message);
@@ -222,8 +283,8 @@
                 }
 
                 // Load tabs of selected spreadsheet
-                function loadSheets(spreadsheetId) {
-                    const sheetSelect = $('#google_sheet_name');
+                function loadSheets(spreadsheetId, targetSelectId, savedValue) {
+                    const sheetSelect = $('#' + targetSelectId);
                     sheetSelect.empty().append('<option value="">@lang("Loading sheets...")</option>');
 
                     let absoluteUrl = "{{ route('admin.setting.sales_agent.google.sheets.list', ':id') }}".replace(':id', spreadsheetId).replace('%3Aid', spreadsheetId);
@@ -244,11 +305,8 @@
                         success: function(response) {
                             if (response.success) {
                                 sheetSelect.empty().append('<option value="">-- @lang("Select Tab") --</option>');
-                                
-                                const savedSheet = "{{ $settings['google_sheet_name'] ?? 'Sheet1' }}";
-                                
                                 response.sheets.forEach(function(sheet) {
-                                    const selected = (sheet === savedSheet) ? 'selected' : '';
+                                    const selected = (sheet === savedValue) ? 'selected' : '';
                                     sheetSelect.append(`<option value="${sheet}" ${selected}>${sheet}</option>`);
                                 });
                             } else {
@@ -266,13 +324,23 @@
                 // Initial loading
                 loadSpreadsheets();
 
-                // Spreadsheet changed event
+                // Products changed event
                 $('#google_spreadsheet_id').on('change', function() {
                     const val = $(this).val();
                     if (val) {
-                        loadSheets(val);
+                        loadSheets(val, 'google_sheet_name', '');
                     } else {
                         $('#google_sheet_name').empty().append('<option value="">@lang("Select Spreadsheet first")</option>');
+                    }
+                });
+
+                // Orders changed event
+                $('#google_orders_spreadsheet_id').on('change', function() {
+                    const val = $(this).val();
+                    if (val) {
+                        loadSheets(val, 'google_orders_sheet_name', '');
+                    } else {
+                        $('#google_orders_sheet_name').empty().append('<option value="">@lang("Select Spreadsheet first")</option>');
                     }
                 });
             @endif

@@ -40,6 +40,9 @@ class AdminSalesAgentController extends Controller
             'google_spreadsheet_id' => 'nullable|string|max:255',
             'google_sheet_name' => 'nullable|string|max:100',
             'google_sheet_sync_enabled' => 'nullable|in:0,1',
+            'google_orders_spreadsheet_id' => 'nullable|string|max:255',
+            'google_orders_sheet_name' => 'nullable|string|max:100',
+            'google_orders_sync_enabled' => 'nullable|in:0,1',
         ]);
 
         $general = gs();
@@ -61,6 +64,11 @@ class AdminSalesAgentController extends Controller
         $settings['google_spreadsheet_id'] = $request->google_spreadsheet_id;
         $settings['google_sheet_name'] = $request->google_sheet_name ?: 'Sheet1';
         $settings['google_sheet_sync_enabled'] = $request->google_sheet_sync_enabled ? 1 : 0;
+        
+        // Update Google orders sheets keys
+        $settings['google_orders_spreadsheet_id'] = $request->google_orders_spreadsheet_id;
+        $settings['google_orders_sheet_name'] = $request->google_orders_sheet_name ?: 'Sheet1';
+        $settings['google_orders_sync_enabled'] = $request->google_orders_sync_enabled ? 1 : 0;
 
         $general->chatbot_settings = $settings;
         $general->save();
