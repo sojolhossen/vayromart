@@ -107,6 +107,10 @@
                             @else
                                 <span class="badge badge--success py-2 px-3"><i class="las la-check-circle"></i> @lang('Google Connected')</span>
                                 
+                                <a href="{{ route('admin.setting.sales_agent.google.redirect') }}" class="btn btn-sm btn-outline--warning">
+                                    <i class="las la-sync-alt"></i> @lang('Reconnect Account')
+                                </a>
+                                
                                 <button type="button" class="btn btn-sm btn--info text-white" id="sync-sheet-btn">
                                     <i class="las la-sync-alt"></i> @lang('Sync Google Sheet Now')
                                 </button>
