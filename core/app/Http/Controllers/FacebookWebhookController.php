@@ -1416,10 +1416,18 @@ Current website details:
                 return null;
             }
 
-            $headers = $values[0];
+            $headers = array_map(function($h) {
+                return strtolower(trim($h));
+            }, $values[0]);
+
+            // Lowercase and trim mapping keys as well
+            $mappingClean = [];
+            foreach ($mapping as $colName => $mappedField) {
+                $mappingClean[strtolower(trim($colName))] = $mappedField;
+            }
 
             // Find mapping column index
-            $orderNumColName = array_search('order_number', $mapping);
+            $orderNumColName = array_search('order_number', $mappingClean);
             $orderNumColIdx = ($orderNumColName !== false) ? array_search($orderNumColName, $headers) : false;
 
             if ($orderNumColIdx === false) {
@@ -1449,7 +1457,7 @@ Current website details:
                     ];
 
                     foreach ($fieldKeys as $apiKey => $fieldKey) {
-                        $colName = array_search($apiKey, $mapping);
+                        $colName = array_search($apiKey, $mappingClean);
                         if ($colName !== false) {
                             $idx = array_search($colName, $headers);
                             if ($idx !== false) {
