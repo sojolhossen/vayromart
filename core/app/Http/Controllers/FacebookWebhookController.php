@@ -579,8 +579,8 @@ class FacebookWebhookController extends Controller
         // 4. Check for new Order status or cancellation query
         $orderNumber = '';
         
-        // Pattern 1: Exact OID-XXXXX match
-        if (preg_match('/OID-\d+/i', $msgEn, $matches)) {
+        // Pattern 1: Exact OID-XXXXX, DXXXXX, or VM-XXXXX match
+        if (preg_match('/\b(OID-\d+|[A-Z]{1,3}\d{4,8}|[A-Z]{1,3}-\d{4,8})\b/i', $msgEn, $matches)) {
             $orderNumber = strtoupper($matches[0]);
         } else {
             // Pattern 2: Customer specifies a number contextually near order-related keywords (e.g. "order 15", "id 120", "অর্ডার ১৫")
