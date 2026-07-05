@@ -644,7 +644,7 @@
             "openai",
             "chat"
         ],
-        "title": "AI Chatbot Config",
+        "title": "Sales Agent Config",
         "icon": "las la-robot",
         "route_name": "admin.setting.chatbot.index",
         "menu_active": "admin.setting.chatbot.*"
