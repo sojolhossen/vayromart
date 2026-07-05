@@ -644,10 +644,24 @@
             "openai",
             "chat"
         ],
-        "title": "Sales Agent Config",
+        "title": "AI Chatbot Config",
         "icon": "las la-robot",
         "route_name": "admin.setting.chatbot.index",
         "menu_active": "admin.setting.chatbot.*"
+    },
+    "sales_agent": {
+        "keyword": [
+            "sales",
+            "agent",
+            "facebook",
+            "google",
+            "sheet",
+            "sync"
+        ],
+        "title": "Sales Agent Config",
+        "icon": "las la-headset",
+        "route_name": "admin.setting.sales_agent.index",
+        "menu_active": "admin.setting.sales_agent.*"
     },
     "ai_landing_page": {
         "keyword": [

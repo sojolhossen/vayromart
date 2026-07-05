@@ -459,13 +459,19 @@ Route::middleware('admin')->group(function () {
         Route::get('/logs/{id}', 'viewLog')->name('logs.view');
         Route::post('/knowledge/store', 'knowledgeStore')->name('knowledge.store');
         Route::post('/knowledge/delete/{id}', 'knowledgeDelete')->name('knowledge.delete');
-        Route::post('/sync-sheet', 'syncGoogleSheet')->name('sync.sheet');
-        Route::get('/google/redirect', 'googleRedirect')->name('google.redirect');
-        Route::get('/google/callback', 'googleCallback')->name('google.callback');
         
         // JSON Exporter routes
         Route::get('/export', 'exportForm')->name('export');
         Route::post('/export/process', 'exportProcess')->name('export.process');
+    });
+
+    // Facebook Sales Agent & Google Sheets Sync settings
+    Route::controller('AdminSalesAgentController')->prefix('setting/sales-agent')->name('setting.sales_agent.')->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::post('/update', 'update')->name('update');
+        Route::get('/google/redirect', 'googleRedirect')->name('google.redirect');
+        Route::get('/google/callback', 'googleCallback')->name('google.callback');
+        Route::post('/sync-sheet', 'syncGoogleSheet')->name('sync.sheet');
     });
 
     // Admin Sales Tracker Routes
