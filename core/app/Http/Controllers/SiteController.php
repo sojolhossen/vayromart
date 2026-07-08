@@ -20,7 +20,29 @@ use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Validator;
 
 class SiteController extends Controller {
-    public function index() {
+    public function index(Request $request) {
+        if ($request->ajax()) {
+            $limit = gs('homepage_products_limit') ?? 20;
+            $products = \App\Models\Product::published()
+                ->with(['brand:id,name', 'productVariants', 'displayImage', 'activeOffer'])
+                ->orderByRaw('SHA1(id) DESC')
+                ->paginate($limit);
+
+            $html = '';
+            $theme = activeTemplate();
+            foreach ($products as $product) {
+                $html .= view('components.frontend.' . $theme . '.product-card', [
+                    'product' => $product,
+                    'showCartButton' => false
+                ])->render();
+            }
+
+            return response()->json([
+                'html' => $html,
+                'hasMore' => $products->hasMorePages()
+            ]);
+        }
+
         $pageTitle   = 'Home';
         $sections    = Page::where('tempname', activeTemplate())->where('slug', '/')->first();
         $seoContents = $sections->seo_content;
