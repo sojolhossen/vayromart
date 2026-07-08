@@ -16,10 +16,8 @@
                 @endforeach
             </div>
 
-            <div class="text-center mt-4 d-none" id="infinite-scroll-loader">
-                <div class="spinner-border text--base" role="status" style="width: 3rem; height: 3rem;">
-                    <span class="visually-hidden">Loading...</span>
-                </div>
+            <div class="text-center mt-4 d-none" id="load-more-btn-wrapper">
+                <button type="button" class="btn btn--base" id="load-more-btn">@lang('Load More')</button>
             </div>
         @endif
     </div>
@@ -34,21 +32,20 @@
         let loading = false;
         let hasMore = {{ $products->hasMorePages() ? 'true' : 'false' }};
         const wrapper = $('#homepage-products-wrapper');
-        const loader = $('#infinite-scroll-loader');
+        const loadMoreBtn = $('#load-more-btn');
+        const loadMoreBtnWrapper = $('#load-more-btn-wrapper');
 
         if (hasMore) {
-            $(window).on('scroll', function () {
+            loadMoreBtnWrapper.removeClass('d-none');
+            loadMoreBtn.on('click', function () {
                 if (loading || !hasMore) return;
-
-                if ($(window).scrollTop() + $(window).height() >= $(document).height() - 800) {
-                    loadMoreProducts();
-                }
+                loadMoreProducts();
             });
         }
 
         function loadMoreProducts() {
             loading = true;
-            loader.removeClass('d-none');
+            loadMoreBtn.prop('disabled', true).text('Loading...');
 
             $.ajax({
                 url: "{{ route('home') }}",
@@ -62,16 +59,21 @@
                         if (typeof lazyload === 'function') {
                             lazyload();
                         }
+                        if (!hasMore) {
+                            loadMoreBtnWrapper.addClass('d-none');
+                        }
                     } else {
                         hasMore = false;
+                        loadMoreBtnWrapper.addClass('d-none');
                     }
                 },
                 error: function () {
                     hasMore = false;
+                    loadMoreBtnWrapper.addClass('d-none');
                 },
                 complete: function () {
                     loading = false;
-                    loader.addClass('d-none');
+                    loadMoreBtn.prop('disabled', false).text('Load More');
                 }
             });
         }
