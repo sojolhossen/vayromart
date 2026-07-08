@@ -53,7 +53,7 @@
             $.ajax({
                 url: "{{ route('home') }}",
                 type: 'GET',
-                data: { page: page },
+                data: { page: page, scroll_home: 1 },
                 success: function (response) {
                     if (response.html) {
                         wrapper.append(response.html);

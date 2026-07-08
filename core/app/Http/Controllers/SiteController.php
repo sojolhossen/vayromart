@@ -21,7 +21,7 @@ use Illuminate\Support\Facades\Validator;
 
 class SiteController extends Controller {
     public function index(Request $request) {
-        if ($request->ajax()) {
+        if ($request->ajax() && $request->has('scroll_home')) {
             $limit = gs('homepage_products_limit') ?? 20;
             $products = \App\Models\Product::published()
                 ->with(['brand:id,name', 'productVariants', 'displayImage', 'activeOffer'])
