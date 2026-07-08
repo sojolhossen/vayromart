@@ -805,11 +805,15 @@ class ProductController extends Controller {
         // Stock mapping based on custom value if API reports stock_status != available
         $product->in_stock = ($item['stock_status'] === 'available') ? 100 : $outOfStockDefaultQty;
 
+        // Detect Mohasagor variants
+        $apiVariants = $item['product_variants'] ?? [];
+        $hasVariants = is_array($apiVariants) && !empty($apiVariants);
+
         // Vayromart defaults
         $product->track_inventory = 1;
         $product->show_stock = 1;
         $product->product_type_id = 0;
-        $product->product_type = 1;
+        $product->product_type = $hasVariants ? 2 : 1;
         $product->is_downloadable = 0;
         $product->show_in_products_page = 1;
 
@@ -854,6 +858,66 @@ class ProductController extends Controller {
                     $product->galleryImages()->sync($galleryIds);
                 }
             }
+        }
+
+        // Process Mohasagor variants
+        if ($hasVariants) {
+            $product->productVariants()->delete(); // Delete old variants
+
+            $productAttributes = [];
+            $attributeValues = [];
+
+            foreach ($apiVariants as $v) {
+                $attributeName = trim($v['attribute'] ?? '');
+                $variantValue = trim($v['variant'] ?? '');
+
+                if (empty($attributeName) || empty($variantValue)) {
+                    continue;
+                }
+
+                $attribute = Attribute::where('name', $attributeName)->first();
+                if (!$attribute) {
+                    $attribute = new Attribute();
+                    $attribute->name = $attributeName;
+                    $attribute->save();
+                }
+
+                $attrValue = \App\Models\AttributeValue::where('attribute_id', $attribute->id)
+                    ->where('name', $variantValue)
+                    ->first();
+                if (!$attrValue) {
+                    $attrValue = new \App\Models\AttributeValue();
+                    $attrValue->attribute_id = $attribute->id;
+                    $attrValue->name = $variantValue;
+                    $attrValue->save();
+                }
+
+                $productAttributes[] = $attribute->id;
+                $attributeValues[] = $attrValue->id;
+
+                $productVariant = new \App\Models\ProductVariant();
+                $productVariant->product_id = $product->id;
+                $productVariant->name = $variantValue;
+                $productVariant->attribute_values = [$attrValue->id];
+                $productVariant->sku = 'MHS-VAR-' . ($v['id'] ?? uniqid());
+
+                $productVariant->regular_price = $product->regular_price;
+                $productVariant->sale_price = $product->sale_price;
+                $productVariant->in_stock = ($item['stock_status'] === 'available') ? 100 : $outOfStockDefaultQty;
+
+                $productVariant->manage_stock = 1;
+                $productVariant->track_inventory = 1;
+                $productVariant->show_stock = 1;
+                $productVariant->is_published = 1;
+                $productVariant->save();
+            }
+
+            $product->attributes()->sync(array_unique($productAttributes));
+            $product->attributeValues()->sync(array_unique($attributeValues));
+        } else {
+            $product->attributes()->sync([]);
+            $product->attributeValues()->sync([]);
+            $product->productVariants()->delete();
         }
 
         // Get main image path for the live UI summary table
