@@ -37,6 +37,7 @@ class LandingPageController extends Controller
             'mobile' => 'required|string|regex:/^(?:\+?88)?01[3-9]\d{8}$/',
             'address' => 'required|string|max:500',
             'shipping_location' => 'nullable|string|in:inside,outside',
+            'landing_page_id' => 'nullable|integer|exists:chatbot_landing_pages,id',
         ], [
             'name.required' => 'অনুগ্রহ করে আপনার নাম লিখুন।',
             'mobile.required' => 'অনুগ্রহ করে আপনার মোবাইল নম্বর লিখুন।',
@@ -85,9 +86,22 @@ class LandingPageController extends Controller
         }
 
         // Price calculation
-        $prices = $product->prices(null);
-        $price = $prices->sale_price;
-        $discount = $prices->regular_price - $prices->sale_price;
+        $price = null;
+        $discount = 0;
+        if ($request->landing_page_id) {
+            $landingPage = ChatbotLandingPage::find($request->landing_page_id);
+            if ($landingPage && isset($landingPage->design_settings['custom_price']) && !empty($landingPage->design_settings['custom_price'])) {
+                $price = floatval($landingPage->design_settings['custom_price']);
+                $regPrice = !empty($landingPage->design_settings['custom_regular_price']) ? floatval($landingPage->design_settings['custom_regular_price']) : ($product->regular_price > $price ? $product->regular_price : round($price * 1.35));
+                $discount = $regPrice - $price;
+            }
+        }
+
+        if ($price === null) {
+            $prices = $product->prices(null);
+            $price = $prices->sale_price;
+            $discount = $prices->regular_price - $prices->sale_price;
+        }
 
         $subtotal = $price * $quantity;
         $shippingCharge = ($request->shipping_location === 'outside') ? 130.00 : 80.00;

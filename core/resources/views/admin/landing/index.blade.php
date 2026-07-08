@@ -85,7 +85,7 @@
                         <i class="las la-times"></i>
                     </button>
                 </div>
-                <form action="{{ route('admin.landing.generate') }}" method="POST" id="builderForm">
+                <form action="{{ route('admin.landing.generate') }}" method="POST" id="builderForm" enctype="multipart/form-data">
                     @csrf
                     <input type="hidden" name="id" id="pageId">
                     <div class="modal-body">
@@ -109,6 +109,18 @@
                                 </div>
 
                                 <div class="form-group mb-3">
+                                    <label class="fw-bold">@lang('Custom Sale Price (BDT)')</label>
+                                    <input type="number" step="any" name="custom_price" id="customPrice" class="form-control" placeholder="e.g. 1200">
+                                    <small class="text-muted">@lang('Leave blank to use default product sale price.')</small>
+                                </div>
+
+                                <div class="form-group mb-3">
+                                    <label class="fw-bold">@lang('Custom Regular Price (BDT)')</label>
+                                    <input type="number" step="any" name="custom_regular_price" id="customRegularPrice" class="form-control" placeholder="e.g. 1800">
+                                    <small class="text-muted">@lang('Leave blank to use default regular price.')</small>
+                                </div>
+
+                                <div class="form-group mb-3">
                                     <label class="fw-bold">@lang('Main Catchy Headline') <span class="text-danger">*</span></label>
                                     <input type="text" name="headline" id="pageHeadline" class="form-control" placeholder="e.g. অসাধারণ সাউন্ডের প্রিমিয়াম ইয়ারবাডস!" required>
                                 </div>
@@ -119,9 +131,15 @@
                                 </div>
 
                                 <div class="form-group mb-3">
-                                    <label class="fw-bold">@lang('Custom Banner Image URL')</label>
+                                    <label class="fw-bold">@lang('Upload Product Banner Image')</label>
+                                    <input type="file" name="image_file" id="imageFile" class="form-control" accept="image/*">
+                                    <small class="text-muted">@lang('Optional. Upload custom banner image file.')</small>
+                                </div>
+
+                                <div class="form-group mb-3">
+                                    <label class="fw-bold">@lang('Or Custom Banner Image URL')</label>
                                     <input type="url" name="image_url" id="imageUrl" class="form-control" placeholder="https://example.com/image.jpg">
-                                    <small class="text-muted">@lang('Leave blank to use the product\'s main image automatically.')</small>
+                                    <small class="text-muted">@lang('Alternatively paste image link.')</small>
                                 </div>
 
                                 <div class="form-group mb-3">
@@ -243,6 +261,8 @@
                 $('#pageTitle').val(settings.title);
                 $('#pageHeadline').val(settings.headline);
                 $('#pageSubtitle').val(settings.subtitle);
+                $('#customPrice').val(settings.custom_price);
+                $('#customRegularPrice').val(settings.custom_regular_price);
                 $('#imageUrl').val(settings.image_url);
                 $('#videoUrl').val(settings.video_url);
                 $('#pageBullets').val(settings.bullets);

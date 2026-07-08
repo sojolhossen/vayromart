@@ -45,6 +45,9 @@ class AdminLandingController extends Controller
             'bullets' => 'required|string',
             'description' => 'required|string',
             'image_url' => 'nullable|url',
+            'image_file' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:4096',
+            'custom_price' => 'nullable|numeric|min:0',
+            'custom_regular_price' => 'nullable|numeric|min:0',
             'video_url' => 'nullable|url',
             'reviewer_name_1' => 'nullable|string',
             'reviewer_comment_1' => 'nullable|string',
@@ -55,16 +58,31 @@ class AdminLandingController extends Controller
         ]);
 
         $product = Product::published()->findOrFail($request->product_id);
-        $html = $this->compileManualTemplate($request->all(), $product);
+
+        $imageUrl = $request->image_url;
+        if ($request->hasFile('image_file')) {
+            try {
+                $imageName = fileUploader($request->file('image_file'), 'assets/images/landing');
+                $imageUrl = asset('assets/images/landing/' . $imageName);
+            } catch (\Exception $e) {
+                \Log::error("Image Upload Error: " . $e->getMessage());
+            }
+        }
+
+        // Merge uploaded image URL and prices into settings array
+        $settings = $request->all();
+        $settings['image_url'] = $imageUrl;
+        unset($settings['image_file']); // File object cannot be serialized
 
         try {
             if ($request->id) {
                 $landingPage = ChatbotLandingPage::findOrFail($request->id);
+                $html = $this->compileManualTemplate($settings, $product);
                 $landingPage->update([
                     'product_id' => $product->id,
                     'title' => $request->title,
                     'content' => $html,
-                    'design_settings' => $request->all()
+                    'design_settings' => $settings
                 ]);
                 $notify[] = ['success', 'Landing Page updated successfully!'];
             } else {
@@ -77,13 +95,21 @@ class AdminLandingController extends Controller
                     $count++;
                 }
 
-                ChatbotLandingPage::create([
+                $landingPage = ChatbotLandingPage::create([
                     'product_id' => $product->id,
                     'slug' => $slug,
                     'title' => $request->title,
-                    'content' => $html,
-                    'design_settings' => $request->all()
+                    'content' => '', // Compiling below with actual database ID
+                    'design_settings' => $settings
                 ]);
+
+                $settings['id'] = $landingPage->id;
+                $html = $this->compileManualTemplate($settings, $product);
+                $landingPage->update([
+                    'content' => $html,
+                    'design_settings' => $settings
+                ]);
+
                 $notify[] = ['success', 'Landing Page created successfully!'];
             }
 
@@ -108,6 +134,8 @@ class AdminLandingController extends Controller
         $description = $data['description'] ?? '';
         $imageUrl = ($data['image_url'] ?? '') ?: $product->mainImage(false);
         
+        $baseColor = '#' . (gs('base_color') ?: '4634ff');
+
         $videoEmbedHtml = '';
         if ($videoUrl) {
             if (preg_match('/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^\"&?\/ ]{11})/', $videoUrl, $match)) {
@@ -127,8 +155,9 @@ class AdminLandingController extends Controller
             </li>';
         }
 
-        $price = $product->sale_price ?: $product->regular_price;
-        $regularPrice = $product->regular_price > $price ? $product->regular_price : round($price * 1.35);
+        // Handle custom prices
+        $price = !empty($data['custom_price']) ? floatval($data['custom_price']) : ($product->sale_price ?: $product->regular_price);
+        $regularPrice = !empty($data['custom_regular_price']) ? floatval($data['custom_regular_price']) : ($product->regular_price > $price ? $product->regular_price : round($price * 1.35));
         $discountAmount = $regularPrice - $price;
         
         $checkoutUrl = route('landing.checkout');
@@ -173,6 +202,9 @@ class AdminLandingController extends Controller
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --primary-color: ' . $baseColor . ';
+        }
         body {
             font-family: \'Hind Siliguri\', \'Inter\', sans-serif;
         }
@@ -183,6 +215,22 @@ class AdminLandingController extends Controller
         }
         .pulsing-btn {
             animation: pulse-ring 2s infinite ease-in-out;
+            background-color: var(--primary-color) !important;
+        }
+        .bg-primary {
+            background-color: var(--primary-color) !important;
+        }
+        .text-primary {
+            color: var(--primary-color) !important;
+        }
+        .border-primary {
+            border-color: var(--primary-color) !important;
+        }
+        .bg-primary-light {
+            background-color: rgba(' . hexdec(substr($baseColor, 1, 2)) . ', ' . hexdec(substr($baseColor, 3, 2)) . ', ' . hexdec(substr($baseColor, 5, 2)) . ', 0.1) !important;
+        }
+        .border-primary-light {
+            border-color: rgba(' . hexdec(substr($baseColor, 1, 2)) . ', ' . hexdec(substr($baseColor, 3, 2)) . ', ' . hexdec(substr($baseColor, 5, 2)) . ', 0.2) !important;
         }
     </style>
 </head>
@@ -191,11 +239,11 @@ class AdminLandingController extends Controller
     <!-- Sticky Header -->
     <header class="sticky top-0 bg-white/95 backdrop-blur-md border-b border-gray-100 z-50 transition-all shadow-sm">
         <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-            <a href="' . url('/') . '" class="text-2xl font-black text-indigo-600 tracking-tight flex items-center gap-2">
+            <a href="' . url('/') . '" class="text-2xl font-black text-primary tracking-tight flex items-center gap-2">
                 <i class="fas fa-shopping-bag"></i>
                 <span>Vayromart</span>
             </a>
-            <a href="#checkout-form" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-6 py-2.5 rounded-full transition-all duration-300 shadow-md hover:shadow-lg flex items-center gap-2">
+            <a href="#checkout-form" class="bg-primary hover:brightness-95 text-white font-bold px-6 py-2.5 rounded-full transition-all duration-300 shadow-md hover:shadow-lg flex items-center gap-2">
                 <i class="fas fa-cart-shopping"></i>
                 <span>এখনই কিনুন</span>
             </a>
@@ -205,7 +253,7 @@ class AdminLandingController extends Controller
     <!-- Hero Section -->
     <section class="max-w-6xl mx-auto px-4 py-12 lg:py-20 grid lg:grid-cols-12 gap-12 items-center">
         <div class="lg:col-span-7">
-            <span class="inline-block bg-indigo-50 text-indigo-600 font-bold px-4 py-1.5 rounded-full text-sm mb-6 border border-indigo-100">
+            <span class="inline-block bg-primary-light text-primary font-bold px-4 py-1.5 rounded-full text-sm mb-6 border border-primary-light">
                 ধামাকা ক্যাশ অন ডেলিভারি অফার!
             </span>
             <h1 class="text-4xl lg:text-5xl font-extrabold text-gray-900 leading-tight mb-4">
@@ -243,15 +291,15 @@ class AdminLandingController extends Controller
             
             <div class="grid grid-cols-3 gap-3 mt-6 text-center">
                 <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-                    <i class="fas fa-truck-fast text-indigo-500 text-2xl mb-2"></i>
+                    <i class="fas fa-truck-fast text-primary text-2xl mb-2"></i>
                     <p class="text-xs font-bold text-gray-700">ফাস্ট হোম ডেলিভারি</p>
                 </div>
                 <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-                    <i class="fas fa-hand-holding-dollar text-indigo-500 text-2xl mb-2"></i>
+                    <i class="fas fa-hand-holding-dollar text-primary text-2xl mb-2"></i>
                     <p class="text-xs font-bold text-gray-700">ক্যাশ অন ডেলিভারি</p>
                 </div>
                 <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-                    <i class="fas fa-shield-halved text-indigo-500 text-2xl mb-2"></i>
+                    <i class="fas fa-shield-halved text-primary text-2xl mb-2"></i>
                     <p class="text-xs font-bold text-gray-700">১০০% অরিজিনাল পণ্য</p>
                 </div>
             </div>
@@ -294,6 +342,7 @@ class AdminLandingController extends Controller
                 <form action="' . $checkoutUrl . '" method="POST" class="space-y-6">
                     <input type="hidden" name="_token" value="' . $csrfToken . '">
                     <input type="hidden" name="product_id" value="' . $product->id . '">
+                    <input type="hidden" name="landing_page_id" value="' . ($data['id'] ?? '') . '">
 
                     <div>
                         <label class="block text-sm font-bold text-gray-700 mb-2">আপনার নাম <span class="text-rose-500">*</span></label>
