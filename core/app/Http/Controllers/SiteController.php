@@ -29,7 +29,7 @@ class SiteController extends Controller {
                 ->paginate($limit);
 
             $html = '';
-            $theme = activeTemplate();
+            $theme = activeTemplateName();
             foreach ($products as $product) {
                 $html .= view('components.frontend.' . $theme . '.product-card', [
                     'product' => $product,

@@ -178,9 +178,28 @@ class ProductController extends Controller {
         $products    = $allProducts->with($this->productRelations())->ratingReviewCount()->paginate(getPaginate($request->per_page ?? 24));
 
         if ($request->ajax()) {
+            if ($request->scroll) {
+                $html = '';
+                $theme = activeTemplateName();
+                foreach ($products as $product) {
+                    $html .= '<div class="col-6 grid-control col-md-4 col-lg-3">';
+                    $html .= view('components.frontend.' . $theme . '.product-card', [
+                        'product' => $product,
+                        'showCartButton' => false
+                    ])->render();
+                    $html .= '</div>';
+                }
+                return response()->json([
+                    'html' => $html,
+                    'hasMore' => $products->hasMorePages(),
+                    'total_products' => $products->total()
+                ]);
+            }
+
             return response()->json([
                 'html' =>  view('Template::partials.products_filter', compact('products'))->render(),
-                'total_products' => $products->total()
+                'total_products' => $products->total(),
+                'hasMore' => $products->hasMorePages()
             ]);
         }
 

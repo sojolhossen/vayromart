@@ -376,14 +376,73 @@
                     $('#filterForm [name=min_price], #filterForm [name=max_price]').attr('disabled', true);
                     $("#slider-range").slider("disable")
                 }
-            }).change();
+            }).change();            let page = 2;
+            let loading = false;
+            let hasMore = {{ $products->hasMorePages() ? 'true' : 'false' }};
 
+            $(window).on('scroll', function () {
+                if (loading || !hasMore) return;
 
-            $(document).on('click', 'a.page-link', function(e) {
-                e.preventDefault();
-                fetchProducts(this.href);
+                if ($(window).scrollTop() + $(window).height() >= $(document).height() - 800) {
+                    loadMoreProducts();
+                }
             });
 
+            function loadMoreProducts() {
+                loading = true;
+                $("#overlay, #overlay2").fadeIn(300);
+
+                let url = decodeHtmlEntities(`{{ $request->fullUrl() }}`);
+                let formData = getFormDataAsQuery();
+
+                let urlObject = new URL(url);
+                let params = new URLSearchParams(urlObject.search);
+
+                if (formData) {
+                    let newParams = new URLSearchParams(formData);
+                    for (let [key, value] of newParams.entries()) {
+                        params.set(key, decodeHtmlEntities(value));
+                    }
+                }
+
+                if ($('[name=sort_by]').val()) {
+                    params.set('sort_by', decodeHtmlEntities($('[name=sort_by]').val()));
+                }
+
+                if ($('[name=per_page]').val()) {
+                    params.set('per_page', decodeHtmlEntities($('[name=per_page]').val()));
+                }
+
+                params.set('page', page);
+                params.set('scroll', 1);
+
+                urlObject.search = params.toString();
+                url = urlObject.toString();
+
+                $.ajax({
+                    url: url,
+                    method: "get",
+                    success: function(response) {
+                        if (response.html) {
+                            $('#grid-view').append(response.html);
+                            page++;
+                            hasMore = response.hasMore;
+                            if (typeof lazyload === 'function') {
+                                lazyload();
+                            }
+                        } else {
+                            hasMore = false;
+                        }
+                    },
+                    error: function() {
+                        hasMore = false;
+                    },
+                    complete: function() {
+                        loading = false;
+                        $("#overlay, #overlay2").fadeOut(300);
+                    }
+                });
+            }
 
             function getFormDataAsQuery() {
                 let formData = $('#filterForm').serializeArray();
@@ -453,6 +512,8 @@
                         $('.totalProducts').text(response.total_products);
                         $('.page-main-content').html(response.html);
                         window.history.pushState(null, null, url);
+                        page = 2;
+                        hasMore = response.hasMore;
                         lazyload();
                         scrollToTop();
 
@@ -472,4 +533,12 @@
             }
         })(jQuery)
     </script>
+@endpush
+
+@push('style')
+<style>
+    .pagination-wrapper {
+        display: none !important;
+    }
+</style>
 @endpush
