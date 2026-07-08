@@ -32,173 +32,339 @@ class AdminLandingController extends Controller
     }
 
     /**
-     * Generate landing page HTML/CSS using AI
+     * Store/Update manual landing page
      */
     public function generate(Request $request)
     {
         $request->validate([
+            'id' => 'nullable|integer|exists:chatbot_landing_pages,id',
             'product_id' => 'required|integer|exists:products,id',
-            'style' => 'required|string|in:Modern,Clean,Minimalist,Corporate,Dark Mode,Elegant',
-            'focus_keyword' => 'nullable|string|max:100',
-            'extra_instructions' => 'nullable|string|max:500',
+            'title' => 'required|string|max:255',
+            'headline' => 'required|string|max:255',
+            'subtitle' => 'required|string|max:500',
+            'bullets' => 'required|string',
+            'description' => 'required|string',
+            'image_url' => 'nullable|url',
+            'video_url' => 'nullable|url',
+            'reviewer_name_1' => 'nullable|string',
+            'reviewer_comment_1' => 'nullable|string',
+            'reviewer_name_2' => 'nullable|string',
+            'reviewer_comment_2' => 'nullable|string',
+            'reviewer_name_3' => 'nullable|string',
+            'reviewer_comment_3' => 'nullable|string',
         ]);
 
         $product = Product::published()->findOrFail($request->product_id);
-        
-        // 1. Get chatbot settings for AI API credentials
-        $general = gs();
-        $chatbotSettings = [];
-        if ($general->chatbot_settings) {
-            $chatbotSettings = is_string($general->chatbot_settings) 
-                ? json_decode($general->chatbot_settings, true) 
-                : (array)$general->chatbot_settings;
-        }
-
-        $activeProvider = $chatbotSettings['active_provider'] ?? 'gemini';
-        $apiKey = $chatbotSettings['api_key'][$activeProvider] ?? '';
-        $modelName = $chatbotSettings['model_name'][$activeProvider] ?? '';
-        $customUrl = $chatbotSettings['custom_url'] ?? '';
-
-        if (empty($apiKey)) {
-            $notify[] = ['error', 'AI configuration is missing API keys. Please configure the Chatbot AI settings first.'];
-            return back()->withNotify($notify);
-        }
-
-        // 2. Prep product context details
-        $price = $product->sale_price ?: $product->regular_price;
-        $summary = strip_tags(html_entity_decode($product->summary ?? $product->meta_description ?? ''));
-        $description = strip_tags(html_entity_decode($product->description ?? ''));
-        $imageUrl = $product->mainImage(false);
-        $shopUrl = url('/');
-        $checkoutUrl = route('landing.checkout');
-        $productUrl = route('product.detail', $product->slug);
-        $csrfToken = csrf_token();
-
-        // Calculate a dummy regular price if regular price is same as price to show discounts
-        $regularPrice = $product->regular_price > $price ? $product->regular_price : round($price * 1.35);
-        $discountAmount = $regularPrice - $price;
-
-        // 3. Construct AI Prompt
-        $systemInstructions = "You are a World-Class E-commerce Conversion Rate Optimization (CRO) expert, premium Web Designer, and expert copywriter.
-Your goal is to write a highly persuasive, visually stunning, fully responsive standalone HTML landing page for the product provided.
-The landing page must look like a premium, top-tier Shopify / custom-built landing page that immediately wows the visitor, establishes strong trust, and drives conversions.
-
-Design Guidelines:
-- The design style selected by user: {$request->style}.
-- Use clean, modern Tailwind CSS for all layouts and styles. Inject the CDN: <script src=\"https://cdn.tailwindcss.com\"></script>.
-- Inject Font Awesome for gorgeous vector icons: <link rel=\"stylesheet\" href=\"https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css\">.
-- Use the Google Font 'Poppins' or 'Inter' for premium typography. Apply class='font-sans' or appropriate styling.
-- Layout sections:
-  1. Sticky Navigation Header: Branding logo ('Vayromart'), features / reviews / specs anchor links, and a prominent \"এখনই অর্ডার করুন\" (Order Now) button linking directly to '{$productUrl}'.
-  2. Hero Section:
-     - Catchy benefit-driven headline in bold gradient text (e.g. bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent).
-     - Subheadline highlighting target audience's core desire.
-     - Urgent CTA / Order buttons (e.g. \"এখনই কিনুন\", \"অর্ডার করুন\", \"Buy Now\"): All main CTA and order buttons throughout the page must link directly to the main store product details page URL: '{$productUrl}' (e.g. <a href=\"{$productUrl}\" class=\"...\">এখনই অর্ডার করুন</a>). Do NOT use javascript scrolling or anchor tags pointing to the checkout form for these main CTA buttons. They must open the main product page '{$productUrl}'.
-     - Visual trust badges (e.g. Cash on Delivery, Fast Shipping in 24-72 hours, 7-Day Replacement Warranty).
-     - PRODUCT IMAGE: Display the actual product image. You MUST use the exact URL provided in the context: '{$imageUrl}'. Embed it as: <img src=\"{$imageUrl}\" alt=\"{$product->name}\" class=\"w-full rounded-2xl shadow-2xl object-cover hover:scale-105 transition-all duration-500 border border-gray-100\">. Do NOT use SVG placeholder icons, mock placeholders, or empty image containers. The actual product image must be clearly visible.
-     - Price block: Display original price ({$regularPrice} BDT with line-through) and current sale price ({$price} BDT) in large bold digits. Show a badge stating \"Save {$discountAmount} BDT!\" or discount percentage.
-  3. Problem vs Solution: Highlight pain points of the target audience and how this product solves them with interactive card components.
-  4. Features & Benefits Grid: Detailed list of features with colorful background icons (Font Awesome) and grid formatting.
-  5. Technical Specifications: A clean, sleek table summarizing specifications.
-  6. Social Proof / Reviews: 3 realistic positive customer testimonials with 5-star rating icons, avatars with initials, and buyer badges (e.g. \"Verified Buyer\").
-  7. FAQ Section: Accordion panels answering questions about delivery, warranty, and return policies.
-  8. Cash on Delivery (COD) Checkout Form:
-     - Wrap this in a premium-styled checkout card with a prominent ID: id=\"checkout-form\".
-     - Include header: \"অর্ডার করতে ফর্মটি পূরণ করুন\" and a trust notice: \"ডেলিভারি ম্যানের কাছ থেকে প্রোডাক্ট বুঝে পেয়ে টাকা পরিশোধ করুন\".
-     - Form must submit to: '{$checkoutUrl}' via POST method.
-     - Include a hidden input for CSRF token: <input type=\"hidden\" name=\"_token\" value=\"{$csrfToken}\">
-     - Include a hidden input for product_id: <input type=\"hidden\" name=\"product_id\" value=\"{$product->id}\">
-     - Inputs styled with premium borders and focus rings:
-       - Name: <input type=\"text\" name=\"name\" required placeholder=\"আপনার সম্পূর্ণ নাম\" class=\"w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all\">
-       - Mobile: <input type=\"tel\" name=\"mobile\" required placeholder=\"১১ ডিজিটের মোবাইল নম্বর\" class=\"w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all\">
-       - Address: <textarea name=\"address\" required placeholder=\"ডেলিভারি ঠিকানা (জেলা, থানা, বাসা নং/গ্রাম)\" class=\"w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all\" rows=\"3\"></textarea>
-     - Submit button: Pulsing animation or gradient hover. Text: \"অর্ডার কনফার্ম করুন (ক্যাশ অন ডেলিভারি)\".
-
-Product details to use:
-- Name: {$product->name}
-- Price: {$price} BDT
-- Shipping Charge: Standard 80 BDT
-- Total Amount: " . ($price + 80) . " BDT (Cash on Delivery)
-- Image URL: {$imageUrl}
-- Shop URL: {$shopUrl}
-- Product Page URL: {$productUrl}
-- Additional Info: {$summary}
-- Description context: {$description}
-
-Optional settings:
-" . ($request->focus_keyword ? "- Focus Keyword to optimize for SEO: {$request->focus_keyword}" : "") . "
-" . ($request->extra_instructions ? "- Special request / instructions: {$request->extra_instructions}" : "") . "
-
-Copywriting Rules:
-- Write standard, persuasive, and engaging Bengali (বাংলা) copy, keeping model names or technical terms in English (Bangla-English mix).
-- ALWAYS write numbers, phone numbers, prices, and specs in standard English digits (0-9) instead of Bengali digits (০-৯) (e.g. '1400 BDT', '01310997902').
-- Do NOT greet the user or append greetings, just write the page content.
-
-OUTPUT RULE: Output ONLY the raw HTML code starting with <!DOCTYPE html>. Do NOT wrap the code in markdown blocks (e.g. do NOT include ```html ... ```). Do not include any reasoning, notes, or commentary. Only return valid, executable HTML content.";
+        $html = $this->compileManualTemplate($request->all(), $product);
 
         try {
-            // Call AI helper (we pass an empty chat history since it's a single one-shot generation prompt)
-            $chatHistory = [
-                ['sender' => 'user', 'message' => "Generate the landing page HTML code for the product: {$product->name}"]
-            ];
-            
-            $responseText = AiService::sendMessage($activeProvider, $apiKey, $modelName, $systemInstructions, $chatHistory, $customUrl);
-            
-            $html = trim($responseText);
-            
-            // Clean up any potential markdown wrappers if returned by sensitive LLMs
-            if (preg_match('/^```html(.*?)```$/is', $html, $matches)) {
-                $html = trim($matches[1]);
-            } elseif (preg_match('/^```(.*?)```$/is', $html, $matches)) {
-                $html = trim($matches[1]);
+            if ($request->id) {
+                $landingPage = ChatbotLandingPage::findOrFail($request->id);
+                $landingPage->update([
+                    'product_id' => $product->id,
+                    'title' => $request->title,
+                    'content' => $html,
+                    'design_settings' => $request->all()
+                ]);
+                $notify[] = ['success', 'Landing Page updated successfully!'];
+            } else {
+                // Generate unique slug
+                $slug = Str::slug($product->name);
+                $baseSlug = $slug;
+                $count = 1;
+                while (ChatbotLandingPage::where('slug', $slug)->exists()) {
+                    $slug = $baseSlug . '-' . $count;
+                    $count++;
+                }
+
+                ChatbotLandingPage::create([
+                    'product_id' => $product->id,
+                    'slug' => $slug,
+                    'title' => $request->title,
+                    'content' => $html,
+                    'design_settings' => $request->all()
+                ]);
+                $notify[] = ['success', 'Landing Page created successfully!'];
             }
 
-            if (empty($html) || stripos($html, '<!DOCTYPE') === false && stripos($html, '<html') === false) {
-                $notify[] = ['error', 'AI generated invalid HTML output. Please try again.'];
-                return back()->withNotify($notify);
-            }
-
-            // 4. Generate unique slug
-            $slug = Str::slug($product->name);
-            $baseSlug = $slug;
-            $count = 1;
-            while (ChatbotLandingPage::where('slug', $slug)->exists()) {
-                $slug = $baseSlug . '-' . $count;
-                $count++;
-            }
-
-            // 5. Store record
-            ChatbotLandingPage::create([
-                'product_id' => $product->id,
-                'slug' => $slug,
-                'title' => 'Landing Page - ' . $product->name,
-                'content' => $html,
-                'design_settings' => [
-                    'style' => $request->style,
-                    'focus_keyword' => $request->focus_keyword,
-                    'extra_instructions' => $request->extra_instructions,
-                ]
-            ]);
-
-            $notify[] = ['success', 'AI Landing Page generated successfully!'];
-            return back()->withNotify($notify)->with('generated_slug', $slug);
+            return back()->withNotify($notify);
 
         } catch (\Exception $e) {
-            \Log::error("AI Landing Page Generation Error: " . $e->getMessage());
-            $notify[] = ['error', 'Generation failed: ' . $e->getMessage()];
+            \Log::error("Landing Page Save Error: " . $e->getMessage());
+            $notify[] = ['error', 'Failed to save landing page: ' . $e->getMessage()];
             return back()->withNotify($notify);
         }
     }
 
     /**
-     * Delete generated landing page
+     * Compile manual HTML template
+     */
+    private function compileManualTemplate($data, $product)
+    {
+        $title = e($data['title']);
+        $headline = e($data['headline']);
+        $subtitle = e($data['subtitle']);
+        $videoUrl = $data['video_url'] ?? '';
+        $description = $data['description'] ?? '';
+        $imageUrl = ($data['image_url'] ?? '') ?: $product->mainImage(false);
+        
+        $videoEmbedHtml = '';
+        if ($videoUrl) {
+            if (preg_match('/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^\"&?\/ ]{11})/', $videoUrl, $match)) {
+                $embedCode = $match[1];
+                $videoEmbedHtml = '<iframe class="w-full aspect-video rounded-2xl shadow-lg" src="https://www.youtube.com/embed/' . $embedCode . '" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>';
+            }
+        }
+
+        $bullets = array_filter(array_map('trim', explode("\n", $data['bullets'])));
+        $bulletsHtml = '';
+        foreach ($bullets as $bullet) {
+            $bulletsHtml .= '<li class="flex items-start gap-3 text-gray-700 text-lg mb-3">
+                <span class="flex-shrink-0 w-6 h-6 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mt-1">
+                    <i class="fas fa-check text-sm"></i>
+                </span>
+                <span>' . e($bullet) . '</span>
+            </li>';
+        }
+
+        $price = $product->sale_price ?: $product->regular_price;
+        $regularPrice = $product->regular_price > $price ? $product->regular_price : round($price * 1.35);
+        $discountAmount = $regularPrice - $price;
+        
+        $checkoutUrl = route('landing.checkout');
+        $csrfToken = csrf_token();
+
+        // Reviews HTML
+        $reviewsHtml = '';
+        $reviewers = [
+            ['name' => ($data['reviewer_name_1'] ?? '') ?: 'Sojol Hossen', 'comment' => ($data['reviewer_comment_1'] ?? '') ?: 'অসাধারণ প্রোডাক্ট! ঠিক যেমনটি চেয়েছিলাম তেমনই পেয়েছি। ডেলিভারি সার্ভিসও খুব ফাস্ট ছিল। ধন্যবাদ বায়রোমার্ট!'],
+            ['name' => ($data['reviewer_name_2'] ?? '') ?: 'Farhana Yasmin', 'comment' => ($data['reviewer_comment_2'] ?? '') ?: 'পণ্যটির কোয়ালিটি খুবই ভালো। ২ দিনেই ডেলিভারি পেয়েছি। আপনারা চাইলে চোখ বন্ধ করে নিতে পারেন।'],
+            ['name' => ($data['reviewer_name_3'] ?? '') ?: 'Md. Arif', 'comment' => ($data['reviewer_comment_3'] ?? '') ?: 'প্রোডাক্ট হাতে পেয়ে চেক করে পেমেন্ট করেছি। ক্যাশ অন ডেলিভারি সুবিধা থাকায় অনেক সুবিধা হয়েছে। ১০/১০ দিব।']
+        ];
+        
+        foreach ($reviewers as $idx => $rev) {
+            $initial = mb_substr($rev['name'], 0, 1, 'utf-8');
+            $reviewsHtml .= '
+            <div class="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300">
+                <div class="flex items-center gap-4 mb-4">
+                    <div class="w-12 h-12 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-lg shadow-inner">' . $initial . '</div>
+                    <div>
+                        <h6 class="font-bold text-gray-800 text-base">' . e($rev['name']) . '</h6>
+                        <div class="text-amber-500 text-xs flex gap-0.5 mt-1">
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                        </div>
+                    </div>
+                </div>
+                <p class="text-gray-600 text-sm leading-relaxed">"' . e($rev['comment']) . '"</p>
+            </div>';
+        }
+
+        $html = '<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>' . $title . '</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: \'Hind Siliguri\', \'Inter\', sans-serif;
+        }
+        @keyframes pulse-ring {
+            0% { transform: scale(0.95); opacity: 0.5; }
+            50% { transform: scale(1.05); opacity: 0.8; }
+            100% { transform: scale(0.95); opacity: 0.5; }
+        }
+        .pulsing-btn {
+            animation: pulse-ring 2s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-900 scroll-smooth">
+
+    <!-- Sticky Header -->
+    <header class="sticky top-0 bg-white/95 backdrop-blur-md border-b border-gray-100 z-50 transition-all shadow-sm">
+        <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+            <a href="' . url('/') . '" class="text-2xl font-black text-indigo-600 tracking-tight flex items-center gap-2">
+                <i class="fas fa-shopping-bag"></i>
+                <span>Vayromart</span>
+            </a>
+            <a href="#checkout-form" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-6 py-2.5 rounded-full transition-all duration-300 shadow-md hover:shadow-lg flex items-center gap-2">
+                <i class="fas fa-cart-shopping"></i>
+                <span>এখনই কিনুন</span>
+            </a>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="max-w-6xl mx-auto px-4 py-12 lg:py-20 grid lg:grid-cols-12 gap-12 items-center">
+        <div class="lg:col-span-7">
+            <span class="inline-block bg-indigo-50 text-indigo-600 font-bold px-4 py-1.5 rounded-full text-sm mb-6 border border-indigo-100">
+                ধামাকা ক্যাশ অন ডেলিভারি অফার!
+            </span>
+            <h1 class="text-4xl lg:text-5xl font-extrabold text-gray-900 leading-tight mb-4">
+                ' . $headline . '
+            </h1>
+            <p class="text-xl text-gray-600 mb-8 font-medium">
+                ' . $subtitle . '
+            </p>
+
+            <ul class="mb-8">
+                ' . $bulletsHtml . '
+            </ul>
+
+            <!-- Pricing block -->
+            <div class="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm max-w-md mb-8 flex items-center justify-between">
+                <div>
+                    <span class="text-gray-400 line-through text-lg font-medium block">পূর্বে মূল্য: ' . $regularPrice . ' BDT</span>
+                    <span class="text-emerald-600 text-3xl font-black block mt-1">আজকের অফার: ' . $price . ' BDT</span>
+                </div>
+                <div class="bg-emerald-50 text-emerald-700 font-bold px-4 py-2.5 rounded-xl border border-emerald-100 text-center animate-bounce text-sm">
+                    সঞ্চয়: ' . $discountAmount . ' BDT!
+                </div>
+            </div>
+
+            <div class="flex flex-col sm:flex-row gap-4 max-w-lg">
+                <a href="#checkout-form" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xl font-bold px-8 py-4 rounded-full transition-all duration-300 shadow-lg text-center flex items-center justify-center gap-3 pulsing-btn">
+                    <i class="fas fa-hand-pointer"></i>
+                    <span>অর্ডার করতে ফর্মটি পূরণ করুন</span>
+                </a>
+            </div>
+        </div>
+
+        <div class="lg:col-span-5 flex flex-col justify-center">
+            ' . ($videoEmbedHtml ?: '<img src="' . $imageUrl . '" alt="' . $title . '" class="w-full rounded-2xl shadow-2xl border border-gray-100 hover:scale-[1.02] transition-all duration-300 object-cover aspect-square">') . '
+            
+            <div class="grid grid-cols-3 gap-3 mt-6 text-center">
+                <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+                    <i class="fas fa-truck-fast text-indigo-500 text-2xl mb-2"></i>
+                    <p class="text-xs font-bold text-gray-700">ফাস্ট হোম ডেলিভারি</p>
+                </div>
+                <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+                    <i class="fas fa-hand-holding-dollar text-indigo-500 text-2xl mb-2"></i>
+                    <p class="text-xs font-bold text-gray-700">ক্যাশ অন ডেলিভারি</p>
+                </div>
+                <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+                    <i class="fas fa-shield-halved text-indigo-500 text-2xl mb-2"></i>
+                    <p class="text-xs font-bold text-gray-700">১০০% অরিজিনাল পণ্য</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Description & Video Embed -->
+    <section class="bg-white border-y border-gray-100 py-16">
+        <div class="max-w-4xl mx-auto px-4">
+            <h2 class="text-3xl font-extrabold text-gray-900 text-center mb-8">পণ্যটির বিস্তারিত বিবরণ</h2>
+            
+            ' . ($videoEmbedHtml ? '<div class="mb-12"><img src="' . $imageUrl . '" alt="' . $title . '" class="w-full max-w-xl mx-auto rounded-2xl shadow-lg border border-gray-100 object-cover aspect-video"></div>' : '') . '
+
+            <div class="prose max-w-none text-gray-700 text-lg leading-relaxed">
+                ' . nl2br($description) . '
+            </div>
+        </div>
+    </section>
+
+    <!-- Social Proof / Reviews -->
+    <section class="max-w-6xl mx-auto px-4 py-16">
+        <h2 class="text-3xl font-extrabold text-gray-900 text-center mb-12">গ্রাহকদের মূল্যবান মতামত (Reviews)</h2>
+        <div class="grid md:grid-cols-3 gap-8">
+            ' . $reviewsHtml . '
+        </div>
+    </section>
+
+    <!-- COD Checkout Form -->
+    <section class="bg-slate-900 text-white py-20 border-t border-slate-800" id="checkout-form">
+        <div class="max-w-2xl mx-auto px-4">
+            <div class="bg-white text-gray-900 p-8 lg:p-12 rounded-3xl shadow-2xl border border-gray-100">
+                <div class="text-center mb-8">
+                    <span class="bg-emerald-50 text-emerald-700 font-bold px-4 py-1.5 rounded-full text-xs border border-emerald-100 tracking-wide uppercase">
+                        ক্যাশ অন ডেলিভারি (হাতে পেয়ে মূল্য পরিশোধ)
+                    </span>
+                    <h3 class="text-2xl lg:text-3xl font-black mt-4 mb-2">অর্ডার করতে ফর্মটি পূরণ করুন</h3>
+                    <p class="text-gray-500 font-medium">ডেলিভারি ম্যানের কাছ থেকে প্রোডাক্ট বুঝে পেয়ে টাকা পরিশোধ করুন।</p>
+                </div>
+
+                <form action="' . $checkoutUrl . '" method="POST" class="space-y-6">
+                    <input type="hidden" name="_token" value="' . $csrfToken . '">
+                    <input type="hidden" name="product_id" value="' . $product->id . '">
+
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">আপনার নাম <span class="text-rose-500">*</span></label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-gray-400"><i class="fas fa-user"></i></span>
+                            <input type="text" name="name" required placeholder="আপনার সম্পূর্ণ নাম লিখুন" class="w-full pl-11 pr-4 py-3.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all duration-200">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">মোবাইল নম্বর <span class="text-rose-500">*</span></label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-gray-400"><i class="fas fa-phone"></i></span>
+                            <input type="tel" name="mobile" required placeholder="১১ ডিজিটের মোবাইল নম্বর লিখুন" class="w-full pl-11 pr-4 py-3.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all duration-200">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">ডেলিভারি ঠিকানা <span class="text-rose-500">*</span></label>
+                        <div class="relative">
+                            <span class="absolute top-4 left-0 flex items-start pl-4 text-gray-400"><i class="fas fa-map-marker-alt mt-1"></i></span>
+                            <textarea name="address" required placeholder="আপনার জেলা, থানা ও গ্রামের নাম বা বাসা নম্বর লিখুন" class="w-full pl-11 pr-4 py-3.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all duration-200" rows="3"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-50 p-6 rounded-2xl border border-gray-100 flex items-center justify-between text-base">
+                        <span class="font-bold text-gray-600">ডেলিভারি চার্জ: 80 BDT</span>
+                        <span class="font-black text-indigo-600 text-xl">সর্বমোট বিল: ' . ($price + 80) . ' BDT</span>
+                    </div>
+
+                    <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-lg py-4 rounded-xl shadow-lg transition-all duration-300 flex items-center justify-center gap-2 pulsing-btn">
+                        <i class="fas fa-circle-check"></i>
+                        <span>অর্ডার নিশ্চিত করুন</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-slate-950 text-gray-500 py-12 text-center border-t border-slate-900">
+        <div class="max-w-6xl mx-auto px-4">
+            <h4 class="text-white text-xl font-bold tracking-tight mb-4 flex items-center justify-center gap-2">
+                <i class="fas fa-shopping-bag text-indigo-500"></i>
+                <span>Vayromart</span>
+            </h4>
+            <p class="text-sm max-w-md mx-auto mb-6 text-gray-400">ডেলিভারি ম্যানের সামনে প্রোডাক্ট দেখে ও চেক করে পরিশোধ করার শতভাগ নিশ্চয়তা।</p>
+            <div class="flex justify-center gap-6 text-xl mb-6">
+                <a href="#" class="hover:text-white transition-colors"><i class="fab fa-facebook"></i></a>
+                <a href="#" class="hover:text-white transition-colors"><i class="fab fa-instagram"></i></a>
+                <a href="#" class="hover:text-white transition-colors"><i class="fab fa-whatsapp"></i></a>
+            </div>
+            <p class="text-xs">&copy; ' . date('Y') . ' Vayromart. All rights reserved.</p>
+        </div>
+    </footer>
+
+</body>
+</html>';
+
+        return $html;
+    }
+
+    /**
+     * Delete landing page
      */
     public function destroy($id)
     {
         $landingPage = ChatbotLandingPage::findOrFail($id);
         $landingPage->delete();
 
-        $notify[] = ['success', 'AI Landing Page deleted successfully'];
+        $notify[] = ['success', 'Landing Page deleted successfully'];
         return back()->withNotify($notify);
     }
 }

@@ -1,96 +1,15 @@
 @extends('admin.layouts.app')
 
 @section('panel')
-    <!-- Loading Overlay for AI Generation -->
-    <div id="loadingOverlay" class="d-none" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.95); z-index: 999999; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; font-family: sans-serif;">
-        <div class="spinner-container mb-4" style="position: relative; width: 100px; height: 100px;">
-            <!-- Outer Glow Ring -->
-            <div style="box-sizing: border-box; display: block; position: absolute; width: 100px; height: 100px; border: 8px solid transparent; border-radius: 50%; border-top-color: #10b981; animation: spin 1.5s cubic-bezier(0.5, 0, 0.5, 1) infinite;"></div>
-            <div style="box-sizing: border-box; display: block; position: absolute; width: 80px; height: 80px; margin: 10px; border: 6px solid transparent; border-radius: 50%; border-bottom-color: #06b6d4; animation: spin-reverse 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;"></div>
-            <!-- Center Icon / Logo placeholder -->
-            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #10b981;">
-                <i class="las la-robot la-3x"></i>
-            </div>
-        </div>
-        
-        <h3 class="mb-2" style="font-weight: 700; background: linear-gradient(135deg, #10b981, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">AI Landing Page Engine Active</h3>
-        <p id="loadingMessage" class="text-muted text-center px-4" style="max-width: 500px; font-size: 16px; color: #94a3b8 !important;">Initializing product analyzer...</p>
-        
-        <!-- Live progress indicators -->
-        <div class="mt-4 w-100" style="max-width: 400px; background: #1e293b; height: 6px; border-radius: 10px; overflow: hidden; border: 1px solid #334155;">
-            <div id="loadingProgressBar" style="width: 5%; height: 100%; background: linear-gradient(90deg, #10b981, #06b6d4); transition: width 0.4s ease-border;"></div>
-        </div>
-    </div>
-
-    <style>
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        @keyframes spin-reverse {
-            0% { transform: rotate(360deg); }
-            100% { transform: rotate(0deg); }
-        }
-    </style>
-
     <div class="row">
-        <!-- Generator Form Card -->
-        <div class="col-xl-4 col-lg-5 mb-4">
-            <div class="card shadow-sm border-0">
-                <div class="card-header bg--dark d-flex align-items-center">
-                    <h5 class="text-white card-title mb-0"><i class="las la-magic"></i> @lang('AI Generator Form')</h5>
-                </div>
-                <div class="card-body">
-                    <form action="{{ route('admin.landing.generate') }}" method="POST" id="generateForm">
-                        @csrf
-                        <div class="form-group mb-3">
-                            <label class="fw-bold">@lang('Select Product') <span class="text-danger">*</span></label>
-                            <select name="product_id" class="form-control select2" required>
-                                <option value="">-- @lang('Choose a product') --</option>
-                                @foreach($products as $product)
-                                    <option value="{{ $product->id }}">{{ $product->name }}</option>
-                                @endforeach
-                            </select>
-                            <small class="text-muted">@lang('Select the product to research and generate page for.')</small>
-                        </div>
-
-                        <div class="form-group mb-3">
-                            <label class="fw-bold">@lang('Design Theme/Style') <span class="text-danger">*</span></label>
-                            <select name="style" class="form-control" required>
-                                <option value="Modern">@lang('Modern (Sleek Gradients, Visuals)')</option>
-                                <option value="Clean">@lang('Clean (Standard White/Light E-commerce)')</option>
-                                <option value="Minimalist">@lang('Minimalist (Lots of Whitespace, Bold Typography)')</option>
-                                <option value="Corporate">@lang('Corporate (Trustworthy, Professional)')</option>
-                                <option value="Dark Mode">@lang('Dark Mode (Cyberpunk/Premium Dark Aesthetics)')</option>
-                                <option value="Elegant">@lang('Elegant (Classic Serif, High-end feel)')</option>
-                            </select>
-                        </div>
-
-                        <div class="form-group mb-3">
-                            <label class="fw-bold">@lang('Focus Keyword (SEO)')</label>
-                            <input type="text" name="focus_keyword" class="form-control" placeholder="e.g. Smart Watch Bangladesh, Cheap Router">
-                            <small class="text-muted">@lang('AI will optimize the title and headings for this keyword.')</small>
-                        </div>
-
-                        <div class="form-group mb-3">
-                            <label class="fw-bold">@lang('Extra Custom Instructions')</label>
-                            <textarea name="extra_instructions" class="form-control" rows="4" placeholder="e.g. Highlight 10% discount, mention free home delivery in Dhaka, emphasize 1-year replacement warranty..."></textarea>
-                            <small class="text-muted">@lang('Provide specific selling points or offers you want in the page.')</small>
-                        </div>
-
-                        <button type="submit" class="btn btn--primary w-100 py-2" id="submitBtn">
-                            <i class="las la-rocket"></i> @lang('Generate Landing Page')
-                        </button>
-                    </form>
-                </div>
-            </div>
-        </div>
-
-        <!-- Generated List Card -->
-        <div class="col-xl-8 col-lg-7 mb-4">
+        <!-- History / Generated List Card -->
+        <div class="col-lg-12 mb-4">
             <div class="card shadow-sm border-0">
                 <div class="card-header bg--dark d-flex align-items-center justify-content-between">
-                    <h5 class="text-white card-title mb-0"><i class="las la-list"></i> @lang('Generated Landing Pages')</h5>
+                    <h5 class="text-white card-title mb-0"><i class="las la-history"></i> @lang('Landing Pages History')</h5>
+                    <button type="button" class="btn btn-sm btn--primary addBtn">
+                        <i class="las la-plus"></i> @lang('Add Landing Page')
+                    </button>
                 </div>
                 <div class="card-body p-0">
                     <div class="table-responsive--md table-responsive">
@@ -98,7 +17,8 @@
                             <thead>
                                 <tr>
                                     <th>@lang('Product Name')</th>
-                                    <th>@lang('URL Slug / Link')</th>
+                                    <th>@lang('Landing Page Title')</th>
+                                    <th>@lang('URL / Live Link')</th>
                                     <th>@lang('Created At')</th>
                                     <th>@lang('Action')</th>
                                 </tr>
@@ -108,6 +28,9 @@
                                     <tr>
                                         <td>
                                             <span class="fw-bold">{{ $page->product->name ?? 'N/A' }}</span>
+                                        </td>
+                                        <td>
+                                            <span>{{ $page->title }}</span>
                                         </td>
                                         <td>
                                             <a href="{{ route('landing.view', $page->slug) }}" target="_blank" class="text--primary fw-bold">
@@ -120,7 +43,12 @@
                                         </td>
                                         <td>
                                             <div class="button--group">
-                                                <a href="{{ route('landing.view', $page->slug) }}" target="_blank" class="btn btn-sm btn-outline--primary">
+                                                <button type="button" class="btn btn-sm btn-outline--primary editBtn" 
+                                                        data-id="{{ $page->id }}" 
+                                                        data-settings="{{ json_encode($page->design_settings) }}">
+                                                    <i class="las la-pen"></i> @lang('Edit')
+                                                </button>
+                                                <a href="{{ route('landing.view', $page->slug) }}" target="_blank" class="btn btn-sm btn-outline--info">
                                                     <i class="las la-eye"></i> @lang('View')
                                                 </a>
                                                 <button type="button" class="btn btn-sm btn-outline--danger deleteBtn" data-id="{{ $page->id }}" data-product="{{ $page->product->name ?? 'N/A' }}">
@@ -131,7 +59,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td class="text-muted text-center" colspan="100%">{{ __($emptyMessage ?? 'No landing pages generated yet') }}</td>
+                                        <td class="text-muted text-center" colspan="100%">{{ __($emptyMessage ?? 'No landing pages created yet') }}</td>
                                     </tr>
                                 @endforelse
                             </tbody>
@@ -147,13 +75,128 @@
         </div>
     </div>
 
+    <!-- Manual Builder Form Modal -->
+    <div id="builderModal" class="modal fade" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header bg--dark">
+                    <h5 class="modal-title text-white" id="modalTitle">@lang('Create Landing Page')</h5>
+                    <button type="button" class="close text-white border-0 bg-transparent" data-bs-dismiss="modal" aria-label="Close">
+                        <i class="las la-times"></i>
+                    </button>
+                </div>
+                <form action="{{ route('admin.landing.generate') }}" method="POST" id="builderForm">
+                    @csrf
+                    <input type="hidden" name="id" id="pageId">
+                    <div class="modal-body">
+                        <div class="row">
+                            <!-- Left column -->
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label class="fw-bold">@lang('Select Product') <span class="text-danger">*</span></label>
+                                    <select name="product_id" id="productId" class="form-control" required>
+                                        <option value="">-- @lang('Choose a product') --</option>
+                                        @foreach($products as $product)
+                                            <option value="{{ $product->id }}">{{ $product->name }}</option>
+                                        @endforeach
+                                    </select>
+                                    <small class="text-muted">@lang('Select the product this landing page is for.')</small>
+                                </div>
+
+                                <div class="form-group mb-3">
+                                    <label class="fw-bold">@lang('Page Tab Title / Meta Title') <span class="text-danger">*</span></label>
+                                    <input type="text" name="title" id="pageTitle" class="form-control" placeholder="e.g. Premium quality bluetooth airbuds - Vayromart" required>
+                                </div>
+
+                                <div class="form-group mb-3">
+                                    <label class="fw-bold">@lang('Main Catchy Headline') <span class="text-danger">*</span></label>
+                                    <input type="text" name="headline" id="pageHeadline" class="form-control" placeholder="e.g. অসাধারণ সাউন্ডের প্রিমিয়াম ইয়ারবাডস!" required>
+                                </div>
+
+                                <div class="form-group mb-3">
+                                    <label class="fw-bold">@lang('Sub-headline Text') <span class="text-danger">*</span></label>
+                                    <input type="text" name="subtitle" id="pageSubtitle" class="form-control" placeholder="e.g. অফুরন্ত চার্জ ব্যাকআপ ও নিখুঁত কলিং ফিচার সহ।" required>
+                                </div>
+
+                                <div class="form-group mb-3">
+                                    <label class="fw-bold">@lang('Custom Banner Image URL')</label>
+                                    <input type="url" name="image_url" id="imageUrl" class="form-control" placeholder="https://example.com/image.jpg">
+                                    <small class="text-muted">@lang('Leave blank to use the product\'s main image automatically.')</small>
+                                </div>
+
+                                <div class="form-group mb-3">
+                                    <label class="fw-bold">@lang('YouTube Video URL')</label>
+                                    <input type="url" name="video_url" id="videoUrl" class="form-control" placeholder="https://www.youtube.com/watch?v=xxxx">
+                                    <small class="text-muted">@lang('Optional. Paste a YouTube link to show a product video.')</small>
+                                </div>
+                            </div>
+
+                            <!-- Right column -->
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label class="fw-bold">@lang('Bullet Points / Key Features') <span class="text-danger">*</span></label>
+                                    <textarea name="bullets" id="pageBullets" class="form-control" rows="4" placeholder="একটি প্রতি লাইনে লিখুন:&#10;ফাস্ট চার্জিং টেকনোলজি&#10;৭ দিনের রিপ্লেসমেন্ট গ্যারান্টি&#10;ক্রিস্টাল ক্লিয়ার সাউন্ড কোয়ালিটি" required></textarea>
+                                    <small class="text-muted">@lang('Enter each selling point on a new line.')</small>
+                                </div>
+
+                                <div class="form-group mb-3">
+                                    <label class="fw-bold">@lang('Detailed Description / Review') <span class="text-danger">*</span></label>
+                                    <textarea name="description" id="pageDescription" class="form-control" rows="8" placeholder="পণ্যটির বিস্তারিত বিবরণ এখানে লিখুন..." required></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+                        <h6 class="mb-3 text--primary"><i class="las la-star"></i> @lang('Customer Reviews (Optional Customization)')</h6>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group mb-2">
+                                    <label class="small fw-bold">@lang('Reviewer 1 Name')</label>
+                                    <input type="text" name="reviewer_name_1" id="revName1" class="form-control form-control-sm" placeholder="Sojol Hossen">
+                                </div>
+                                <div class="form-group mb-2">
+                                    <label class="small fw-bold">@lang('Reviewer 1 Comment')</label>
+                                    <textarea name="reviewer_comment_1" id="revComment1" class="form-control form-control-sm" rows="2" placeholder="অসাধারণ প্রোডাক্ট!"></textarea>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group mb-2">
+                                    <label class="small fw-bold">@lang('Reviewer 2 Name')</label>
+                                    <input type="text" name="reviewer_name_2" id="revName2" class="form-control form-control-sm" placeholder="Farhana Yasmin">
+                                </div>
+                                <div class="form-group mb-2">
+                                    <label class="small fw-bold">@lang('Reviewer 2 Comment')</label>
+                                    <textarea name="reviewer_comment_2" id="revComment2" class="form-control form-control-sm" rows="2" placeholder="পণ্যটির কোয়ালিটি খুবই ভালো।"></textarea>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group mb-2">
+                                    <label class="small fw-bold">@lang('Reviewer 3 Name')</label>
+                                    <input type="text" name="reviewer_name_3" id="revName3" class="form-control form-control-sm" placeholder="Md. Arif">
+                                </div>
+                                <div class="form-group mb-2">
+                                    <label class="small fw-bold">@lang('Reviewer 3 Comment')</label>
+                                    <textarea name="reviewer_comment_3" id="revComment3" class="form-control form-control-sm" rows="2" placeholder="ক্যাশ অন ডেলিভারি পেয়ে ভালো লেগেছে।"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn--dark" data-bs-dismiss="modal">@lang('Close')</button>
+                        <button type="submit" class="btn btn--primary" id="saveBtn">@lang('Save Landing Page')</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <!-- Delete Confirmation Modal -->
     <div id="deleteModal" class="modal fade" tabindex="-1" role="dialog">
         <div class="modal-dialog" role="document">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">@lang('Delete Landing Page')</h5>
-                    <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
+                    <button type="button" class="close border-0 bg-transparent" data-bs-dismiss="modal" aria-label="Close">
                         <i class="las la-times"></i>
                     </button>
                 </div>
@@ -177,12 +220,45 @@
     (function ($) {
         "use strict";
 
-        // Setup Select2 for product search dropdown
-        $('.select2').select2({
-            dropdownParent: $('.card-body')
+        // Open Create Modal
+        $('.addBtn').on('click', function () {
+            $('#modalTitle').text("@lang('Create Landing Page')");
+            $('#builderForm').trigger('reset');
+            $('#pageId').val('');
+            $('#productId').prop('disabled', false);
+            $('#builderModal').modal('show');
         });
 
-        // Trigger delete confirmation modal
+        // Open Edit Modal & Populate Settings
+        $('.editBtn').on('click', function () {
+            $('#modalTitle').text("@lang('Edit Landing Page')");
+            $('#builderForm').trigger('reset');
+
+            var id = $(this).data('id');
+            var settings = $(this).data('settings');
+
+            $('#pageId').val(id);
+            if (settings) {
+                $('#productId').val(settings.product_id);
+                $('#pageTitle').val(settings.title);
+                $('#pageHeadline').val(settings.headline);
+                $('#pageSubtitle').val(settings.subtitle);
+                $('#imageUrl').val(settings.image_url);
+                $('#videoUrl').val(settings.video_url);
+                $('#pageBullets').val(settings.bullets);
+                $('#pageDescription').val(settings.description);
+                $('#revName1').val(settings.reviewer_name_1);
+                $('#revComment1').val(settings.reviewer_comment_1);
+                $('#revName2').val(settings.reviewer_name_2);
+                $('#revComment2').val(settings.reviewer_comment_2);
+                $('#revName3').val(settings.reviewer_name_3);
+                $('#revComment3').val(settings.reviewer_comment_3);
+            }
+
+            $('#builderModal').modal('show');
+        });
+
+        // Delete Modal
         $('.deleteBtn').on('click', function () {
             var id = $(this).data('id');
             var productName = $(this).data('product');
@@ -191,35 +267,6 @@
             $('#deleteProductName').text(productName);
             $('#deleteForm').attr('action', actionUrl);
             $('#deleteModal').modal('show');
-        });
-
-        // Handle generator submit to show premium loading steps
-        $('#generateForm').on('submit', function () {
-            $('#loadingOverlay').removeClass('d-none');
-            
-            var steps = [
-                { percent: 10, text: "Initializing market researcher agent..." },
-                { percent: 25, text: "Retrieving e-commerce product specifications..." },
-                { percent: 45, text: "Analyzing competitor details and target audience pain points..." },
-                { percent: 65, text: "Writing highly persuasive copywriting copy in Bengali (Benglish)..." },
-                { percent: 80, text: "Creating a premium Tailwind CSS landing layout theme..." },
-                { percent: 90, text: "Integrating standard Cash on Delivery checkout form..." },
-                { percent: 95, text: "Formatting and compiling clean, responsive HTML outputs..." }
-            ];
-
-            var currentStep = 0;
-            var interval = setInterval(function () {
-                if (currentStep < steps.length) {
-                    $('#loadingProgressBar').css('width', steps[currentStep].percent + '%');
-                    $('#loadingMessage').text(steps[currentStep].text);
-                    currentStep++;
-                }
-            }, 2500);
-
-            // Safety check: clear interval if page unloads or takes extremely long
-            $(window).on('unload', function () {
-                clearInterval(interval);
-            });
         });
 
     })(jQuery);
