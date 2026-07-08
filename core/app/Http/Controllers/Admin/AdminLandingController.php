@@ -312,6 +312,17 @@ class AdminLandingController extends Controller
                     </div>
 
                     <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">ডেলিভারি এলাকা <span class="text-rose-500">*</span></label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-gray-400"><i class="fas fa-truck"></i></span>
+                            <select name="shipping_location" id="shipping_location" required class="w-full pl-11 pr-4 py-3.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all duration-200">
+                                <option value="inside" data-charge="80">ঢাকা সিটির ভেতরে (80 BDT)</option>
+                                <option value="outside" data-charge="130">ঢাকা সিটির বাইরে (130 BDT)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
                         <label class="block text-sm font-bold text-gray-700 mb-2">ডেলিভারি ঠিকানা <span class="text-rose-500">*</span></label>
                         <div class="relative">
                             <span class="absolute top-4 left-0 flex items-start pl-4 text-gray-400"><i class="fas fa-map-marker-alt mt-1"></i></span>
@@ -320,8 +331,8 @@ class AdminLandingController extends Controller
                     </div>
 
                     <div class="bg-gray-50 p-6 rounded-2xl border border-gray-100 flex items-center justify-between text-base">
-                        <span class="font-bold text-gray-600">ডেলিভারি চার্জ: 80 BDT</span>
-                        <span class="font-black text-indigo-600 text-xl">সর্বমোট বিল: ' . ($price + 80) . ' BDT</span>
+                        <span class="font-bold text-gray-600">ডেলিভারি চার্জ: <span id="delivery_charge_val">80 BDT</span></span>
+                        <span class="font-black text-indigo-600 text-xl">সর্বমোট বিল: <span id="total_bill_val">' . ($price + 80) . ' BDT</span></span>
                     </div>
 
                     <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-lg py-4 rounded-xl shadow-lg transition-all duration-300 flex items-center justify-center gap-2 pulsing-btn">
@@ -349,6 +360,15 @@ class AdminLandingController extends Controller
             <p class="text-xs">&copy; ' . date('Y') . ' Vayromart. All rights reserved.</p>
         </div>
     </footer>
+
+    <script>
+        document.getElementById("shipping_location").addEventListener("change", function() {
+            var charge = parseInt(this.options[this.selectedIndex].getAttribute("data-charge"));
+            var basePrice = ' . $price . ';
+            document.getElementById("delivery_charge_val").innerText = charge + " BDT";
+            document.getElementById("total_bill_val").innerText = (basePrice + charge) + " BDT";
+        });
+    </script>
 
 </body>
 </html>';

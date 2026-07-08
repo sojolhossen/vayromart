@@ -36,6 +36,7 @@ class LandingPageController extends Controller
             'name' => 'required|string|max:255',
             'mobile' => 'required|string|regex:/^(?:\+?88)?01[3-9]\d{8}$/',
             'address' => 'required|string|max:500',
+            'shipping_location' => 'nullable|string|in:inside,outside',
         ], [
             'name.required' => 'অনুগ্রহ করে আপনার নাম লিখুন।',
             'mobile.required' => 'অনুগ্রহ করে আপনার মোবাইল নম্বর লিখুন।',
@@ -89,7 +90,7 @@ class LandingPageController extends Controller
         $discount = $prices->regular_price - $prices->sale_price;
 
         $subtotal = $price * $quantity;
-        $shippingCharge = 80.00; // Standard shipping
+        $shippingCharge = ($request->shipping_location === 'outside') ? 130.00 : 80.00;
         $totalAmount = $subtotal + $shippingCharge;
 
         // Generate unique Order Number
