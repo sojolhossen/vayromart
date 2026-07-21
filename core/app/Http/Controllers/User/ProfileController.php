@@ -83,15 +83,15 @@ class ProfileController extends Controller {
     public function saveShippingAddress(Request $request, $id = 0) {
         $request->validate([
             'firstname' => 'required|string',
-            'lastname' => 'required|string',
-            'mobile' => 'required|string',
-            'email' => 'required|email',
-            'city' => 'required|string',
-            'state' => 'required|string',
-            'zip' => 'required|string',
-            'country' => 'required|string',
-            'address' => 'required|string',
-            'label' => 'required|string',
+            'lastname'  => 'nullable|string',
+            'mobile'    => 'required|string',
+            'email'     => 'nullable|email',
+            'city'      => 'nullable|string',
+            'state'     => 'nullable|string',
+            'zip'       => 'nullable|string',
+            'country'   => 'nullable|string',
+            'address'   => 'required|string',
+            'label'     => 'required|string',
         ]);
 
         if ($id) {

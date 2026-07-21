@@ -12,21 +12,16 @@
                     <div class="row">
                         <div class="col-md-12">
                             <div class="form-group">
-                                <label>@lang('Title')</label>
+                                <label>@lang('Title (e.g. Home / Office)')</label>
                                 <input type="text" class="form-control form--control" name="label" required>
                             </div>
                         </div>
 
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label>@lang('First Name')</label>
+                                <label>@lang('Name')</label>
                                 <input type="text" class="form-control form--control" name="firstname" required>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label>@lang('Last Name')</label>
-                                <input type="text" class="form-control form--control" name="lastname" required>
+                                <input type="hidden" name="lastname" value="">
                             </div>
                         </div>
                         <div class="col-md-6">
@@ -35,46 +30,21 @@
                                 <input type="text" class="form-control form--control" name="mobile" required>
                             </div>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-12">
                             <div class="form-group">
-                                <label>@lang('Email')</label>
-                                <input type="text" class="form-control form--control" name="email" required>
+                                <label>@lang('Email (Optional)')</label>
+                                <input type="email" class="form-control form--control" name="email">
                             </div>
                         </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label>@lang('City')</label>
-                                <input type="text" class="form-control form--control" name="city" required>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label>@lang('State')</label>
-                                <input type="text" class="form-control form--control" name="state" required>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label>@lang('Zip')</label>
-                                <input type="text" class="form-control form--control" name="zip" required>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label>@lang('Country')</label>
-                                <select name="country" class="form-control form--control form-select select2">
-                                    <option value="" hidden>@lang('Select One')</option>
-                                    @foreach ($countries as $country)
-                                        <option value="{{ $country->country }}">{{ __($country->country) }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                        </div>
+                        <input type="hidden" name="city" value="">
+                        <input type="hidden" name="state" value="">
+                        <input type="hidden" name="zip" value="">
+                        <input type="hidden" name="country" value="Bangladesh">
 
                         <div class="col-md-12">
                             <div class="form-group mb-0">
                                 <label>@lang('Address')</label>
-                                <input type="text" class="form-control form--control" name="address" required>
+                                <input type="text" class="form-control form--control" name="address" placeholder="@lang('Full Shipping Address')" required>
                             </div>
                         </div>
                     </div>

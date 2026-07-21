@@ -20,17 +20,11 @@
             @endif
 
             <div class="row">
-
                 <div class="col-md-6">
                     <div class="form-group">
-                        <label>@lang('First Name')</label>
-                        <input type="text" value="{{ @$shippingInformation->firstname }}" class="form-control form--control" name="firstname">
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label>@lang('Last Name')</label>
-                        <input type="text" value="{{ @$shippingInformation->lastname }}" class="form-control form--control" name="lastname">
+                        <label>@lang('Name')</label>
+                        <input type="text" value="{{ @$shippingInformation->firstname ?: (auth()->user()?->fullname ?? '') }}" class="form-control form--control" name="firstname" placeholder="@lang('Your Full Name')" required>
+                        <input type="hidden" name="lastname" value="{{ @$shippingInformation->lastname }}">
                     </div>
                 </div>
 
@@ -38,25 +32,25 @@
                     <div class="form-group">
                         <label>@lang('Mobile')</label>
                         <div class="input-group">
-                            <span class="input-group-text mobile-code"></span>
-                            <input type="hidden" name="mobile_code">
-                            <input type="hidden" name="country_code">
-                            <input type="number" name="mobile" value="{{ @$shippingInformation->mobile }}" class="form-control form--control  ps-0">
+                            <span class="input-group-text mobile-code">+880</span>
+                            <input type="hidden" name="mobile_code" value="880">
+                            <input type="hidden" name="country_code" value="BD">
+                            <input type="hidden" name="country" value="Bangladesh">
+                            <input type="number" name="mobile" value="{{ @$shippingInformation->mobile ?: (auth()->user()?->mobile ?? '') }}" class="form-control form--control ps-0" placeholder="@lang('Mobile Number')" required>
                         </div>
                         <small class="text-muted"><i class="la la-info-circle"></i> @lang('Enter the mobile number without the country code.')</small>
                     </div>
                 </div>
 
-                <div class="col-md-6">
+                <div class="col-md-12">
                     <div class="form-group">
-                        <label>@lang('Email')</label>
-                        <input type="text" value="{{ @$shippingInformation->email }}" class="form-control form--control" name="email">
+                        <label>@lang('Email (Optional)')</label>
+                        <input type="email" value="{{ @$shippingInformation->email ?: (auth()->user()?->email ?? '') }}" class="form-control form--control" name="email" placeholder="@lang('Email Address (Optional)')">
                     </div>
                 </div>
             </div>
 
             <div class="row mt-4">
-
                 @if ($checkoutContent->description_in_shipping_info_title)
                     <h5 class="mb-1 ">{{ __($checkoutContent->description_in_shipping_info_title) }}</h5>
                 @endif
@@ -67,44 +61,14 @@
                     </p>
                 @endif
 
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label class="form-label">@lang('Country')</label>
-                        <select name="country" class="form-control form--control select2">
-                            @foreach ($countries as $key => $country)
-                                <option data-mobile_code="{{ $country->dial_code }}" value="{{ $country->country }}" data-code="{{ $key }}" @selected($key == 'BD')>
-                                    {{ __($country->country) }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
-                </div>
-
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label>@lang('State')</label>
-                        <input type="text" value="{{ @$shippingInformation->state }}" class="form-control form--control" name="state">
-                    </div>
-                </div>
-
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label>@lang('City')</label>
-                        <input type="text" value="{{ @$shippingInformation->city }}" class="form-control form--control" name="city">
-                    </div>
-                </div>
-
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label>@lang('Zip')</label>
-                        <input type="text" value="{{ @$shippingInformation->zip }}" class="form-control form--control" name="zip">
-                    </div>
-                </div>
+                <input type="hidden" name="state" value="{{ @$shippingInformation->state }}">
+                <input type="hidden" name="city" value="{{ @$shippingInformation->city }}">
+                <input type="hidden" name="zip" value="{{ @$shippingInformation->zip }}">
 
                 <div class="col-md-12">
                     <div class="form-group">
                         <label>@lang('Address')</label>
-                        <input type="text" value="{{ @$shippingInformation->address }}" class="form-control form--control" name="address">
+                        <input type="text" value="{{ @$shippingInformation->address }}" class="form-control form--control" name="address" placeholder="@lang('Full Shipping Address')" required>
                     </div>
                 </div>
             </div>
