@@ -5,6 +5,7 @@
     <!-- Required meta tags -->
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="facebook-domain-verification" content="91lo57ekvxy06s6rvpuz41jtx3hqpd" />
     <title> {{ gs()->siteName(__($pageTitle)) }}</title>
     @include('partials.seo')
     <link type="image/x-icon" href="{{ siteFavicon() }}" rel="shortcut icon">
