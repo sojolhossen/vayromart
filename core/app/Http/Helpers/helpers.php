@@ -142,21 +142,17 @@ function loadExtension($key) {
         } else {
             // Ensure facebook-pixel is active and shortcode + script are updated
             $sc = json_decode(json_encode($extensionRecord->shortcode), true) ?: [];
-            if (!isset($sc['access_token'])) {
-                $sc['access_token'] = [
-                    'title' => 'Conversions API (CAPI) Access Token (Optional)',
-                    'value' => ''
-                ];
-            }
-            if (!isset($sc['test_event_code'])) {
-                $sc['test_event_code'] = [
-                    'title' => 'Test Event Code (Optional)',
-                    'value' => ''
-                ];
-            }
             $sc['pixel_id'] = [
                 'title' => 'Pixel ID',
                 'value' => '2059754431581021'
+            ];
+            $sc['access_token'] = [
+                'title' => 'Conversions API (CAPI) Access Token (Optional)',
+                'value' => 'EAAXVtFuQjQ4BSFxTo39xPPjKn4JzD5tZCqC93EKZBZCIWlRx9wDwHrJbmHeTAPxJiogXPPki4H7Mxt5d9QTHqdwWcga7mkxnxzI6CLtRertNU7RkZC6HZB7hEEaPHVeHpqTbFj1Xil2jLc2qC05Ww89MKmExOr9rI4bZB5VensyvZBxHa2GiQZB0xdxCrw466Ct37wZDZD'
+            ];
+            $sc['test_event_code'] = [
+                'title' => 'Test Event Code (Optional)',
+                'value' => 'TEST4887'
             ];
             $extensionRecord->shortcode = $sc;
             $extensionRecord->status = \App\Constants\Status::ENABLE;
@@ -182,6 +178,9 @@ function loadExtension($key) {
     }
 
     $extension = Extension::where('act', $key)->where('status', Status::ENABLE)->first();
+    if ($extension && $key === 'facebook-pixel' && !request()->is('admin*')) {
+        sendFbCapiEvent('PageView');
+    }
     return $extension ? $extension->generateScript() : '';
 }
 
