@@ -88,7 +88,10 @@ class Email extends NotifyProcess implements Notifiable
         $headers .= "Reply-To: $sentFromName <$sentFromEmail> \r\n";
         $headers .= "MIME-Version: 1.0\r\n";
         $headers .= "Content-Type: text/html; charset=utf-8\r\n";
-        @\mail($this->email, $this->subject, $this->finalMessage, $headers);
+        $result = @\mail($this->email, $this->subject, $this->finalMessage, $headers);
+        if (!$result) {
+            throw new \Exception('PHP mail() failed to send email. Please use SMTP configuration.');
+        }
     }
 
     protected function sendSmtpMail()
@@ -108,6 +111,7 @@ class Email extends NotifyProcess implements Notifiable
         $mail->SMTPAuth   = true;
         $mail->Username   = $user;
         $mail->Password   = $pass;
+        $mail->Timeout    = 10;
         if ($enc == 'ssl') {
             $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
         } else {
@@ -132,7 +136,33 @@ class Email extends NotifyProcess implements Notifiable
         $mail->isHTML(true);
         $mail->Subject = $this->subject;
         $mail->Body    = $this->finalMessage;
-        $mail->send();
+
+        try {
+            $mail->send();
+        } catch (\Exception $e) {
+            // Fallback retry using localhost / 127.0.0.1 for cPanel hosted mail
+            if ($host != 'localhost' && $host != '127.0.0.1') {
+                try {
+                    $mail->Host = 'localhost';
+                    $mail->Port = 587;
+                    $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+                    $mail->send();
+                    return;
+                } catch (\Exception $e2) {
+                    try {
+                        $mail->Host = '127.0.0.1';
+                        $mail->Port = 25;
+                        $mail->SMTPSecure = '';
+                        $mail->SMTPAutoTLS = false;
+                        $mail->send();
+                        return;
+                    } catch (\Exception $e3) {
+                        throw $e;
+                    }
+                }
+            }
+            throw $e;
+        }
     }
 
     protected function sendSendGridMail()
