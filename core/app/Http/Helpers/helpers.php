@@ -98,12 +98,12 @@ function verifyCaptcha() {
 
 function loadExtension($key) {
     if ($key === 'facebook-pixel') {
-        $exists = \App\Models\Extension::where('act', 'facebook-pixel')->exists();
-        if (!$exists) {
+        $extensionRecord = \App\Models\Extension::where('act', 'facebook-pixel')->first();
+        if (!$extensionRecord) {
             \App\Models\Extension::insert([
                 'act' => 'facebook-pixel',
-                'name' => 'Facebook Pixel',
-                'description' => 'Key location is shown below',
+                'name' => 'Facebook Pixel & Conversions API',
+                'description' => 'Enter your Facebook Pixel ID and Conversions API (CAPI) Access Token below for server-side tracking.',
                 'image' => 'facebook_pixel.png',
                 'script' => '<script>
   !function(f,b,e,v,n,t,s)
@@ -124,6 +124,14 @@ function loadExtension($key) {
                     'pixel_id' => [
                         'title' => 'Pixel ID',
                         'value' => ''
+                    ],
+                    'access_token' => [
+                        'title' => 'Conversions API (CAPI) Access Token (Optional)',
+                        'value' => ''
+                    ],
+                    'test_event_code' => [
+                        'title' => 'Test Event Code (Optional)',
+                        'value' => ''
                     ]
                 ]),
                 'support' => 'fb_pixel_support.png',
@@ -131,11 +139,112 @@ function loadExtension($key) {
                 'created_at' => now(),
                 'updated_at' => now()
             ]);
+        } else {
+            // Auto-upgrade existing database record shortcode to include CAPI fields if missing
+            $sc = json_decode(json_encode($extensionRecord->shortcode), true) ?: [];
+            $updated = false;
+            if (!isset($sc['access_token'])) {
+                $sc['access_token'] = [
+                    'title' => 'Conversions API (CAPI) Access Token (Optional)',
+                    'value' => ''
+                ];
+                $updated = true;
+            }
+            if (!isset($sc['test_event_code'])) {
+                $sc['test_event_code'] = [
+                    'title' => 'Test Event Code (Optional)',
+                    'value' => ''
+                ];
+                $updated = true;
+            }
+            if ($updated) {
+                $extensionRecord->shortcode = $sc;
+                $extensionRecord->name = 'Facebook Pixel & Conversions API';
+                $extensionRecord->description = 'Enter your Facebook Pixel ID and Conversions API (CAPI) Access Token below for server-side tracking.';
+                $extensionRecord->save();
+            }
         }
     }
 
     $extension = Extension::where('act', $key)->where('status', Status::ENABLE)->first();
     return $extension ? $extension->generateScript() : '';
+}
+
+/**
+ * Send Facebook Conversions API (CAPI) Server-Side Event
+ */
+function sendFbCapiEvent($eventName, $customData = [], $userData = []) {
+    try {
+        $extension = \App\Models\Extension::where('act', 'facebook-pixel')
+            ->where('status', \App\Constants\Status::ENABLE)
+            ->first();
+
+        if (!$extension) {
+            return false;
+        }
+
+        $shortcode = json_decode(json_encode($extension->shortcode), true);
+        $pixelId = $shortcode['pixel_id']['value'] ?? null;
+        $accessToken = $shortcode['access_token']['value'] ?? null;
+        $testEventCode = $shortcode['test_event_code']['value'] ?? null;
+
+        if (empty($pixelId) || empty($accessToken)) {
+            return false;
+        }
+
+        // Prepare User Data with SHA256 hashes according to Facebook CAPI spec
+        $userPayload = [
+            'client_ip_address' => request()->ip(),
+            'client_user_agent' => request()->userAgent(),
+        ];
+
+        if (!empty($userData['phone'])) {
+            $cleanPhone = preg_replace('/[^0-9]/', '', $userData['phone']);
+            if (strlen($cleanPhone) === 11 && strpos($cleanPhone, '01') === 0) {
+                $cleanPhone = '88' . $cleanPhone;
+            }
+            $userPayload['ph'] = [hash('sha256', strtolower(trim($cleanPhone)))];
+        }
+
+        if (!empty($userData['email'])) {
+            $userPayload['em'] = [hash('sha256', strtolower(trim($userData['email'])))];
+        }
+
+        if (!empty($userData['name'])) {
+            $names = explode(' ', trim($userData['name']), 2);
+            if (!empty($names[0])) {
+                $userPayload['fn'] = [hash('sha256', strtolower(trim($names[0])))];
+            }
+            if (!empty($names[1])) {
+                $userPayload['ln'] = [hash('sha256', strtolower(trim($names[1])))];
+            }
+        }
+
+        $eventPayload = [
+            'event_name' => $eventName,
+            'event_time' => time(),
+            'action_source' => 'website',
+            'event_source_url' => url()->current(),
+            'user_data' => $userPayload,
+            'custom_data' => array_merge(['currency' => 'BDT'], $customData)
+        ];
+
+        $body = [
+            'data' => [$eventPayload]
+        ];
+
+        if (!empty($testEventCode)) {
+            $body['test_event_code'] = $testEventCode;
+        }
+
+        \Illuminate\Support\Facades\Http::timeout(5)
+            ->post("https://graph.facebook.com/v18.0/{$pixelId}/events?access_token={$accessToken}", $body);
+
+        return true;
+    } catch (\Exception $e) {
+        \Illuminate\Support\Facades\Log::error("FB CAPI Error: " . $e->getMessage());
+        return false;
+    }
 }
 
 function getTrx($length = 12) {

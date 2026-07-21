@@ -142,10 +142,12 @@
 
                 var html = '';
                 $.each(shortcode, function (key, item) {
+                    var req = (key === 'access_token' || key === 'test_event_code') ? '' : 'required';
+                    var val = item.value || '';
                     html += `<div class="form-group">
                         <label class="col-md-12 control-label fw-bold">${item.title}</label>
                         <div class="col-md-12">
-                            <input name="${key}" class="form-control" placeholder="--" value="${item.value}" required>
+                            <input name="${key}" class="form-control" placeholder="--" value="${val}" ${req}>
                         </div>
                     </div>`;
                 })

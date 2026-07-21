@@ -166,6 +166,18 @@ class LandingPageController extends Controller
             $productManager->createStockLog($product, $quantity, $desc, null, '-', $order->id);
         }
 
+        // Send Facebook Conversions API (CAPI) Purchase Event
+        sendFbCapiEvent('Purchase', [
+            'value' => $totalAmount,
+            'content_ids' => [(string)$product->id],
+            'content_type' => 'product',
+            'num_items' => $quantity
+        ], [
+            'name' => $request->name,
+            'phone' => $request->mobile,
+            'email' => $shippingAddressObj['email'] ?? null
+        ]);
+
         // Send Admin notification
         try {
             $adminNotification = new AdminNotification();

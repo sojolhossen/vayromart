@@ -20,13 +20,17 @@ class ExtensionController extends Controller
         $extension = Extension::findOrFail($id);
         $validationRule = [];
         foreach ($extension->shortcode as $key => $val) {
-            $validationRule = array_merge($validationRule,[$key => 'required']);
+            if (in_array($key, ['access_token', 'test_event_code'])) {
+                $validationRule = array_merge($validationRule, [$key => 'nullable|string']);
+            } else {
+                $validationRule = array_merge($validationRule, [$key => 'required']);
+            }
         }
         $request->validate($validationRule);
 
         $shortcode = json_decode(json_encode($extension->shortcode), true);
         foreach ($shortcode as $key => $value) {
-            $shortcode[$key]['value'] = $request->$key;
+            $shortcode[$key]['value'] = $request->$key ?? '';
         }
 
         $extension->shortcode = $shortcode;
