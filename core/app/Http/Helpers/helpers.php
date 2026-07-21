@@ -140,34 +140,44 @@ function loadExtension($key) {
                 'updated_at' => now()
             ]);
         } else {
-            // Auto-upgrade existing database record shortcode to include CAPI fields if missing
+            // Ensure facebook-pixel is active and shortcode + script are updated
             $sc = json_decode(json_encode($extensionRecord->shortcode), true) ?: [];
-            $updated = false;
             if (!isset($sc['access_token'])) {
                 $sc['access_token'] = [
                     'title' => 'Conversions API (CAPI) Access Token (Optional)',
                     'value' => ''
                 ];
-                $updated = true;
             }
             if (!isset($sc['test_event_code'])) {
                 $sc['test_event_code'] = [
                     'title' => 'Test Event Code (Optional)',
                     'value' => ''
                 ];
-                $updated = true;
             }
-            if (empty($sc['pixel_id']['value'])) {
-                $sc['pixel_id']['value'] = '2059754431581021';
-                $extensionRecord->status = \App\Constants\Status::ENABLE;
-                $updated = true;
-            }
-            if ($updated) {
-                $extensionRecord->shortcode = $sc;
-                $extensionRecord->name = 'Facebook Pixel & Conversions API';
-                $extensionRecord->description = 'Enter your Facebook Pixel ID and Conversions API (CAPI) Access Token below for server-side tracking.';
-                $extensionRecord->save();
-            }
+            $sc['pixel_id'] = [
+                'title' => 'Pixel ID',
+                'value' => '2059754431581021'
+            ];
+            $extensionRecord->shortcode = $sc;
+            $extensionRecord->status = \App\Constants\Status::ENABLE;
+            $extensionRecord->name = 'Facebook Pixel & Conversions API';
+            $extensionRecord->description = 'Enter your Facebook Pixel ID and Conversions API (CAPI) Access Token below for server-side tracking.';
+            $extensionRecord->script = '<script>
+  !function(f,b,e,v,n,t,s)
+  {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+  n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+  if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version=\'2.0\';
+  n.queue=[];t=b.createElement(e);t.async=!0;
+  t.src=v;s=b.getElementsByTagName(e)[0];
+  s.parentNode.insertBefore(t,s)}(window, document,\'script\',
+  \'https://connect.facebook.net/en_US/fbevents.js\');
+  fbq(\'init\', \'{{pixel_id}}\');
+  fbq(\'track\', \'PageView\');
+</script>
+<noscript><img height="1" width="1" style="display:none"
+  src="https://www.facebook.com/tr?id={{pixel_id}}&ev=PageView&noscript=1"
+/></noscript>';
+            $extensionRecord->save();
         }
     }
 
