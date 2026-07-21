@@ -72,16 +72,16 @@ function siteLogo($type = null) {
     $name = $type ? "logo_$type" : 'logo';
     $path = getFilePath('logoIcon');
     if (file_exists($path . '/' . $name . '.webp')) {
-        return getImage($path . '/' . $name . '.webp');
+        return asset($path . '/' . $name . '.webp');
     }
-    return getImage($path . '/' . $name . '.png');
+    return asset($path . '/' . $name . '.png');
 }
 function siteFavicon() {
     $path = getFilePath('logoIcon');
     if (file_exists($path . '/favicon.webp')) {
-        return getImage($path . '/favicon.webp');
+        return asset($path . '/favicon.webp');
     }
-    return getImage($path . '/favicon.png');
+    return asset($path . '/favicon.png');
 }
 
 function loadReCaptcha() {
