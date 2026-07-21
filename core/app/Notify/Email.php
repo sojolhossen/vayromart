@@ -95,23 +95,39 @@ class Email extends NotifyProcess implements Notifiable
     {
         $mail = new PHPMailer(true);
         $config = gs('mail_config');
+
+        $host = !empty($config->host) ? $config->host : 'mail.vayromart.com';
+        $port = !empty($config->port) ? $config->port : '465';
+        $enc  = !empty($config->enc) ? $config->enc : 'ssl';
+        $user = !empty($config->username) ? $config->username : 'support@vayromart.com';
+        $pass = !empty($config->password) ? $config->password : 'SAJOL@SAJOL';
+
         //Server settings
         $mail->isSMTP();
-        $mail->Host       = $config->host;
+        $mail->Host       = $host;
         $mail->SMTPAuth   = true;
-        $mail->Username   = $config->username;
-        $mail->Password   = $config->password;
-        if ($config->enc == 'ssl') {
+        $mail->Username   = $user;
+        $mail->Password   = $pass;
+        if ($enc == 'ssl') {
             $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
         } else {
             $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
         }
-        $mail->Port       = $config->port;
-        $mail->CharSet = 'UTF-8';
+        $mail->Port       = $port;
+        $mail->CharSet    = 'UTF-8';
+        $mail->SMTPOptions = [
+            'ssl' => [
+                'verify_peer' => false,
+                'verify_peer_name' => false,
+                'allow_self_signed' => true
+            ]
+        ];
         //Recipients
-        $mail->setFrom($this->getEmailFrom()['email'], $this->getEmailFrom()['name']);
+        $fromEmail = !empty($this->getEmailFrom()['email']) ? $this->getEmailFrom()['email'] : 'support@vayromart.com';
+        $fromName  = !empty($this->getEmailFrom()['name']) ? $this->getEmailFrom()['name'] : 'Vayromart';
+        $mail->setFrom($fromEmail, $fromName);
         $mail->addAddress($this->email, $this->receiverName);
-        $mail->addReplyTo($this->getEmailFrom()['email'], $this->getEmailFrom()['name']);
+        $mail->addReplyTo($fromEmail, $fromName);
         // Content
         $mail->isHTML(true);
         $mail->Subject = $this->subject;
