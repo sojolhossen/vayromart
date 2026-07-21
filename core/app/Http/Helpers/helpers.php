@@ -144,7 +144,7 @@ function loadExtension($key) {
             $sc = json_decode(json_encode($extensionRecord->shortcode), true) ?: [];
             $sc['pixel_id'] = [
                 'title' => 'Pixel ID',
-                'value' => '2059754431581021'
+                'value' => '1444633954364653'
             ];
             $sc['access_token'] = [
                 'title' => 'Conversions API (CAPI) Access Token (Optional)',
