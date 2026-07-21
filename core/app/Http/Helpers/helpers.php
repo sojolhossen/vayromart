@@ -144,7 +144,7 @@ function loadExtension($key) {
             $sc = json_decode(json_encode($extensionRecord->shortcode), true) ?: [];
             $sc['pixel_id'] = [
                 'title' => 'Pixel ID',
-                'value' => '1444633954364653'
+                'value' => '1012202121425400'
             ];
             $sc['access_token'] = [
                 'title' => 'Conversions API (CAPI) Access Token (Optional)',
@@ -167,11 +167,11 @@ function loadExtension($key) {
   t.src=v;s=b.getElementsByTagName(e)[0];
   s.parentNode.insertBefore(t,s)}(window, document,\'script\',
   \'https://connect.facebook.net/en_US/fbevents.js\');
-  fbq(\'init\', \'1444633954364653\');
+  fbq(\'init\', \'1012202121425400\');
   fbq(\'track\', \'PageView\');
 </script>
 <noscript><img height="1" width="1" style="display:none"
-  src="https://www.facebook.com/tr?id=1444633954364653&ev=PageView&noscript=1"
+  src="https://www.facebook.com/tr?id=1012202121425400&ev=PageView&noscript=1"
 /></noscript>';
             $extensionRecord->save();
         }
@@ -192,7 +192,7 @@ function sendFbCapiEvent($eventName, $customData = [], $userData = []) {
         $extension = \App\Models\Extension::where('act', 'facebook-pixel')->first();
 
         $shortcode = json_decode(json_encode($extension->shortcode ?? []), true);
-        $pixelId = !empty($shortcode['pixel_id']['value']) ? $shortcode['pixel_id']['value'] : '1444633954364653';
+        $pixelId = !empty($shortcode['pixel_id']['value']) ? $shortcode['pixel_id']['value'] : '1012202121425400';
         $accessToken = !empty($shortcode['access_token']['value']) ? $shortcode['access_token']['value'] : 'EAAXVtFuQjQ4BSNOSa3J0Lxr3TX6emEzggxcaP1mnHYqZAiZCfeq7Ro9AVm3ZCUYLGI66InUQL6XPDg1cQZAR0NZAjO8frZCztOX83Betz8j1fnETjSx3kBjUPrQgmVRfsN324HUhbNTXETlbqGTW3UWASLAH1ozkwCfFrRZBxxbg1Lm2vGgxreedOzgMa92JbNzAAZDZD';
         $testEventCode = !empty($shortcode['test_event_code']['value']) ? $shortcode['test_event_code']['value'] : 'TEST75398';
 
