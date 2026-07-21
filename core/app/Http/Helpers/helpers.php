@@ -148,11 +148,11 @@ function loadExtension($key) {
             ];
             $sc['access_token'] = [
                 'title' => 'Conversions API (CAPI) Access Token (Optional)',
-                'value' => 'EAAXVtFuQjQ4BSFxTo39xPPjKn4JzD5tZCqC93EKZBZCIWlRx9wDwHrJbmHeTAPxJiogXPPki4H7Mxt5d9QTHqdwWcga7mkxnxzI6CLtRertNU7RkZC6HZB7hEEaPHVeHpqTbFj1Xil2jLc2qC05Ww89MKmExOr9rI4bZB5VensyvZBxHa2GiQZB0xdxCrw466Ct37wZDZD'
+                'value' => 'EAAXVtFuQjQ4BSNOSa3J0Lxr3TX6emEzggxcaP1mnHYqZAiZCfeq7Ro9AVm3ZCUYLGI66InUQL6XPDg1cQZAR0NZAjO8frZCztOX83Betz8j1fnETjSx3kBjUPrQgmVRfsN324HUhbNTXETlbqGTW3UWASLAH1ozkwCfFrRZBxxbg1Lm2vGgxreedOzgMa92JbNzAAZDZD'
             ];
             $sc['test_event_code'] = [
                 'title' => 'Test Event Code (Optional)',
-                'value' => 'TEST4887'
+                'value' => 'TEST75398'
             ];
             $extensionRecord->shortcode = $sc;
             $extensionRecord->status = \App\Constants\Status::ENABLE;
