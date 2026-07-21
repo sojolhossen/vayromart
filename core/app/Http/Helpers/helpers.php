@@ -157,6 +157,11 @@ function loadExtension($key) {
                 ];
                 $updated = true;
             }
+            if (empty($sc['pixel_id']['value'])) {
+                $sc['pixel_id']['value'] = '2059754431581021';
+                $extensionRecord->status = \App\Constants\Status::ENABLE;
+                $updated = true;
+            }
             if ($updated) {
                 $extensionRecord->shortcode = $sc;
                 $extensionRecord->name = 'Facebook Pixel & Conversions API';
