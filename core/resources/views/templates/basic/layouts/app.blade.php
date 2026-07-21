@@ -31,10 +31,9 @@
     <style>
         {!! file_get_contents(base_path('../' . $activeTemplateTrue . 'css/custom.css')) !!}
     </style>
+    @php echo loadExtension('google-analytics') @endphp
+    @php echo loadExtension('facebook-pixel') @endphp
 </head>
-
-@php echo loadExtension('google-analytics') @endphp
-@php echo loadExtension('facebook-pixel') @endphp
 
 <body>
     <div class="body-overlay" id="body-overlay"></div>
