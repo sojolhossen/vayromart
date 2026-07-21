@@ -300,26 +300,63 @@ body {
     }
 }
 
-/* Homepage Hero Banner Auto Adjust Style */
+/* Homepage Hero & Promo Banner Auto Adjust Styles */
 .slider-wrapper {
     height: auto !important;
-    aspect-ratio: 990 / 480;
-    width: 100%;
+    min-height: 0 !important;
+    width: 100% !important;
+    aspect-ratio: auto !important;
     overflow: hidden;
+    border-radius: 8px;
 }
 
+.banner-slider.owl-carousel,
 .banner-slider.owl-carousel .owl-stage-outer,
 .banner-slider.owl-carousel .owl-stage,
 .banner-slider.owl-carousel .owl-item,
 .banner-slider.owl-carousel .owl-item a,
 .banner-slider .slide-item {
     height: auto !important;
+    min-height: 0 !important;
 }
 
 .banner-slider.owl-carousel .owl-item img {
     width: 100% !important;
     height: auto !important;
-    object-fit: contain !important;
+    max-height: 520px !important;
+    object-fit: cover !important;
+    border-radius: 8px;
+    display: block;
+}
+
+.hero-banner {
+    height: auto !important;
+    min-height: 0 !important;
+    width: 100% !important;
+    aspect-ratio: auto !important;
+}
+
+.hero-banner img {
+    width: 100% !important;
+    height: auto !important;
+    object-fit: cover !important;
+}
+
+.offer-banner,
+.offer-banner a {
+    height: auto !important;
+}
+
+.offer-banner img {
+    width: 100% !important;
+    height: auto !important;
+    object-fit: cover !important;
+}
+
+@media (max-width: 767px) {
+    .banner-slider.owl-carousel .owl-item img {
+        max-height: 280px !important;
+    }
 }
 
 /* Premium Footer Styling Overrides */
