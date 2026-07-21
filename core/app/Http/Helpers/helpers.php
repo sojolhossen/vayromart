@@ -152,7 +152,7 @@ function loadExtension($key) {
             ];
             $sc['test_event_code'] = [
                 'title' => 'Test Event Code (Optional)',
-                'value' => 'TEST75398'
+                'value' => 'TEST89704'
             ];
             $extensionRecord->shortcode = $sc;
             $extensionRecord->status = \App\Constants\Status::ENABLE;
@@ -194,7 +194,7 @@ function sendFbCapiEvent($eventName, $customData = [], $userData = []) {
         $shortcode = json_decode(json_encode($extension->shortcode ?? []), true);
         $pixelId = !empty($shortcode['pixel_id']['value']) ? $shortcode['pixel_id']['value'] : '1012202121425400';
         $accessToken = !empty($shortcode['access_token']['value']) ? $shortcode['access_token']['value'] : 'EAAXVtFuQjQ4BSNOSa3J0Lxr3TX6emEzggxcaP1mnHYqZAiZCfeq7Ro9AVm3ZCUYLGI66InUQL6XPDg1cQZAR0NZAjO8frZCztOX83Betz8j1fnETjSx3kBjUPrQgmVRfsN324HUhbNTXETlbqGTW3UWASLAH1ozkwCfFrRZBxxbg1Lm2vGgxreedOzgMa92JbNzAAZDZD';
-        $testEventCode = !empty($shortcode['test_event_code']['value']) ? $shortcode['test_event_code']['value'] : 'TEST75398';
+        $testEventCode = !empty($shortcode['test_event_code']['value']) ? $shortcode['test_event_code']['value'] : 'TEST89704';
 
         // Prepare User Data with SHA256 hashes according to Facebook CAPI spec
         $userPayload = [
