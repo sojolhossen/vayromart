@@ -449,11 +449,14 @@
         });
 
         // Helper to add active slideshow image
-        function addActiveProductImage(imgUrl) {
+        function addActiveProductImage(imgUrl, imgPath) {
             if (!imgUrl) return;
+            if (!imgPath) {
+                imgPath = imgUrl;
+            }
             var exists = false;
             $('#activeProductImagesList input[name="existing_product_images[]"]').each(function() {
-                if ($(this).val() === imgUrl) {
+                if ($(this).val() === imgPath) {
                     exists = true;
                 }
             });
@@ -462,7 +465,7 @@
             var card = `
                 <div class="col active-img-card position-relative" style="max-width: 90px; margin-bottom: 10px;">
                     <img src="${imgUrl}" class="img-thumbnail" style="width: 70px; height: 70px; object-fit: cover;">
-                    <input type="hidden" name="existing_product_images[]" value="${imgUrl}">
+                    <input type="hidden" name="existing_product_images[]" value="${imgPath}">
                     <button type="button" class="btn btn-sm btn-danger remove-active-image-btn" style="position: absolute; top: -5px; right: -5px; padding: 2px 6px; border-radius: 50%; font-size: 10px; line-height: 1;"><i class="las la-times"></i></button>
                 </div>
             `;
@@ -470,7 +473,7 @@
             
             // Set single fallback URL
             if (!$('#imageUrl').val()) {
-                $('#imageUrl').val(imgUrl);
+                $('#imageUrl').val(imgPath);
             }
         }
 
@@ -528,17 +531,17 @@
                 success: function(response) {
                     if (response.success && response.images && response.images.length > 0) {
                         $('#productImagesGallery').empty();
-                        response.images.forEach(function(imgUrl, idx) {
+                        response.images.forEach(function(imgItem, idx) {
                             var imgCol = `
                                 <div class="col text-center">
-                                    <img src="${imgUrl}" class="img-thumbnail select-product-image-btn" style="width: 70px; height: 70px; object-fit: cover; cursor: pointer;" data-imgurl="${imgUrl}" title="Click to add to slideshow">
+                                    <img src="${imgItem.url}" class="img-thumbnail select-product-image-btn" style="width: 70px; height: 70px; object-fit: cover; cursor: pointer;" data-imgurl="${imgItem.url}" data-imgpath="${imgItem.path}" title="Click to add to slideshow">
                                 </div>
                             `;
                             $('#productImagesGallery').append(imgCol);
                             
                             // Auto add first image (main image) as fallback if list is empty
                             if (idx === 0 && $('#activeProductImagesList').children().length === 0) {
-                                addActiveProductImage(imgUrl);
+                                addActiveProductImage(imgItem.url, imgItem.path);
                             }
                         });
                         $('#productImagesGalleryWrapper').removeClass('d-none');
@@ -557,7 +560,8 @@
         // Click handler for product image thumbnail selection (add to active slider)
         $(document).on('click', '.select-product-image-btn', function() {
             var imgUrl = $(this).data('imgurl');
-            addActiveProductImage(imgUrl);
+            var imgPath = $(this).data('imgpath');
+            addActiveProductImage(imgUrl, imgPath);
         });
 
         // Add/Remove dynamic description row buttons
@@ -640,6 +644,27 @@
                 $('#videoTitle').val(settings.video_title || '');
                 $('#whyUsTitle').val(settings.why_us_title || 'পণ্যটির বিস্তারিত বিবরণ');
                 $('#productDescriptionTitle').val(settings.product_description_title || 'পণ্যটি কেন আপনার জন্য প্রয়োজনীয়?');
+
+                // Populate active product images
+                $('#activeProductImagesList').empty();
+                $('#manualProductImages').val('');
+                $('#customImageUrl').val('');
+                if (settings.product_images && settings.product_images.length > 0) {
+                    settings.product_images.forEach(function(imgPath) {
+                        var imgUrl = imgPath;
+                        if (imgPath && imgPath.indexOf('http://') !== 0 && imgPath.indexOf('https://') !== 0) {
+                            imgUrl = "{{ asset('') }}" + imgPath;
+                        }
+                        addActiveProductImage(imgUrl, imgPath);
+                    });
+                } else if (settings.image_url) {
+                    var imgPath = settings.image_url;
+                    var imgUrl = imgPath;
+                    if (imgPath && imgPath.indexOf('http://') !== 0 && imgPath.indexOf('https://') !== 0) {
+                        imgUrl = "{{ asset('') }}" + imgPath;
+                    }
+                    addActiveProductImage(imgUrl, imgPath);
+                }
 
                 // Trigger product image gallery loading
                 $('#productId').trigger('change');

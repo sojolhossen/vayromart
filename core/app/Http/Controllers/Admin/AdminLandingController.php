@@ -44,12 +44,20 @@ class AdminLandingController extends Controller
         $images = [];
         
         // Add main image
-        $images[] = $product->mainImage(false);
+        if ($product->displayImage) {
+            $images[] = [
+                'url' => $product->mainImage(false),
+                'path' => $product->displayImage->path . '/' . $product->displayImage->file_name
+            ];
+        }
 
         // Add gallery images
         if ($product->galleryImages) {
             foreach ($product->galleryImages as $media) {
-                $images[] = getImage($media->path . '/' . $media->file_name);
+                $images[] = [
+                    'url' => $media->full_url,
+                    'path' => $media->path . '/' . $media->file_name
+                ];
             }
         }
 
@@ -108,7 +116,7 @@ class AdminLandingController extends Controller
         if ($request->hasFile('image_file')) {
             try {
                 $imageName = fileUploader($request->file('image_file'), 'assets/images/landing');
-                $imageUrl = asset('assets/images/landing/' . $imageName);
+                $imageUrl = 'assets/images/landing/' . $imageName;
             } catch (\Exception $e) {
                 \Log::error("Image Upload Error: " . $e->getMessage());
             }
@@ -127,7 +135,7 @@ class AdminLandingController extends Controller
             if ($request->hasFile($inputName)) {
                 try {
                     $imgName = fileUploader($request->file($inputName), 'assets/images/landing');
-                    $reviewImages[$i - 1] = asset('assets/images/landing/' . $imgName);
+                    $reviewImages[$i - 1] = 'assets/images/landing/' . $imgName;
                 } catch (\Exception $e) {
                     \Log::error("Review Image {$i} Upload Error: " . $e->getMessage());
                 }
@@ -142,7 +150,7 @@ class AdminLandingController extends Controller
             foreach ($request->file('manual_product_images') as $file) {
                 try {
                     $imgName = fileUploader($file, 'assets/images/landing');
-                    $productImages[] = asset('assets/images/landing/' . $imgName);
+                    $productImages[] = 'assets/images/landing/' . $imgName;
                 } catch (\Exception $e) {
                     \Log::error("Manual Product Image Upload Error: " . $e->getMessage());
                 }
@@ -235,7 +243,16 @@ class AdminLandingController extends Controller
         $subtitle = e($data['subtitle'] ?? '');
         $videoUrl = $data['video_url'] ?? '';
         $description = $data['description'] ?? '';
-        $imageUrl = ($data['image_url'] ?? '') ?: $product->mainImage(false);
+
+        $resolveUrl = function($path) {
+            if (empty($path)) return '';
+            if (strpos($path, 'http://') === 0 || strpos($path, 'https://') === 0) {
+                return $path;
+            }
+            return asset($path);
+        };
+
+        $imageUrl = $resolveUrl(($data['image_url'] ?? '') ?: $product->mainImage(false));
         
         $baseColor = '#' . (gs('base_color') ?: '4634ff');
 
@@ -250,7 +267,8 @@ class AdminLandingController extends Controller
         if (count($productImages) > 1) {
             $sliderHtml .= '<div class="relative w-full rounded-2xl shadow-2xl border border-gray-100 overflow-hidden aspect-square bg-white group mb-6">';
             $sliderHtml .= '<div class="flex transition-transform duration-500 ease-out h-full" id="product-slider">';
-            foreach ($productImages as $imgUrl) {
+            foreach ($productImages as $imgPath) {
+                $imgUrl = $resolveUrl($imgPath);
                 $sliderHtml .= '<div class="w-full h-full flex-shrink-0"><img src="' . $imgUrl . '" class="w-full h-full object-cover"></div>';
             }
             $sliderHtml .= '</div>';
@@ -615,7 +633,16 @@ class AdminLandingController extends Controller
         $whyUsTitle = e($data['why_us_title'] ?? 'পণ্যটির বিস্তারিত বিবরণ');
         $whyUsDescription = $data['why_us_description'] ?? '';
         $productDescTitle = e($data['product_description_title'] ?? 'পণ্যটি কেন আপনার জন্য প্রয়োজনীয়?');
-        $imageUrl = ($data['image_url'] ?? '') ?: $product->mainImage(false);
+
+        $resolveUrl = function($path) {
+            if (empty($path)) return '';
+            if (strpos($path, 'http://') === 0 || strpos($path, 'https://') === 0) {
+                return $path;
+            }
+            return asset($path);
+        };
+
+        $imageUrl = $resolveUrl(($data['image_url'] ?? '') ?: $product->mainImage(false));
         $hotlineTitle = e($data['hotline_title'] ?? 'প্রয়োজনে কল করুন');
         $hotlinePhone = e($data['hotline_phone'] ?? '');
         
@@ -632,7 +659,8 @@ class AdminLandingController extends Controller
         if (count($productImages) > 1) {
             $sliderHtml .= '<div class="relative w-full rounded-2xl shadow-2xl border border-gray-100 overflow-hidden aspect-square bg-white group mb-6">';
             $sliderHtml .= '<div class="flex transition-transform duration-500 ease-out h-full" id="product-slider">';
-            foreach ($productImages as $imgUrl) {
+            foreach ($productImages as $imgPath) {
+                $imgUrl = $resolveUrl($imgPath);
                 $sliderHtml .= '<div class="w-full h-full flex-shrink-0"><img src="' . $imgUrl . '" class="w-full h-full object-cover"></div>';
             }
             $sliderHtml .= '</div>';
@@ -741,8 +769,9 @@ class AdminLandingController extends Controller
         $reviewsHtml = '';
         if (!empty($data['review_images'])) {
             $reviewsHtml .= '<div class="grid grid-cols-2 md:grid-cols-3 gap-6">';
-            foreach ($data['review_images'] as $imgUrl) {
-                if ($imgUrl) {
+            foreach ($data['review_images'] as $imgPath) {
+                if ($imgPath) {
+                    $imgUrl = $resolveUrl($imgPath);
                     $reviewsHtml .= '
                     <div class="overflow-hidden rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg hover:scale-[1.02] transition-all duration-300 bg-white p-2">
                         <img src="' . $imgUrl . '" alt="Customer Review" class="w-full h-64 object-cover rounded-xl image-popup cursor-zoom-in">
