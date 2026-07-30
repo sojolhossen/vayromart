@@ -131,28 +131,49 @@
                             <div class="col-12">
                                 <div class="card border-0 shadow-sm mb-3">
                                     <div class="card-header bg--dark text-white py-2">
-                                        <h6 class="mb-0 text-white"><i class="las la-image"></i> @lang('Main Banner')</h6>
+                                        <h6 class="mb-0 text-white"><i class="las la-image"></i> @lang('Main Banner & Product Images')</h6>
                                     </div>
                                     <div class="card-body p-3">
-                                        <div class="form-group mb-2">
+                                        <div class="form-group mb-3">
                                             <label class="fw-bold">@lang('Title') <span class="text-danger">*</span></label>
                                             <input type="text" name="title" id="pageTitle" class="form-control form-control-sm" placeholder="e.g. Premium quality bluetooth airbuds" required>
                                         </div>
+
+                                        <!-- Multi Manual Upload -->
                                         <div class="row align-items-center mb-3">
-                                            <div class="col-md-6 form-group mb-2">
-                                                <label class="fw-bold">@lang('Banner Image (1440 x 790)')</label>
-                                                <input type="file" name="image_file" id="imageFile" class="form-control form-control-sm" accept="image/*">
-                                                <input type="url" name="image_url" id="imageUrl" class="form-control form-control-sm mt-1" placeholder="Or custom image URL">
+                                            <div class="col-md-12 form-group mb-2">
+                                                <label class="fw-bold text-dark"><i class="las la-upload"></i> @lang('Upload Manually Product Images (Multiple)')</label>
+                                                <input type="file" name="manual_product_images[]" id="manualProductImages" class="form-control form-control-sm" accept="image/*" multiple>
+                                                <small class="text-muted">@lang('You can select multiple local images to upload as slider photos.')</small>
                                             </div>
-                                            <div class="col-md-6 text-center">
-                                                <img id="bannerImagePreview" src="https://placehold.co/300x150?text=Banner+Image" class="img-thumbnail" style="max-height: 120px; object-fit: cover;">
+                                        </div>
+
+                                        <!-- Or Add Custom URL -->
+                                        <div class="row align-items-center mb-3">
+                                            <div class="col-md-12 form-group mb-2">
+                                                <label class="fw-bold text-dark"><i class="las la-link"></i> @lang('Or Add Single Custom Image URL')</label>
+                                                <div class="input-group">
+                                                    <input type="url" id="customImageUrl" class="form-control form-control-sm" placeholder="https://example.com/image.jpg">
+                                                    <button type="button" class="btn btn-sm btn-dark" id="addCustomUrlBtn"><i class="las la-plus"></i> @lang('Add')</button>
+                                                </div>
                                             </div>
+                                        </div>
+
+                                        <!-- Active Images Container -->
+                                        <div class="form-group mb-3">
+                                            <label class="fw-bold text-success"><i class="las la-images"></i> @lang('Active Slider Images')</label>
+                                            <small class="text-muted d-block mb-2">@lang('These images will be displayed as an auto-sliding slideshow on the page. Click the trash icon to remove any.')</small>
+                                            <div class="row g-2 row-cols-3 row-cols-sm-6" id="activeProductImagesList" style="min-height: 90px; padding: 10px; border: 2px dashed #ddd; border-radius: 8px; background-color: #fafafa;">
+                                                <!-- Thumbnails will dynamically append here -->
+                                            </div>
+                                            <!-- Hidden input to hold a single fallback image if needed -->
+                                            <input type="hidden" name="image_url" id="imageUrl">
                                         </div>
 
                                         <!-- Product Gallery Images Wrapper -->
                                         <div class="form-group mb-3 d-none animate__animated animate__fadeIn" id="productImagesGalleryWrapper">
                                             <label class="fw-bold text-primary"><i class="las la-images"></i> @lang('Select from Product Gallery Images')</label>
-                                            <small class="text-muted d-block mb-2">@lang('Click on any thumbnail below to instantly select it as your landing page banner image.')</small>
+                                            <small class="text-muted d-block mb-2">@lang('Click on any thumbnail below to add it to the active slider images.')</small>
                                             <div class="row g-2 row-cols-3 row-cols-sm-6" id="productImagesGallery" style="max-height: 220px; overflow-y: auto; padding: 5px; border: 1px solid #eee; border-radius: 8px; background-color: #fafafa;">
                                                 <!-- Dynamic product thumbnails will load here -->
                                             </div>
@@ -427,6 +448,68 @@
             }
         });
 
+        // Helper to add active slideshow image
+        function addActiveProductImage(imgUrl) {
+            if (!imgUrl) return;
+            var exists = false;
+            $('#activeProductImagesList input[name="existing_product_images[]"]').each(function() {
+                if ($(this).val() === imgUrl) {
+                    exists = true;
+                }
+            });
+            if (exists) return;
+            
+            var card = `
+                <div class="col active-img-card position-relative" style="max-width: 90px; margin-bottom: 10px;">
+                    <img src="${imgUrl}" class="img-thumbnail" style="width: 70px; height: 70px; object-fit: cover;">
+                    <input type="hidden" name="existing_product_images[]" value="${imgUrl}">
+                    <button type="button" class="btn btn-sm btn-danger remove-active-image-btn" style="position: absolute; top: -5px; right: -5px; padding: 2px 6px; border-radius: 50%; font-size: 10px; line-height: 1;"><i class="las la-times"></i></button>
+                </div>
+            `;
+            $('#activeProductImagesList').append(card);
+            
+            // Set single fallback URL
+            if (!$('#imageUrl').val()) {
+                $('#imageUrl').val(imgUrl);
+            }
+        }
+
+        // Live manual upload files previews
+        $('#manualProductImages').on('change', function() {
+            if (this.files) {
+                for (var i = 0; i < this.files.length; i++) {
+                    var file = this.files[i];
+                    var localUrl = URL.createObjectURL(file);
+                    var card = `
+                        <div class="col active-img-card position-relative" style="max-width: 90px; margin-bottom: 10px;">
+                            <img src="${localUrl}" class="img-thumbnail" style="width: 70px; height: 70px; object-fit: cover; border: 1px dashed #28a745;">
+                            <span class="badge bg-success" style="position: absolute; bottom: 0; left: 0; font-size: 8px; width: 100%; text-align: center; border-radius: 0 0 4px 4px;">Local</span>
+                        </div>
+                    `;
+                    $('#activeProductImagesList').append(card);
+                }
+            }
+        });
+
+        // Add custom URL button click
+        $('#addCustomUrlBtn').on('click', function(e) {
+            e.preventDefault();
+            var customUrl = $('#customImageUrl').val().trim();
+            if (customUrl) {
+                addActiveProductImage(customUrl);
+                $('#customImageUrl').val('');
+            }
+        });
+
+        // Remove active image click handler
+        $(document).on('click', '.remove-active-image-btn', function(e) {
+            e.preventDefault();
+            $(this).closest('.active-img-card').remove();
+            // Sync fallback image input
+            var firstImg = $('#activeProductImagesList input[name="existing_product_images[]"]').first().val();
+            $('#imageUrl').val(firstImg || '');
+        });
+
         // Fetch product images when a product is selected
         $('#productId').on('change', function() {
             var productId = $(this).val();
@@ -445,15 +528,18 @@
                 success: function(response) {
                     if (response.success && response.images && response.images.length > 0) {
                         $('#productImagesGallery').empty();
-                        response.images.forEach(function(imgUrl) {
-                            var currentUrl = $('#imageUrl').val();
-                            var activeStyle = (currentUrl && imgUrl === currentUrl) ? 'border: 2px solid #4634ff;' : '';
+                        response.images.forEach(function(imgUrl, idx) {
                             var imgCol = `
                                 <div class="col text-center">
-                                    <img src="${imgUrl}" class="img-thumbnail select-product-image-btn" style="width: 70px; height: 70px; object-fit: cover; cursor: pointer; ${activeStyle}" data-imgurl="${imgUrl}" title="Click to use as banner">
+                                    <img src="${imgUrl}" class="img-thumbnail select-product-image-btn" style="width: 70px; height: 70px; object-fit: cover; cursor: pointer;" data-imgurl="${imgUrl}" title="Click to add to slideshow">
                                 </div>
                             `;
                             $('#productImagesGallery').append(imgCol);
+                            
+                            // Auto add first image (main image) as fallback if list is empty
+                            if (idx === 0 && $('#activeProductImagesList').children().length === 0) {
+                                addActiveProductImage(imgUrl);
+                            }
                         });
                         $('#productImagesGalleryWrapper').removeClass('d-none');
                     } else {
@@ -468,15 +554,10 @@
             });
         });
 
-        // Click handler for product image thumbnail selection
+        // Click handler for product image thumbnail selection (add to active slider)
         $(document).on('click', '.select-product-image-btn', function() {
             var imgUrl = $(this).data('imgurl');
-            $('#imageUrl').val(imgUrl);
-            $('#bannerImagePreview').attr('src', imgUrl);
-            
-            // Add active class style
-            $('.select-product-image-btn').css('border', '1px solid #dee2e6');
-            $(this).css('border', '2px solid #4634ff');
+            addActiveProductImage(imgUrl);
         });
 
         // Add/Remove dynamic description row buttons
@@ -505,9 +586,9 @@
             $('#productImagesGalleryWrapper').addClass('d-none');
             $('#productImagesGallery').empty();
             $('#freeDelivery').val('paid');
-
-            // Reset image previews
-            $('#bannerImagePreview').attr('src', 'https://placehold.co/300x150?text=Banner+Image');
+            $('#activeProductImagesList').empty();
+            $('#manualProductImages').val('');
+            $('#customImageUrl').val('');
             for(var i=1; i<=6; i++) {
                 $('#reviewImgPreview_' + i).attr('src', 'https://placehold.co/100x100?text=Review+'+i);
             }
@@ -581,12 +662,8 @@
                     $('#reviewImgPreview_' + i).attr('src', previewSrc);
                 }
 
-                // Populate banner image preview
-                if (settings.image_url) {
-                    $('#bannerImagePreview').attr('src', settings.image_url);
-                } else {
-                    $('#bannerImagePreview').attr('src', 'https://placehold.co/300x150?text=Banner+Image');
-                }
+                // Image inputs already loaded inside activeProductImagesList
+                $('#imageUrl').val(settings.image_url || '');
 
                 // Set WYSIWYG editor content after a tiny delay so nicEditor has time to initialize
                 setTimeout(function() {

@@ -96,6 +96,10 @@ class AdminLandingController extends Controller
             'reviewer_comment_2' => 'nullable|string',
             'reviewer_name_3' => 'nullable|string',
             'reviewer_comment_3' => 'nullable|string',
+            'existing_product_images' => 'nullable|array',
+            'existing_product_images.*' => 'nullable|string',
+            'manual_product_images' => 'nullable|array',
+            'manual_product_images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:4096',
         ]);
 
         $product = Product::published()->findOrFail($request->product_id);
@@ -130,13 +134,31 @@ class AdminLandingController extends Controller
             }
         }
 
+        // Process multiple product images
+        $productImages = $request->existing_product_images ?? [];
+
+        // Upload manual product images
+        if ($request->hasFile('manual_product_images')) {
+            foreach ($request->file('manual_product_images') as $file) {
+                try {
+                    $imgName = fileUploader($file, 'assets/images/landing');
+                    $productImages[] = asset('assets/images/landing/' . $imgName);
+                } catch (\Exception $e) {
+                    \Log::error("Manual Product Image Upload Error: " . $e->getMessage());
+                }
+            }
+        }
+
         // Merge uploaded image URL, review images, and other inputs into settings array
         $settings = $request->all();
         $settings['image_url'] = $imageUrl;
         $settings['review_images'] = $reviewImages;
+        $settings['product_images'] = $productImages;
         
         // Remove file objects from settings array
         unset($settings['image_file']);
+        unset($settings['manual_product_images']);
+        unset($settings['existing_product_images']);
         for ($i = 1; $i <= 6; $i++) {
             unset($settings['review_image_' . $i]);
         }
@@ -216,6 +238,77 @@ class AdminLandingController extends Controller
         $imageUrl = ($data['image_url'] ?? '') ?: $product->mainImage(false);
         
         $baseColor = '#' . (gs('base_color') ?: '4634ff');
+
+        $productImages = $data['product_images'] ?? [];
+        if (empty($productImages)) {
+            $productImages = [$imageUrl];
+        }
+
+        $sliderHtml = '';
+        $sliderJs = '';
+
+        if (count($productImages) > 1) {
+            $sliderHtml .= '<div class="relative w-full rounded-2xl shadow-2xl border border-gray-100 overflow-hidden aspect-square bg-white group mb-6">';
+            $sliderHtml .= '<div class="flex transition-transform duration-500 ease-out h-full" id="product-slider">';
+            foreach ($productImages as $imgUrl) {
+                $sliderHtml .= '<div class="w-full h-full flex-shrink-0"><img src="' . $imgUrl . '" class="w-full h-full object-cover"></div>';
+            }
+            $sliderHtml .= '</div>';
+            
+            $sliderHtml .= '
+            <button onclick="prevSlide()" class="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/80 hover:bg-white text-gray-800 flex items-center justify-center shadow-md transition-all opacity-0 group-hover:opacity-100 z-10">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+            <button onclick="nextSlide()" class="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/80 hover:bg-white text-gray-800 flex items-center justify-center shadow-md transition-all opacity-0 group-hover:opacity-100 z-10">
+                <i class="fas fa-chevron-right"></i>
+            </button>';
+            
+            $sliderHtml .= '<div class="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-10" id="slider-dots">';
+            foreach ($productImages as $idx => $imgUrl) {
+                $activeClass = $idx === 0 ? 'bg-primary' : 'bg-gray-300';
+                $sliderHtml .= '<button onclick="showSlide(' . $idx . ')" class="w-3 h-3 rounded-full ' . $activeClass . ' transition-all" style="' . ($idx === 0 ? 'background-color: ' . $baseColor . ';' : 'background-color: #d1d5db;') . '"></button>';
+            }
+            $sliderHtml .= '</div>';
+            $sliderHtml .= '</div>';
+
+            $sliderJs = '
+            <script>
+                var currentSlide = 0;
+                var slides = document.querySelectorAll("#product-slider > div");
+                var dots = document.querySelectorAll("#slider-dots > button");
+                
+                function showSlide(index) {
+                    if (slides.length === 0) return;
+                    if (index >= slides.length) currentSlide = 0;
+                    else if (index < 0) currentSlide = slides.length - 1;
+                    else currentSlide = index;
+                    
+                    document.getElementById("product-slider").style.transform = "translateX(-" + (currentSlide * 100) + "%)";
+                    dots.forEach(function(dot, idx) {
+                        if (idx === currentSlide) {
+                            dot.style.backgroundColor = "' . $baseColor . '";
+                        } else {
+                            dot.style.backgroundColor = "#d1d5db";
+                        }
+                    });
+                }
+                
+                function nextSlide() {
+                    showSlide(currentSlide + 1);
+                }
+                
+                function prevSlide() {
+                    showSlide(currentSlide - 1);
+                }
+                
+                if (slides.length > 1) {
+                    setInterval(nextSlide, 5000);
+                }
+            </script>';
+        } else {
+            $singleImg = reset($productImages);
+            $sliderHtml = '<img src="' . $singleImg . '" class="w-full rounded-2xl shadow-2xl border border-gray-100 hover:scale-[1.02] transition-all duration-300 object-cover aspect-square mb-6">';
+        }
 
         $videoEmbedHtml = '';
         if ($videoUrl) {
@@ -502,6 +595,8 @@ class AdminLandingController extends Controller
         });
     </script>
 
+    ' . $sliderJs . '
+
 </body>
 </html>';
 
@@ -525,6 +620,77 @@ class AdminLandingController extends Controller
         $hotlinePhone = e($data['hotline_phone'] ?? '');
         
         $baseColor = '#' . (gs('base_color') ?: '4634ff');
+
+        $productImages = $data['product_images'] ?? [];
+        if (empty($productImages)) {
+            $productImages = [$imageUrl];
+        }
+
+        $sliderHtml = '';
+        $sliderJs = '';
+
+        if (count($productImages) > 1) {
+            $sliderHtml .= '<div class="relative w-full rounded-2xl shadow-2xl border border-gray-100 overflow-hidden aspect-square bg-white group mb-6">';
+            $sliderHtml .= '<div class="flex transition-transform duration-500 ease-out h-full" id="product-slider">';
+            foreach ($productImages as $imgUrl) {
+                $sliderHtml .= '<div class="w-full h-full flex-shrink-0"><img src="' . $imgUrl . '" class="w-full h-full object-cover"></div>';
+            }
+            $sliderHtml .= '</div>';
+            
+            $sliderHtml .= '
+            <button onclick="prevSlide()" class="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/80 hover:bg-white text-gray-800 flex items-center justify-center shadow-md transition-all opacity-0 group-hover:opacity-100 z-10">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+            <button onclick="nextSlide()" class="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/80 hover:bg-white text-gray-800 flex items-center justify-center shadow-md transition-all opacity-0 group-hover:opacity-100 z-10">
+                <i class="fas fa-chevron-right"></i>
+            </button>';
+            
+            $sliderHtml .= '<div class="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-10" id="slider-dots">';
+            foreach ($productImages as $idx => $imgUrl) {
+                $activeClass = $idx === 0 ? 'bg-primary' : 'bg-gray-300';
+                $sliderHtml .= '<button onclick="showSlide(' . $idx . ')" class="w-3 h-3 rounded-full ' . $activeClass . ' transition-all" style="' . ($idx === 0 ? 'background-color: ' . $baseColor . ';' : 'background-color: #d1d5db;') . '"></button>';
+            }
+            $sliderHtml .= '</div>';
+            $sliderHtml .= '</div>';
+
+            $sliderJs = '
+            <script>
+                var currentSlide = 0;
+                var slides = document.querySelectorAll("#product-slider > div");
+                var dots = document.querySelectorAll("#slider-dots > button");
+                
+                function showSlide(index) {
+                    if (slides.length === 0) return;
+                    if (index >= slides.length) currentSlide = 0;
+                    else if (index < 0) currentSlide = slides.length - 1;
+                    else currentSlide = index;
+                    
+                    document.getElementById("product-slider").style.transform = "translateX(-" + (currentSlide * 100) + "%)";
+                    dots.forEach(function(dot, idx) {
+                        if (idx === currentSlide) {
+                            dot.style.backgroundColor = "' . $baseColor . '";
+                        } else {
+                            dot.style.backgroundColor = "#d1d5db";
+                        }
+                    });
+                }
+                
+                function nextSlide() {
+                    showSlide(currentSlide + 1);
+                }
+                
+                function prevSlide() {
+                    showSlide(currentSlide - 1);
+                }
+                
+                if (slides.length > 1) {
+                    setInterval(nextSlide, 5000);
+                }
+            </script>';
+        } else {
+            $singleImg = reset($productImages);
+            $sliderHtml = '<img src="' . $singleImg . '" class="w-full rounded-2xl shadow-2xl border border-gray-100 hover:scale-[1.02] transition-all duration-300 object-cover aspect-square mb-6">';
+        }
 
         $videoEmbedHtml = '';
         if ($videoUrl) {
@@ -724,7 +890,7 @@ class AdminLandingController extends Controller
         </div>
 
         <div class="lg:col-span-5 flex flex-col justify-center">
-            ' . ($videoEmbedHtml ?: '<img src="' . $imageUrl . '" alt="' . $title . '" class="w-full rounded-2xl shadow-2xl border border-gray-100 hover:scale-[1.02] transition-all duration-300 object-cover aspect-square">') . '
+            ' . ($videoEmbedHtml ?: $sliderHtml) . '
             
             <div class="grid grid-cols-3 gap-3 mt-6 text-center">
                 <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
@@ -864,6 +1030,8 @@ class AdminLandingController extends Controller
             document.getElementById("total_bill_val").innerText = (basePrice + charge) + " BDT";
         });
     </script>
+
+    ' . $sliderJs . '
 
 </body>
 </html>';
