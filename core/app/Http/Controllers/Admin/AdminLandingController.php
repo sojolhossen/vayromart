@@ -94,7 +94,7 @@ class AdminLandingController extends Controller
             'subtitle' => 'nullable|string|max:500',
             'bullets' => 'nullable|string',
             'description' => 'nullable|string',
-            'image_url' => 'nullable|url',
+            'image_url' => 'nullable|string|max:500',
             'image_file' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:4096',
             'custom_price' => 'nullable|numeric|min:0',
             'custom_regular_price' => 'nullable|numeric|min:0',
