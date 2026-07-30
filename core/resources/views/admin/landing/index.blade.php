@@ -89,112 +89,247 @@
                     @csrf
                     <input type="hidden" name="id" id="pageId">
                     <div class="modal-body">
-                        <div class="row">
-                            <!-- Left column -->
-                            <div class="col-md-6">
-                                <div class="form-group mb-3">
-                                    <label class="fw-bold">@lang('Select Product') <span class="text-danger">*</span></label>
-                                    <select name="product_id" id="productId" class="form-control" required>
-                                        <option value="">-- @lang('Choose a product') --</option>
-                                        @foreach($products as $product)
-                                            <option value="{{ $product->id }}">{{ $product->name }}</option>
-                                        @endforeach
-                                    </select>
-                                    <small class="text-muted">@lang('Select the product this landing page is for.')</small>
-                                </div>
-
-                                <div class="form-group mb-3">
-                                    <label class="fw-bold">@lang('Page Tab Title / Meta Title') <span class="text-danger">*</span></label>
-                                    <input type="text" name="title" id="pageTitle" class="form-control" placeholder="e.g. Premium quality bluetooth airbuds - Vayromart" required>
-                                </div>
-
-                                <div class="form-group mb-3">
-                                    <label class="fw-bold">@lang('Custom Sale Price (BDT)')</label>
-                                    <input type="number" step="any" name="custom_price" id="customPrice" class="form-control" placeholder="e.g. 1200">
-                                    <small class="text-muted">@lang('Leave blank to use default product sale price.')</small>
-                                </div>
-
-                                <div class="form-group mb-3">
-                                    <label class="fw-bold">@lang('Custom Regular Price (BDT)')</label>
-                                    <input type="number" step="any" name="custom_regular_price" id="customRegularPrice" class="form-control" placeholder="e.g. 1800">
-                                    <small class="text-muted">@lang('Leave blank to use default regular price.')</small>
-                                </div>
-
-                                <div class="form-group mb-3">
-                                    <label class="fw-bold">@lang('Main Catchy Headline') <span class="text-danger">*</span></label>
-                                    <input type="text" name="headline" id="pageHeadline" class="form-control" placeholder="e.g. অসাধারণ সাউন্ডের প্রিমিয়াম ইয়ারবাডস!" required>
-                                </div>
-
-                                <div class="form-group mb-3">
-                                    <label class="fw-bold">@lang('Sub-headline Text') <span class="text-danger">*</span></label>
-                                    <input type="text" name="subtitle" id="pageSubtitle" class="form-control" placeholder="e.g. অফুরন্ত চার্জ ব্যাকআপ ও নিখুঁত কলিং ফিচার সহ।" required>
-                                </div>
-
-                                <div class="form-group mb-3">
-                                    <label class="fw-bold">@lang('Upload Product Banner Image')</label>
-                                    <input type="file" name="image_file" id="imageFile" class="form-control" accept="image/*">
-                                    <small class="text-muted">@lang('Optional. Upload custom banner image file.')</small>
-                                </div>
-
-                                <div class="form-group mb-3">
-                                    <label class="fw-bold">@lang('Or Custom Banner Image URL')</label>
-                                    <input type="url" name="image_url" id="imageUrl" class="form-control" placeholder="https://example.com/image.jpg">
-                                    <small class="text-muted">@lang('Alternatively paste image link.')</small>
-                                </div>
-
-                                <div class="form-group mb-3">
-                                    <label class="fw-bold">@lang('YouTube Video URL')</label>
-                                    <input type="url" name="video_url" id="videoUrl" class="form-control" placeholder="https://www.youtube.com/watch?v=xxxx">
-                                    <small class="text-muted">@lang('Optional. Paste a YouTube link to show a product video.')</small>
+                        <div class="row gy-3">
+                            <!-- Basic Product Details Section -->
+                            <div class="col-12">
+                                <div class="card border-0 shadow-sm mb-3">
+                                    <div class="card-header bg--dark text-white py-2">
+                                        <h6 class="mb-0 text-white"><i class="las la-cog"></i> @lang('Basic Product & Pricing Details')</h6>
+                                    </div>
+                                    <div class="card-body p-3">
+                                        <div class="row">
+                                            <div class="col-md-6 form-group mb-2">
+                                                <label class="fw-bold">@lang('Select Product') <span class="text-danger">*</span></label>
+                                                <select name="product_id" id="productId" class="form-control form-control-sm" required>
+                                                    <option value="">-- @lang('Choose a product') --</option>
+                                                    @foreach($products as $product)
+                                                        <option value="{{ $product->id }}">{{ $product->name }}</option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+                                            <div class="col-md-3 form-group mb-2">
+                                                <label class="fw-bold">@lang('Custom Sale Price (BDT)')</label>
+                                                <input type="number" step="any" name="custom_price" id="customPrice" class="form-control form-control-sm" placeholder="e.g. 1200">
+                                            </div>
+                                            <div class="col-md-3 form-group mb-2">
+                                                <label class="fw-bold">@lang('Custom Regular Price (BDT)')</label>
+                                                <input type="number" step="any" name="custom_regular_price" id="customRegularPrice" class="form-control form-control-sm" placeholder="e.g. 1800">
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
-                            <!-- Right column -->
-                            <div class="col-md-6">
-                                <div class="form-group mb-3">
-                                    <label class="fw-bold">@lang('Bullet Points / Key Features') <span class="text-danger">*</span></label>
-                                    <textarea name="bullets" id="pageBullets" class="form-control" rows="4" placeholder="একটি প্রতি লাইনে লিখুন:&#10;ফাস্ট চার্জিং টেকনোলজি&#10;৭ দিনের রিপ্লেসমেন্ট গ্যারান্টি&#10;ক্রিস্টাল ক্লিয়ার সাউন্ড কোয়ালিটি" required></textarea>
-                                    <small class="text-muted">@lang('Enter each selling point on a new line.')</small>
+                            <!-- Main Banner Section -->
+                            <div class="col-12">
+                                <div class="card border-0 shadow-sm mb-3">
+                                    <div class="card-header bg--dark text-white py-2">
+                                        <h6 class="mb-0 text-white"><i class="las la-image"></i> @lang('Main Banner')</h6>
+                                    </div>
+                                    <div class="card-body p-3">
+                                        <div class="form-group mb-2">
+                                            <label class="fw-bold">@lang('Title') <span class="text-danger">*</span></label>
+                                            <input type="text" name="title" id="pageTitle" class="form-control form-control-sm" placeholder="e.g. Premium quality bluetooth airbuds" required>
+                                        </div>
+                                        <div class="row align-items-center">
+                                            <div class="col-md-6 form-group mb-2">
+                                                <label class="fw-bold">@lang('Banner Image (1440 x 790)')</label>
+                                                <input type="file" name="image_file" id="imageFile" class="form-control form-control-sm" accept="image/*">
+                                                <input type="url" name="image_url" id="imageUrl" class="form-control form-control-sm mt-1" placeholder="Or custom image URL">
+                                            </div>
+                                            <div class="col-md-6 text-center">
+                                                <img id="bannerImagePreview" src="https://placehold.co/300x150?text=Banner+Image" class="img-thumbnail" style="max-height: 120px; object-fit: cover;">
+                                            </div>
+                                        </div>
+                                        <div class="form-group mb-2">
+                                            <label class="fw-bold">@lang('Template')</label>
+                                            <select name="template" id="pageTemplate" class="form-control form-control-sm">
+                                                <option value="template_1">Template 1 (Original Style)</option>
+                                                <option value="template_2" selected>Template 2 (Mohasagor Style)</option>
+                                            </select>
+                                        </div>
+                                    </div>
                                 </div>
+                            </div>
 
-                                <div class="form-group mb-3">
-                                    <label class="fw-bold">@lang('Detailed Description / Review') <span class="text-danger">*</span></label>
-                                    <textarea name="description" id="pageDescription" class="form-control" rows="8" placeholder="পণ্যটির বিস্তারিত বিবরণ এখানে লিখুন..." required></textarea>
+                            <!-- Hero Content (Headline, Subtitle, Bullets) -->
+                            <div class="col-12">
+                                <div class="card border-0 shadow-sm mb-3">
+                                    <div class="card-header bg--dark text-white py-2">
+                                        <h6 class="mb-0 text-white"><i class="las la-bullhorn"></i> @lang('Hero Headline & Key Features')</h6>
+                                    </div>
+                                    <div class="card-body p-3">
+                                        <div class="form-group mb-2">
+                                            <label class="fw-bold">@lang('Main Catchy Headline')</label>
+                                            <input type="text" name="headline" id="pageHeadline" class="form-control form-control-sm" placeholder="e.g. অসাধারণ সাউন্ডের প্রিমিয়াম ইয়ারবাডস!">
+                                        </div>
+                                        <div class="form-group mb-2">
+                                            <label class="fw-bold">@lang('Sub-headline Text')</label>
+                                            <input type="text" name="subtitle" id="pageSubtitle" class="form-control form-control-sm" placeholder="e.g. অফুরন্ত চার্জ ব্যাকআপ ও নিখুঁত কলিং ফিচার সহ।">
+                                        </div>
+                                        <div class="form-group mb-2">
+                                            <label class="fw-bold">@lang('Bullet Points / Key Features')</label>
+                                            <textarea name="bullets" id="pageBullets" class="form-control form-control-sm" rows="3" placeholder="একটি প্রতি লাইনে লিখুন:&#10;ফাস্ট চার্জিং টেকনোলজি&#10;৭ দিনের রিপ্লেসমেন্ট গ্যারান্টি"></textarea>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
 
-                        <hr class="my-4">
-                        <h6 class="mb-3 text--primary"><i class="las la-star"></i> @lang('Customer Reviews (Optional Customization)')</h6>
-                        <div class="row">
-                            <div class="col-md-4">
-                                <div class="form-group mb-2">
-                                    <label class="small fw-bold">@lang('Reviewer 1 Name')</label>
-                                    <input type="text" name="reviewer_name_1" id="revName1" class="form-control form-control-sm" placeholder="Sojol Hossen">
-                                </div>
-                                <div class="form-group mb-2">
-                                    <label class="small fw-bold">@lang('Reviewer 1 Comment')</label>
-                                    <textarea name="reviewer_comment_1" id="revComment1" class="form-control form-control-sm" rows="2" placeholder="অসাধারণ প্রোডাক্ট!"></textarea>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="form-group mb-2">
-                                    <label class="small fw-bold">@lang('Reviewer 2 Name')</label>
-                                    <input type="text" name="reviewer_name_2" id="revName2" class="form-control form-control-sm" placeholder="Farhana Yasmin">
-                                </div>
-                                <div class="form-group mb-2">
-                                    <label class="small fw-bold">@lang('Reviewer 2 Comment')</label>
-                                    <textarea name="reviewer_comment_2" id="revComment2" class="form-control form-control-sm" rows="2" placeholder="পণ্যটির কোয়ালিটি খুবই ভালো।"></textarea>
+                            <!-- Hotline Section -->
+                            <div class="col-12">
+                                <div class="card border-0 shadow-sm mb-3">
+                                    <div class="card-header bg--dark text-white py-2">
+                                        <h6 class="mb-0 text-white"><i class="las la-phone-volume"></i> @lang('Hotline')</h6>
+                                    </div>
+                                    <div class="card-body p-3">
+                                        <div class="row">
+                                            <div class="col-md-6 form-group mb-2">
+                                                <label class="fw-bold">@lang('Title')</label>
+                                                <input type="text" name="hotline_title" id="hotlineTitle" class="form-control form-control-sm" value="প্রয়োজনে কল করুন">
+                                            </div>
+                                            <div class="col-md-6 form-group mb-2">
+                                                <label class="fw-bold">@lang('Phone')</label>
+                                                <input type="text" name="hotline_phone" id="hotlinePhone" class="form-control form-control-sm" placeholder="01XXXXXXXXX">
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                            <div class="col-md-4">
-                                <div class="form-group mb-2">
-                                    <label class="small fw-bold">@lang('Reviewer 3 Name')</label>
-                                    <input type="text" name="reviewer_name_3" id="revName3" class="form-control form-control-sm" placeholder="Md. Arif">
+
+                            <!-- Video Section -->
+                            <div class="col-12">
+                                <div class="card border-0 shadow-sm mb-3">
+                                    <div class="card-header bg--dark text-white py-2">
+                                        <h6 class="mb-0 text-white"><i class="las la-video"></i> @lang('Video')</h6>
+                                    </div>
+                                    <div class="card-body p-3">
+                                        <div class="row">
+                                            <div class="col-md-6 form-group mb-2">
+                                                <label class="fw-bold">@lang('Video Title')</label>
+                                                <input type="text" name="video_title" id="videoTitle" class="form-control form-control-sm" placeholder="Video Title">
+                                            </div>
+                                            <div class="col-md-6 form-group mb-2">
+                                                <label class="fw-bold">@lang('Video URL')</label>
+                                                <input type="url" name="video_url" id="videoUrl" class="form-control form-control-sm" placeholder="https://www.youtube.com/watch?v=xxxx">
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="form-group mb-2">
-                                    <label class="small fw-bold">@lang('Reviewer 3 Comment')</label>
-                                    <textarea name="reviewer_comment_3" id="revComment3" class="form-control form-control-sm" rows="2" placeholder="ক্যাশ অন ডেলিভারি পেয়ে ভালো লেগেছে।"></textarea>
+                            </div>
+
+                            <!-- Why Us Section -->
+                            <div class="col-12">
+                                <div class="card border-0 shadow-sm mb-3">
+                                    <div class="card-header bg--dark text-white py-2">
+                                        <h6 class="mb-0 text-white"><i class="las la-question-circle"></i> @lang('Why Us')</h6>
+                                    </div>
+                                    <div class="card-body p-3">
+                                        <div class="form-group mb-2">
+                                            <label class="fw-bold">@lang('Title')</label>
+                                            <input type="text" name="why_us_title" id="whyUsTitle" class="form-control form-control-sm" placeholder="e.g. পণ্যটির বিস্তারিত বিবরণ">
+                                        </div>
+                                        <div class="form-group mb-2">
+                                            <label class="fw-bold">@lang('Description')</label>
+                                            <textarea name="why_us_description" id="whyUsDescription" class="form-control nicEdit" rows="5" placeholder="পণ্যটি সম্পর্কে বিস্তারিত বিবরণ লিখুন..."></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Product Description Dynamic List -->
+                            <div class="col-12">
+                                <div class="card border-0 shadow-sm mb-3">
+                                    <div class="card-header bg--dark text-white py-2">
+                                        <h6 class="mb-0 text-white"><i class="las la-list-ol"></i> @lang('Product Description (Key Bullet Blocks)')</h6>
+                                    </div>
+                                    <div class="card-body p-3">
+                                        <div class="form-group mb-2">
+                                            <label class="fw-bold">@lang('Add Title')</label>
+                                            <input type="text" name="product_description_title" id="productDescriptionTitle" class="form-control form-control-sm" value="পণ্যটি কেন আপনার জন্য প্রয়োজনীয়?">
+                                        </div>
+                                        <div id="dynamicDescriptionsContainer">
+                                            <!-- Dynamic rows will be inserted here -->
+                                        </div>
+                                        <button type="button" class="btn btn-sm btn-outline--success addDescRowBtn mt-2">
+                                            <i class="las la-plus"></i> @lang('Add Description')
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Customer Review Section -->
+                            <div class="col-12">
+                                <div class="card border-0 shadow-sm mb-3">
+                                    <div class="card-header bg--dark text-white py-2">
+                                        <h6 class="mb-0 text-white"><i class="las la-star"></i> @lang('Customer Review (Images Upload)')</h6>
+                                    </div>
+                                    <div class="card-body p-3">
+                                        <small class="text-muted d-block mb-3"><i>@lang('(Every image max size 2400 x 2400 px)')</i></small>
+                                        <div class="row row-cols-2 row-cols-sm-3 row-cols-md-6 g-3">
+                                            @for($i = 1; $i <= 6; $i++)
+                                                <div class="col text-center">
+                                                    <div class="border rounded p-2 bg-light">
+                                                        <label class="fw-bold mb-1 small d-block">@lang('Image') {{ $i }}</label>
+                                                        <img id="reviewImgPreview_{{ $i }}" src="https://placehold.co/100x100?text=Review+{{ $i }}" class="img-thumbnail d-block mx-auto mb-2" style="height: 80px; width: 80px; object-fit: cover;">
+                                                        <input type="file" name="review_image_{{ $i }}" id="reviewImgFile_{{ $i }}" class="form-control form-control-sm review-img-input" data-index="{{ $i }}" accept="image/*">
+                                                    </div>
+                                                </div>
+                                            @endfor
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Original Template 1 Fields (Hidden / Textarea Description & Original Text Reviews - Collapsible for Backward Compatibility) -->
+                            <div class="col-12">
+                                <div class="accordion" id="originalFieldsAccordion">
+                                    <div class="accordion-item border-0 shadow-sm mb-3">
+                                        <h2 class="accordion-header" id="originalFieldsHeading">
+                                            <button class="accordion-button collapsed bg-light py-2 text-dark font-weight-bold" type="button" data-bs-toggle="collapse" data-bs-target="#originalFieldsCollapse" aria-expanded="false" aria-controls="originalFieldsCollapse">
+                                                <i class="las la-history mr-2"></i> @lang('Original Template 1 Reviews & Description (Optional)')
+                                            </button>
+                                        </h2>
+                                        <div id="originalFieldsCollapse" class="accordion-collapse collapse" aria-labelledby="originalFieldsHeading" data-bs-parent="#originalFieldsAccordion">
+                                            <div class="accordion-body bg-white p-3 border-top">
+                                                <div class="form-group mb-3">
+                                                    <label class="fw-bold">@lang('Original Detailed Description (Template 1)')</label>
+                                                    <textarea name="description" id="pageDescription" class="form-control form-control-sm" rows="3" placeholder="পণ্যটির বিস্তারিত বিবরণ এখানে লিখুন (Template 1 এর জন্য)..."></textarea>
+                                                </div>
+                                                <div class="row">
+                                                    <div class="col-md-4">
+                                                        <div class="form-group mb-2">
+                                                            <label class="small fw-bold">@lang('Reviewer 1 Name')</label>
+                                                            <input type="text" name="reviewer_name_1" id="revName1" class="form-control form-control-sm" placeholder="Sojol Hossen">
+                                                        </div>
+                                                        <div class="form-group mb-2">
+                                                            <label class="small fw-bold">@lang('Reviewer 1 Comment')</label>
+                                                            <textarea name="reviewer_comment_1" id="revComment1" class="form-control form-control-sm" rows="2" placeholder="অসাধারণ প্রোডাক্ট!"></textarea>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <div class="form-group mb-2">
+                                                            <label class="small fw-bold">@lang('Reviewer 2 Name')</label>
+                                                            <input type="text" name="reviewer_name_2" id="revName2" class="form-control form-control-sm" placeholder="Farhana Yasmin">
+                                                        </div>
+                                                        <div class="form-group mb-2">
+                                                            <label class="small fw-bold">@lang('Reviewer 2 Comment')</label>
+                                                            <textarea name="reviewer_comment_2" id="revComment2" class="form-control form-control-sm" rows="2" placeholder="পণ্যটির কোয়ালিটি খুবই ভালো।"></textarea>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <div class="form-group mb-2">
+                                                            <label class="small fw-bold">@lang('Reviewer 3 Name')</label>
+                                                            <input type="text" name="reviewer_name_3" id="revName3" class="form-control form-control-sm" placeholder="Md. Arif">
+                                                        </div>
+                                                        <div class="form-group mb-2">
+                                                            <label class="small fw-bold">@lang('Reviewer 3 Comment')</label>
+                                                            <textarea name="reviewer_comment_3" id="revComment3" class="form-control form-control-sm" rows="2" placeholder="ক্যাশ অন ডেলিভারি পেয়ে ভালো লেগেছে।"></textarea>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -238,12 +373,79 @@
     (function ($) {
         "use strict";
 
+        // Dynamic descriptions logic
+        function clearDescriptions() {
+            $('#dynamicDescriptionsContainer').empty();
+        }
+
+        function addDescriptionRow(val = '') {
+            var row = `
+            <div class="input-group mb-2 desc-row">
+                <input type="text" name="descriptions[]" class="form-control form-control-sm" value="${val}" placeholder="Enter product feature/description line...">
+                <button type="button" class="btn btn-sm btn-outline-danger removeDescRowBtn"><i class="las la-trash"></i></button>
+            </div>`;
+            $('#dynamicDescriptionsContainer').append(row);
+        }
+
+        // Live banner image preview
+        $('#imageFile').on('change', function() {
+            if (this.files && this.files[0]) {
+                var reader = new FileReader();
+                reader.onload = function (e) {
+                    $('#bannerImagePreview').attr('src', e.target.result);
+                }
+                reader.readAsDataURL(this.files[0]);
+            }
+        });
+
+        // Live review images previews
+        $(document).on('change', '.review-img-input', function() {
+            var idx = $(this).data('index');
+            if (this.files && this.files[0]) {
+                var reader = new FileReader();
+                reader.onload = function (e) {
+                    $('#reviewImgPreview_' + idx).attr('src', e.target.result);
+                }
+                reader.readAsDataURL(this.files[0]);
+            }
+        });
+
+        // Add/Remove dynamic description row buttons
+        $('.addDescRowBtn').on('click', function() {
+            addDescriptionRow();
+        });
+        
+        $(document).on('click', '.removeDescRowBtn', function() {
+            $(this).closest('.desc-row').remove();
+            if ($('#dynamicDescriptionsContainer').children().length === 0) {
+                addDescriptionRow();
+            }
+        });
+
         // Open Create Modal
         $('.addBtn').on('click', function () {
             $('#modalTitle').text("@lang('Create Landing Page')");
             $('#builderForm').trigger('reset');
             $('#pageId').val('');
             $('#productId').prop('disabled', false);
+
+            clearDescriptions();
+            addDescriptionRow(); // Start with one empty row
+
+            // Reset image previews
+            $('#bannerImagePreview').attr('src', 'https://placehold.co/300x150?text=Banner+Image');
+            for(var i=1; i<=6; i++) {
+                $('#reviewImgPreview_' + i).attr('src', 'https://placehold.co/100x100?text=Review+'+i);
+            }
+
+            // Reset WYSIWYG editor
+            if (typeof nicEditors !== 'undefined') {
+                var whyUsEditor = nicEditors.findEditor('whyUsDescription');
+                if (whyUsEditor) {
+                    whyUsEditor.setContent('');
+                }
+            }
+
             $('#builderModal').modal('show');
         });
 
@@ -251,6 +453,7 @@
         $('.editBtn').on('click', function () {
             $('#modalTitle').text("@lang('Edit Landing Page')");
             $('#builderForm').trigger('reset');
+            clearDescriptions();
 
             var id = $(this).data('id');
             var settings = $(this).data('settings');
@@ -273,9 +476,68 @@
                 $('#revComment2').val(settings.reviewer_comment_2);
                 $('#revName3').val(settings.reviewer_name_3);
                 $('#revComment3').val(settings.reviewer_comment_3);
+
+                // Populate new fields
+                $('#pageTemplate').val(settings.template || 'template_1');
+                $('#hotlineTitle').val(settings.hotline_title || 'প্রয়োজনে কল করুন');
+                $('#hotlinePhone').val(settings.hotline_phone || '');
+                $('#videoTitle').val(settings.video_title || '');
+                $('#whyUsTitle').val(settings.why_us_title || 'পণ্যটির বিস্তারিত বিবরণ');
+                $('#productDescriptionTitle').val(settings.product_description_title || 'পণ্যটি কেন আপনার জন্য প্রয়োজনীয়?');
+
+                // Populate dynamic descriptions
+                if (settings.descriptions && settings.descriptions.length > 0) {
+                    settings.descriptions.forEach(function(val) {
+                        addDescriptionRow(val);
+                    });
+                } else {
+                    addDescriptionRow();
+                }
+
+                // Populate review images
+                for(var i=1; i<=6; i++) {
+                    var previewSrc = 'https://placehold.co/100x100?text=Review+'+i;
+                    if (settings.review_images && settings.review_images[i-1]) {
+                        previewSrc = settings.review_images[i-1];
+                    }
+                    $('#reviewImgPreview_' + i).attr('src', previewSrc);
+                }
+
+                // Populate banner image preview
+                if (settings.image_url) {
+                    $('#bannerImagePreview').attr('src', settings.image_url);
+                } else {
+                    $('#bannerImagePreview').attr('src', 'https://placehold.co/300x150?text=Banner+Image');
+                }
+
+                // Set WYSIWYG editor content after a tiny delay so nicEditor has time to initialize
+                setTimeout(function() {
+                    if (typeof nicEditors !== 'undefined') {
+                        var whyUsEditor = nicEditors.findEditor('whyUsDescription');
+                        if (whyUsEditor) {
+                            whyUsEditor.setContent(settings.why_us_description || '');
+                        } else {
+                            $('#whyUsDescription').val(settings.why_us_description || '');
+                        }
+                    } else {
+                        $('#whyUsDescription').val(settings.why_us_description || '');
+                    }
+                }, 100);
             }
 
             $('#builderModal').modal('show');
+        });
+
+        // Save nicEditor contents before submitting
+        $('#builderForm').on('submit', function() {
+            if (typeof nicEditors !== 'undefined') {
+                $(".nicEdit").each(function(index, element) {
+                    var editor = nicEditors.findEditor(element);
+                    if (editor) {
+                        editor.saveContent();
+                    }
+                });
+            }
         });
 
         // Delete Modal

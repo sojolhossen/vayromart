@@ -34,21 +34,33 @@ class AdminLandingController extends Controller
     /**
      * Store/Update manual landing page
      */
+    /**
+     * Store/Update manual landing page
+     */
     public function generate(Request $request)
     {
         $request->validate([
             'id' => 'nullable|integer|exists:chatbot_landing_pages,id',
             'product_id' => 'required|integer|exists:products,id',
             'title' => 'required|string|max:255',
-            'headline' => 'required|string|max:255',
-            'subtitle' => 'required|string|max:500',
-            'bullets' => 'required|string',
-            'description' => 'required|string',
+            'template' => 'nullable|string|max:50',
+            'hotline_title' => 'nullable|string|max:255',
+            'hotline_phone' => 'nullable|string|max:50',
+            'video_title' => 'nullable|string|max:255',
+            'video_url' => 'nullable|url',
+            'why_us_title' => 'nullable|string|max:255',
+            'why_us_description' => 'nullable|string',
+            'product_description_title' => 'nullable|string|max:255',
+            'descriptions' => 'nullable|array',
+            'descriptions.*' => 'nullable|string',
+            'headline' => 'nullable|string|max:255',
+            'subtitle' => 'nullable|string|max:500',
+            'bullets' => 'nullable|string',
+            'description' => 'nullable|string',
             'image_url' => 'nullable|url',
             'image_file' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:4096',
             'custom_price' => 'nullable|numeric|min:0',
             'custom_regular_price' => 'nullable|numeric|min:0',
-            'video_url' => 'nullable|url',
             'reviewer_name_1' => 'nullable|string',
             'reviewer_comment_1' => 'nullable|string',
             'reviewer_name_2' => 'nullable|string',
@@ -69,10 +81,36 @@ class AdminLandingController extends Controller
             }
         }
 
-        // Merge uploaded image URL and prices into settings array
+        // Upload review images (up to 6)
+        $reviewImages = [];
+        if ($request->id) {
+            $existingPage = ChatbotLandingPage::find($request->id);
+            if ($existingPage && isset($existingPage->design_settings['review_images'])) {
+                $reviewImages = $existingPage->design_settings['review_images'];
+            }
+        }
+        for ($i = 1; $i <= 6; $i++) {
+            $inputName = "review_image_" . $i;
+            if ($request->hasFile($inputName)) {
+                try {
+                    $imgName = fileUploader($request->file($inputName), 'assets/images/landing');
+                    $reviewImages[$i - 1] = asset('assets/images/landing/' . $imgName);
+                } catch (\Exception $e) {
+                    \Log::error("Review Image {$i} Upload Error: " . $e->getMessage());
+                }
+            }
+        }
+
+        // Merge uploaded image URL, review images, and other inputs into settings array
         $settings = $request->all();
         $settings['image_url'] = $imageUrl;
-        unset($settings['image_file']); // File object cannot be serialized
+        $settings['review_images'] = $reviewImages;
+        
+        // Remove file objects from settings array
+        unset($settings['image_file']);
+        for ($i = 1; $i <= 6; $i++) {
+            unset($settings['review_image_' . $i]);
+        }
 
         try {
             if ($request->id) {
@@ -127,9 +165,23 @@ class AdminLandingController extends Controller
      */
     private function compileManualTemplate($data, $product)
     {
+        $template = $data['template'] ?? 'template_1';
+
+        if ($template === 'template_2') {
+            return $this->compileTemplateTwo($data, $product);
+        }
+
+        return $this->compileTemplateOne($data, $product);
+    }
+
+    /**
+     * Compile Template 1 (Original Style)
+     */
+    private function compileTemplateOne($data, $product)
+    {
         $title = e($data['title']);
-        $headline = e($data['headline']);
-        $subtitle = e($data['subtitle']);
+        $headline = e($data['headline'] ?? '');
+        $subtitle = e($data['subtitle'] ?? '');
         $videoUrl = $data['video_url'] ?? '';
         $description = $data['description'] ?? '';
         $imageUrl = ($data['image_url'] ?? '') ?: $product->mainImage(false);
@@ -144,7 +196,7 @@ class AdminLandingController extends Controller
             }
         }
 
-        $bullets = array_filter(array_map('trim', explode("\n", $data['bullets'])));
+        $bullets = array_filter(array_map('trim', explode("\n", $data['bullets'] ?? '')));
         $bulletsHtml = '';
         foreach ($bullets as $bullet) {
             $bulletsHtml .= '<li class="flex items-start gap-3 text-gray-700 text-lg mb-3">
@@ -311,9 +363,7 @@ class AdminLandingController extends Controller
         <div class="max-w-4xl mx-auto px-4">
             <h2 class="text-3xl font-extrabold text-gray-900 text-center mb-8">পণ্যটির বিস্তারিত বিবরণ</h2>
             
-            ' . ($videoEmbedHtml ? '<div class="mb-12"><img src="' . $imageUrl . '" alt="' . $title . '" class="w-full max-w-xl mx-auto rounded-2xl shadow-lg border border-gray-100 object-cover aspect-video"></div>' : '') . '
-
-            <div class="prose max-w-none text-gray-700 text-lg leading-relaxed">
+            ' . ($videoEmbedHtml ? '<div' : '') . ' class="prose max-w-none text-gray-700 text-lg leading-relaxed">
                 ' . nl2br($description) . '
             </div>
         </div>
@@ -409,6 +459,365 @@ class AdminLandingController extends Controller
             <p class="text-xs">&copy; ' . date('Y') . ' Vayromart. All rights reserved.</p>
         </div>
     </footer>
+
+    <script>
+        document.getElementById("shipping_location").addEventListener("change", function() {
+            var charge = parseInt(this.options[this.selectedIndex].getAttribute("data-charge"));
+            var basePrice = ' . $price . ';
+            document.getElementById("delivery_charge_val").innerText = charge + " BDT";
+            document.getElementById("total_bill_val").innerText = (basePrice + charge) + " BDT";
+        });
+    </script>
+
+</body>
+</html>';
+
+        return $html;
+    }
+
+    /**
+     * Compile Template 2 (Mohasagor Style)
+     */
+    private function compileTemplateTwo($data, $product)
+    {
+        $title = e($data['title']);
+        $headline = e($data['headline'] ?? $product->name);
+        $subtitle = e($data['subtitle'] ?? '');
+        $videoUrl = $data['video_url'] ?? '';
+        $whyUsTitle = e($data['why_us_title'] ?? 'পণ্যটির বিস্তারিত বিবরণ');
+        $whyUsDescription = $data['why_us_description'] ?? '';
+        $productDescTitle = e($data['product_description_title'] ?? 'পণ্যটি কেন আপনার জন্য প্রয়োজনীয়?');
+        $imageUrl = ($data['image_url'] ?? '') ?: $product->mainImage(false);
+        $hotlineTitle = e($data['hotline_title'] ?? 'প্রয়োজনে কল করুন');
+        $hotlinePhone = e($data['hotline_phone'] ?? '');
+        
+        $baseColor = '#' . (gs('base_color') ?: '4634ff');
+
+        $videoEmbedHtml = '';
+        if ($videoUrl) {
+            if (preg_match('/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^\"&?\/ ]{11})/', $videoUrl, $match)) {
+                $embedCode = $match[1];
+                $videoEmbedHtml = '<iframe class="w-full aspect-video rounded-2xl shadow-lg" src="https://www.youtube.com/embed/' . $embedCode . '" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>';
+            }
+        }
+
+        $bullets = array_filter(array_map('trim', explode("\n", $data['bullets'] ?? '')));
+        $bulletsHtml = '';
+        foreach ($bullets as $bullet) {
+            $bulletsHtml .= '<li class="flex items-start gap-3 text-gray-700 text-lg mb-3">
+                <span class="flex-shrink-0 w-6 h-6 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mt-1">
+                    <i class="fas fa-check text-sm"></i>
+                </span>
+                <span>' . e($bullet) . '</span>
+            </li>';
+        }
+
+        // Custom descriptions list
+        $descriptionsHtml = '';
+        if (!empty($data['descriptions'])) {
+            foreach ($data['descriptions'] as $desc) {
+                if (trim($desc)) {
+                    $descriptionsHtml .= '
+                    <div class="flex gap-4 items-start bg-white p-5 rounded-2xl border border-slate-100 hover:border-primary-light hover:shadow-md transition-all duration-300">
+                        <span class="w-8 h-8 rounded-full bg-primary-light text-primary flex items-center justify-center flex-shrink-0 mt-0.5"><i class="fas fa-arrow-right text-xs"></i></span>
+                        <p class="text-slate-700 font-semibold">' . e($desc) . '</p>
+                    </div>';
+                }
+            }
+        }
+
+        // Handle custom prices
+        $price = !empty($data['custom_price']) ? floatval($data['custom_price']) : ($product->sale_price ?: $product->regular_price);
+        $regularPrice = !empty($data['custom_regular_price']) ? floatval($data['custom_regular_price']) : ($product->regular_price > $price ? $product->regular_price : round($price * 1.35));
+        $discountAmount = $regularPrice - $price;
+        
+        $checkoutUrl = route('landing.checkout');
+        $csrfToken = csrf_token();
+
+        // Review images
+        $reviewsHtml = '';
+        if (!empty($data['review_images'])) {
+            $reviewsHtml .= '<div class="grid grid-cols-2 md:grid-cols-3 gap-6">';
+            foreach ($data['review_images'] as $imgUrl) {
+                if ($imgUrl) {
+                    $reviewsHtml .= '
+                    <div class="overflow-hidden rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg hover:scale-[1.02] transition-all duration-300 bg-white p-2">
+                        <img src="' . $imgUrl . '" alt="Customer Review" class="w-full h-64 object-cover rounded-xl image-popup cursor-zoom-in">
+                    </div>';
+                }
+            }
+            $reviewsHtml .= '</div>';
+        } else {
+            // Fallback text reviews
+            $reviewers = [
+                ['name' => 'Sojol Hossen', 'comment' => 'অসাধারণ প্রোডাক্ট! ঠিক যেমনটি চেয়েছিলাম তেমনই পেয়েছি। ডেলিভারি সার্ভিসও খুব ফাস্ট ছিল। ধন্যবাদ বায়রোমার্ট!'],
+                ['name' => 'Farhana Yasmin', 'comment' => 'পণ্যটির কোয়ালিটি খুবই ভালো। ২ দিনেই ডেলিভারি পেয়েছি। আপনারা চাইলে চোখ বন্ধ করে নিতে পারেন।'],
+                ['name' => 'Md. Arif', 'comment' => 'প্রোডাক্ট হাতে পেয়ে চেক করে পেমেন্ট করেছি। ক্যাশ অন ডেলিভারি সুবিধা থাকায় অনেক সুবিধা হয়েছে। ১০/১০ দিব।']
+            ];
+            $reviewsHtml .= '<div class="grid md:grid-cols-3 gap-8">';
+            foreach ($reviewers as $rev) {
+                $initial = mb_substr($rev['name'], 0, 1, 'utf-8');
+                $reviewsHtml .= '
+                <div class="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300">
+                    <div class="flex items-center gap-4 mb-4">
+                        <div class="w-12 h-12 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-lg shadow-inner">' . $initial . '</div>
+                        <div>
+                            <h6 class="font-bold text-gray-800 text-base">' . e($rev['name']) . '</h6>
+                            <div class="text-amber-500 text-xs flex gap-0.5 mt-1">
+                                <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="text-gray-600 text-sm leading-relaxed">"' . e($rev['comment']) . '"</p>
+                </div>';
+            }
+            $reviewsHtml .= '</div>';
+        }
+
+        $hotlineBlock = '';
+        if ($hotlinePhone) {
+            $hotlineBlock = '
+            <div class="bg-gradient-to-r from-orange-500 to-amber-500 text-white p-8 rounded-3xl text-center shadow-xl mb-12 max-w-2xl mx-auto border border-orange-400">
+                <h3 class="text-2xl font-bold mb-3">' . $hotlineTitle . '</h3>
+                <a href="tel:' . $hotlinePhone . '" class="text-3xl lg:text-4xl font-black flex items-center justify-center gap-4 hover:scale-105 transition-all"><i class="fas fa-phone-volume animate-bounce"></i> ' . $hotlinePhone . '</a>
+            </div>';
+        }
+
+        $floatingWidget = '';
+        if ($hotlinePhone) {
+            $floatingWidget = '
+            <a href="tel:' . $hotlinePhone . '" class="fixed bottom-6 left-6 z-50 bg-emerald-600 hover:bg-emerald-700 text-white p-4 rounded-full shadow-2xl flex items-center gap-3 transition-all hover:scale-110 active:scale-95 group">
+                <span class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center text-xl animate-pulse"><i class="fas fa-phone"></i></span>
+                <span class="max-w-0 overflow-hidden group-hover:max-w-xs transition-all duration-500 ease-out font-bold text-sm whitespace-nowrap">কল করুন</span>
+            </a>';
+        }
+
+        $html = '<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>' . $title . '</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: ' . $baseColor . ';
+        }
+        body {
+            font-family: \'Noto Sans Bengali\', \'Inter\', sans-serif;
+        }
+        @keyframes pulse-ring {
+            0% { transform: scale(0.95); opacity: 0.5; }
+            50% { transform: scale(1.05); opacity: 0.8; }
+            100% { transform: scale(0.95); opacity: 0.5; }
+        }
+        .pulsing-btn {
+            animation: pulse-ring 2s infinite ease-in-out;
+            background-color: var(--primary-color) !important;
+        }
+        .bg-primary {
+            background-color: var(--primary-color) !important;
+        }
+        .text-primary {
+            color: var(--primary-color) !important;
+        }
+        .border-primary {
+            border-color: var(--primary-color) !important;
+        }
+        .bg-primary-light {
+            background-color: rgba(' . hexdec(substr($baseColor, 1, 2)) . ', ' . hexdec(substr($baseColor, 3, 2)) . ', ' . hexdec(substr($baseColor, 5, 2)) . ', 0.1) !important;
+        }
+        .border-primary-light {
+            border-color: rgba(' . hexdec(substr($baseColor, 1, 2)) . ', ' . hexdec(substr($baseColor, 3, 2)) . ', ' . hexdec(substr($baseColor, 5, 2)) . ', 0.2) !important;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 scroll-smooth">
+
+    <!-- Sticky Header -->
+    <header class="sticky top-0 bg-white/95 backdrop-blur-md border-b border-gray-100 z-50 transition-all shadow-sm">
+        <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+            <a href="' . url('/') . '" class="text-2xl font-black text-primary tracking-tight flex items-center gap-2">
+                <i class="fas fa-shopping-bag"></i>
+                <span>' . gs('site_name') . '</span>
+            </a>
+            <a href="#checkout-form" class="bg-primary hover:brightness-95 text-white font-bold px-6 py-2.5 rounded-full transition-all duration-300 shadow-md hover:shadow-lg flex items-center gap-2">
+                <i class="fas fa-cart-shopping"></i>
+                <span>এখনই কিনুন</span>
+            </a>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="max-w-6xl mx-auto px-4 py-12 lg:py-20 grid lg:grid-cols-12 gap-12 items-center">
+        <div class="lg:col-span-7">
+            <span class="inline-block bg-primary-light text-primary font-bold px-4 py-1.5 rounded-full text-sm mb-6 border border-primary-light">
+                ধামাকা ক্যাশ অন ডেলিভারি অফার!
+            </span>
+            <h1 class="text-3xl lg:text-4xl font-extrabold text-gray-900 leading-tight mb-4">
+                ' . $headline . '
+            </h1>
+            <p class="text-lg text-gray-600 mb-8 font-medium">
+                ' . $subtitle . '
+            </p>
+
+            <ul class="mb-8">
+                ' . $bulletsHtml . '
+            </ul>
+
+            <!-- Pricing block -->
+            <div class="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm max-w-md mb-8 flex items-center justify-between">
+                <div>
+                    <span class="text-gray-400 line-through text-lg font-medium block">পূর্বে মূল্য: ' . $regularPrice . ' BDT</span>
+                    <span class="text-emerald-600 text-3xl font-black block mt-1">আজকের অফার: ' . $price . ' BDT</span>
+                </div>
+                <div class="bg-emerald-50 text-emerald-700 font-bold px-4 py-2.5 rounded-xl border border-emerald-100 text-center animate-bounce text-sm">
+                    সঞ্চয়: ' . $discountAmount . ' BDT!
+                </div>
+            </div>
+
+            <div class="flex flex-col sm:flex-row gap-4 max-w-lg">
+                <a href="#checkout-form" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xl font-bold px-8 py-4 rounded-full transition-all duration-300 shadow-lg text-center flex items-center justify-center gap-3 pulsing-btn">
+                    <i class="fas fa-hand-pointer animate-pulse"></i>
+                    <span>অর্ডার করতে ফর্মটি পূরণ করুন</span>
+                </a>
+            </div>
+        </div>
+
+        <div class="lg:col-span-5 flex flex-col justify-center">
+            ' . ($videoEmbedHtml ?: '<img src="' . $imageUrl . '" alt="' . $title . '" class="w-full rounded-2xl shadow-2xl border border-gray-100 hover:scale-[1.02] transition-all duration-300 object-cover aspect-square">') . '
+            
+            <div class="grid grid-cols-3 gap-3 mt-6 text-center">
+                <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+                    <i class="fas fa-truck-fast text-primary text-2xl mb-2"></i>
+                    <p class="text-xs font-bold text-gray-700">ফাস্ট হোম ডেলিভারি</p>
+                </div>
+                <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+                    <i class="fas fa-hand-holding-dollar text-primary text-2xl mb-2"></i>
+                    <p class="text-xs font-bold text-gray-700">ক্যাশ অন ডেলিভারি</p>
+                </div>
+                <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+                    <i class="fas fa-shield-halved text-primary text-2xl mb-2"></i>
+                    <p class="text-xs font-bold text-gray-700">১০০% অরিজিনাল পণ্য</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Description & Video Embed -->
+    <section class="bg-white border-y border-gray-100 py-16">
+        <div class="max-w-4xl mx-auto px-4">
+            <h2 class="text-3xl font-extrabold text-gray-900 text-center mb-8">' . $whyUsTitle . '</h2>
+            
+            ' . ($videoEmbedHtml ? '<div class="mb-12"><img src="' . $imageUrl . '" alt="' . $title . '" class="w-full max-w-xl mx-auto rounded-2xl shadow-lg border border-gray-100 object-cover aspect-video"></div>' : '') . '
+
+            <div class="prose max-w-none text-gray-700 text-lg leading-relaxed">
+                ' . $whyUsDescription . '
+            </div>
+        </div>
+    </section>
+
+    <!-- Product Description list -->
+    ' . ($descriptionsHtml ? '
+    <section class="py-16 bg-slate-50 border-b border-gray-100">
+        <div class="max-w-4xl mx-auto px-4">
+            <h2 class="text-3xl font-extrabold text-gray-900 text-center mb-12">' . $productDescTitle . '</h2>
+            <div class="grid md:grid-cols-2 gap-6">
+                ' . $descriptionsHtml . '
+            </div>
+        </div>
+    </section>
+    ' : '') . '
+
+    <!-- Social Proof / Reviews -->
+    <section class="max-w-6xl mx-auto px-4 py-16">
+        <h2 class="text-3xl font-extrabold text-gray-900 text-center mb-12">গ্রাহকদের মূল্যবান মতামত (Reviews)</h2>
+        ' . $reviewsHtml . '
+    </section>
+
+    <!-- COD Checkout Form -->
+    <section class="bg-slate-900 text-white py-20 border-t border-slate-800" id="checkout-form">
+        <div class="max-w-2xl mx-auto px-4">
+            ' . $hotlineBlock . '
+
+            <div class="bg-white text-gray-900 p-8 lg:p-12 rounded-3xl shadow-2xl border border-gray-100">
+                <div class="text-center mb-8">
+                    <span class="bg-emerald-50 text-emerald-700 font-bold px-4 py-1.5 rounded-full text-xs border border-emerald-100 tracking-wide uppercase">
+                        ক্যাশ অন ডেলিভারি (হাতে পেয়ে মূল্য পরিশোধ)
+                    </span>
+                    <h3 class="text-2xl lg:text-3xl font-black mt-4 mb-2">অর্ডার করতে ফর্মটি পূরণ করুন</h3>
+                    <p class="text-gray-500 font-medium">ডেলিভারি ম্যানের কাছ থেকে প্রোডাক্ট বুঝে পেয়ে টাকা পরিশোধ করুন।</p>
+                </div>
+
+                <form action="' . $checkoutUrl . '" method="POST" class="space-y-6">
+                    <input type="hidden" name="_token" value="' . $csrfToken . '">
+                    <input type="hidden" name="product_id" value="' . $product->id . '">
+                    <input type="hidden" name="landing_page_id" value="' . ($data['id'] ?? '') . '">
+
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">আপনার নাম <span class="text-rose-500">*</span></label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-gray-400"><i class="fas fa-user"></i></span>
+                            <input type="text" name="name" required placeholder="আপনার সম্পূর্ণ নাম লিখুন" class="w-full pl-11 pr-4 py-3.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all duration-200">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">মোবাইল নম্বর <span class="text-rose-500">*</span></label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-gray-400"><i class="fas fa-phone"></i></span>
+                            <input type="tel" name="mobile" required placeholder="১১ ডিজিটের মোবাইল নম্বর লিখুন" class="w-full pl-11 pr-4 py-3.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all duration-200">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">ডেলিভারি এলাকা <span class="text-rose-500">*</span></label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-gray-400"><i class="fas fa-truck"></i></span>
+                            <select name="shipping_location" id="shipping_location" required class="w-full pl-11 pr-4 py-3.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all duration-200">
+                                <option value="inside" data-charge="80">ঢাকা সিটির ভেতরে (80 BDT)</option>
+                                <option value="outside" data-charge="130">ঢাকা সিটির বাইরে (130 BDT)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">ডেলিভারি ঠিকানা <span class="text-rose-500">*</span></label>
+                        <div class="relative">
+                            <span class="absolute top-4 left-0 flex items-start pl-4 text-gray-400"><i class="fas fa-map-marker-alt mt-1"></i></span>
+                            <textarea name="address" required placeholder="আপনার জেলা, থানা ও গ্রামের নাম বা বাসা নম্বর লিখুন" class="w-full pl-11 pr-4 py-3.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all duration-200" rows="3"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-50 p-6 rounded-2xl border border-gray-100 flex items-center justify-between text-base">
+                        <span class="font-bold text-gray-600">ডেলিভারি চার্জ: <span id="delivery_charge_val">80 BDT</span></span>
+                        <span class="font-black text-indigo-600 text-xl">সর্বমোট বিল: <span id="total_bill_val">' . ($price + 80) . ' BDT</span></span>
+                    </div>
+
+                    <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-lg py-4 rounded-xl shadow-lg transition-all duration-300 flex items-center justify-center gap-2 pulsing-btn">
+                        <i class="fas fa-circle-check"></i>
+                        <span>অর্ডার নিশ্চিত করুন</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-slate-950 text-gray-500 py-12 text-center border-t border-slate-900">
+        <div class="max-w-6xl mx-auto px-4">
+            <h4 class="text-white text-xl font-bold tracking-tight mb-4 flex items-center justify-center gap-2">
+                <i class="fas fa-shopping-bag text-indigo-500"></i>
+                <span>' . gs('site_name') . '</span>
+            </h4>
+            <p class="text-sm max-w-md mx-auto mb-6 text-gray-400">ডেলিভারি ম্যানের সামনে প্রোডাক্ট দেখে ও চেক করে পরিশোধ করার শতভাগ নিশ্চয়তা।</p>
+            <p class="text-xs">&copy; ' . date('Y') . ' ' . gs('site_name') . '. All rights reserved.</p>
+        </div>
+    </footer>
+
+    ' . $floatingWidget . '
 
     <script>
         document.getElementById("shipping_location").addEventListener("change", function() {
