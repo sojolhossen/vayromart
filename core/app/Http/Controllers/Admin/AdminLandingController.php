@@ -32,6 +32,34 @@ class AdminLandingController extends Controller
     }
 
     /**
+     * Get all images of a product
+     */
+    public function getProductImages($id)
+    {
+        $product = Product::with('displayImage', 'galleryImages')->find($id);
+        if (!$product) {
+            return response()->json(['success' => false, 'error' => 'Product not found']);
+        }
+
+        $images = [];
+        
+        // Add main image
+        $images[] = $product->mainImage(false);
+
+        // Add gallery images
+        if ($product->galleryImages) {
+            foreach ($product->galleryImages as $media) {
+                $images[] = getImage($media->path . '/' . $media->file_name);
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'images' => $images
+        ]);
+    }
+
+    /**
      * Store/Update manual landing page
      */
     /**
@@ -44,6 +72,7 @@ class AdminLandingController extends Controller
             'product_id' => 'required|integer|exists:products,id',
             'title' => 'required|string|max:255',
             'template' => 'nullable|string|max:50',
+            'free_delivery' => 'nullable|string|in:free,paid',
             'hotline_title' => 'nullable|string|max:255',
             'hotline_phone' => 'nullable|string|max:50',
             'video_title' => 'nullable|string|max:255',
@@ -214,6 +243,10 @@ class AdminLandingController extends Controller
         
         $checkoutUrl = route('landing.checkout');
         $csrfToken = csrf_token();
+
+        $isFreeDelivery = ($data['free_delivery'] ?? 'paid') === 'free';
+        $insideCharge = $isFreeDelivery ? 0 : 80;
+        $outsideCharge = $isFreeDelivery ? 0 : 130;
 
         // Reviews HTML
         $reviewsHtml = '';
@@ -415,8 +448,8 @@ class AdminLandingController extends Controller
                         <div class="relative">
                             <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-gray-400"><i class="fas fa-truck"></i></span>
                             <select name="shipping_location" id="shipping_location" required class="w-full pl-11 pr-4 py-3.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all duration-200">
-                                <option value="inside" data-charge="80">ঢাকা সিটির ভেতরে (80 BDT)</option>
-                                <option value="outside" data-charge="130">ঢাকা সিটির বাইরে (130 BDT)</option>
+                                <option value="inside" data-charge="' . $insideCharge . '">ঢাকা সিটির ভেতরে (' . ($isFreeDelivery ? 'ফ্রি' : $insideCharge . ' BDT') . ')</option>
+                                <option value="outside" data-charge="' . $outsideCharge . '">ঢাকা সিটির বাইরে (' . ($isFreeDelivery ? 'ফ্রি' : $outsideCharge . ' BDT') . ')</option>
                             </select>
                         </div>
                     </div>
@@ -430,8 +463,8 @@ class AdminLandingController extends Controller
                     </div>
 
                     <div class="bg-gray-50 p-6 rounded-2xl border border-gray-100 flex items-center justify-between text-base">
-                        <span class="font-bold text-gray-600">ডেলিভারি চার্জ: <span id="delivery_charge_val">80 BDT</span></span>
-                        <span class="font-black text-indigo-600 text-xl">সর্বমোট বিল: <span id="total_bill_val">' . ($price + 80) . ' BDT</span></span>
+                        <span class="font-bold text-gray-600">ডেলিভারি চার্জ: <span id="delivery_charge_val">' . ($isFreeDelivery ? 'ফ্রি' : $insideCharge . ' BDT') . '</span></span>
+                        <span class="font-black text-indigo-600 text-xl">সর্বমোট বিল: <span id="total_bill_val">' . ($price + $insideCharge) . ' BDT</span></span>
                     </div>
 
                     <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-lg py-4 rounded-xl shadow-lg transition-all duration-300 flex items-center justify-center gap-2 pulsing-btn">
@@ -464,7 +497,7 @@ class AdminLandingController extends Controller
         document.getElementById("shipping_location").addEventListener("change", function() {
             var charge = parseInt(this.options[this.selectedIndex].getAttribute("data-charge"));
             var basePrice = ' . $price . ';
-            document.getElementById("delivery_charge_val").innerText = charge + " BDT";
+            document.getElementById("delivery_charge_val").innerText = charge === 0 ? "ফ্রি" : charge + " BDT";
             document.getElementById("total_bill_val").innerText = (basePrice + charge) + " BDT";
         });
     </script>
@@ -533,6 +566,10 @@ class AdminLandingController extends Controller
         
         $checkoutUrl = route('landing.checkout');
         $csrfToken = csrf_token();
+
+        $isFreeDelivery = ($data['free_delivery'] ?? 'paid') === 'free';
+        $insideCharge = $isFreeDelivery ? 0 : 80;
+        $outsideCharge = $isFreeDelivery ? 0 : 130;
 
         // Review images
         $reviewsHtml = '';
@@ -777,8 +814,8 @@ class AdminLandingController extends Controller
                         <div class="relative">
                             <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-gray-400"><i class="fas fa-truck"></i></span>
                             <select name="shipping_location" id="shipping_location" required class="w-full pl-11 pr-4 py-3.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all duration-200">
-                                <option value="inside" data-charge="80">ঢাকা সিটির ভেতরে (80 BDT)</option>
-                                <option value="outside" data-charge="130">ঢাকা সিটির বাইরে (130 BDT)</option>
+                                <option value="inside" data-charge="' . $insideCharge . '">ঢাকা সিটির ভেতরে (' . ($isFreeDelivery ? 'ফ্রি' : $insideCharge . ' BDT') . ')</option>
+                                <option value="outside" data-charge="' . $outsideCharge . '">ঢাকা সিটির বাইরে (' . ($isFreeDelivery ? 'ফ্রি' : $outsideCharge . ' BDT') . ')</option>
                             </select>
                         </div>
                     </div>
@@ -792,8 +829,8 @@ class AdminLandingController extends Controller
                     </div>
 
                     <div class="bg-gray-50 p-6 rounded-2xl border border-gray-100 flex items-center justify-between text-base">
-                        <span class="font-bold text-gray-600">ডেলিভারি চার্জ: <span id="delivery_charge_val">80 BDT</span></span>
-                        <span class="font-black text-indigo-600 text-xl">সর্বমোট বিল: <span id="total_bill_val">' . ($price + 80) . ' BDT</span></span>
+                        <span class="font-bold text-gray-600">ডেলিভারি চার্জ: <span id="delivery_charge_val">' . ($isFreeDelivery ? 'ফ্রি' : $insideCharge . ' BDT') . '</span></span>
+                        <span class="font-black text-indigo-600 text-xl">সর্বমোট বিল: <span id="total_bill_val">' . ($price + $insideCharge) . ' BDT</span></span>
                     </div>
 
                     <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-lg py-4 rounded-xl shadow-lg transition-all duration-300 flex items-center justify-center gap-2 pulsing-btn">
@@ -823,7 +860,7 @@ class AdminLandingController extends Controller
         document.getElementById("shipping_location").addEventListener("change", function() {
             var charge = parseInt(this.options[this.selectedIndex].getAttribute("data-charge"));
             var basePrice = ' . $price . ';
-            document.getElementById("delivery_charge_val").innerText = charge + " BDT";
+            document.getElementById("delivery_charge_val").innerText = charge === 0 ? "ফ্রি" : charge + " BDT";
             document.getElementById("total_bill_val").innerText = (basePrice + charge) + " BDT";
         });
     </script>

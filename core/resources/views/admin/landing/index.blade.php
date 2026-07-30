@@ -98,7 +98,7 @@
                                     </div>
                                     <div class="card-body p-3">
                                         <div class="row">
-                                            <div class="col-md-6 form-group mb-2">
+                                            <div class="col-md-4 form-group mb-2">
                                                 <label class="fw-bold">@lang('Select Product') <span class="text-danger">*</span></label>
                                                 <select name="product_id" id="productId" class="form-control form-control-sm" required>
                                                     <option value="">-- @lang('Choose a product') --</option>
@@ -107,13 +107,20 @@
                                                     @endforeach
                                                 </select>
                                             </div>
-                                            <div class="col-md-3 form-group mb-2">
-                                                <label class="fw-bold">@lang('Custom Sale Price (BDT)')</label>
+                                            <div class="col-md-2 form-group mb-2">
+                                                <label class="fw-bold">@lang('Sale Price (BDT)')</label>
                                                 <input type="number" step="any" name="custom_price" id="customPrice" class="form-control form-control-sm" placeholder="e.g. 1200">
                                             </div>
-                                            <div class="col-md-3 form-group mb-2">
-                                                <label class="fw-bold">@lang('Custom Regular Price (BDT)')</label>
+                                            <div class="col-md-2 form-group mb-2">
+                                                <label class="fw-bold">@lang('Regular Price')</label>
                                                 <input type="number" step="any" name="custom_regular_price" id="customRegularPrice" class="form-control form-control-sm" placeholder="e.g. 1800">
+                                            </div>
+                                            <div class="col-md-4 form-group mb-2">
+                                                <label class="fw-bold">@lang('Delivery Offer')</label>
+                                                <select name="free_delivery" id="freeDelivery" class="form-control form-control-sm">
+                                                    <option value="paid">Standard / Paid Delivery</option>
+                                                    <option value="free">Free Delivery (ফ্রি ডেলিভারি)</option>
+                                                </select>
                                             </div>
                                         </div>
                                     </div>
@@ -131,7 +138,7 @@
                                             <label class="fw-bold">@lang('Title') <span class="text-danger">*</span></label>
                                             <input type="text" name="title" id="pageTitle" class="form-control form-control-sm" placeholder="e.g. Premium quality bluetooth airbuds" required>
                                         </div>
-                                        <div class="row align-items-center">
+                                        <div class="row align-items-center mb-3">
                                             <div class="col-md-6 form-group mb-2">
                                                 <label class="fw-bold">@lang('Banner Image (1440 x 790)')</label>
                                                 <input type="file" name="image_file" id="imageFile" class="form-control form-control-sm" accept="image/*">
@@ -141,6 +148,16 @@
                                                 <img id="bannerImagePreview" src="https://placehold.co/300x150?text=Banner+Image" class="img-thumbnail" style="max-height: 120px; object-fit: cover;">
                                             </div>
                                         </div>
+
+                                        <!-- Product Gallery Images Wrapper -->
+                                        <div class="form-group mb-3 d-none animate__animated animate__fadeIn" id="productImagesGalleryWrapper">
+                                            <label class="fw-bold text-primary"><i class="las la-images"></i> @lang('Select from Product Gallery Images')</label>
+                                            <small class="text-muted d-block mb-2">@lang('Click on any thumbnail below to instantly select it as your landing page banner image.')</small>
+                                            <div class="row g-2 row-cols-3 row-cols-sm-6" id="productImagesGallery" style="max-height: 220px; overflow-y: auto; padding: 5px; border: 1px solid #eee; border-radius: 8px; background-color: #fafafa;">
+                                                <!-- Dynamic product thumbnails will load here -->
+                                            </div>
+                                        </div>
+
                                         <div class="form-group mb-2">
                                             <label class="fw-bold">@lang('Template')</label>
                                             <select name="template" id="pageTemplate" class="form-control form-control-sm">
@@ -410,6 +427,58 @@
             }
         });
 
+        // Fetch product images when a product is selected
+        $('#productId').on('change', function() {
+            var productId = $(this).val();
+            if (!productId) {
+                $('#productImagesGalleryWrapper').addClass('d-none');
+                $('#productImagesGallery').empty();
+                return;
+            }
+            
+            // Fetch images via AJAX
+            var url = "{{ route('admin.landing.product.images', '') }}/" + productId;
+            $.ajax({
+                url: url,
+                type: 'GET',
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success && response.images && response.images.length > 0) {
+                        $('#productImagesGallery').empty();
+                        response.images.forEach(function(imgUrl) {
+                            var currentUrl = $('#imageUrl').val();
+                            var activeStyle = (currentUrl && imgUrl === currentUrl) ? 'border: 2px solid #4634ff;' : '';
+                            var imgCol = `
+                                <div class="col text-center">
+                                    <img src="${imgUrl}" class="img-thumbnail select-product-image-btn" style="width: 70px; height: 70px; object-fit: cover; cursor: pointer; ${activeStyle}" data-imgurl="${imgUrl}" title="Click to use as banner">
+                                </div>
+                            `;
+                            $('#productImagesGallery').append(imgCol);
+                        });
+                        $('#productImagesGalleryWrapper').removeClass('d-none');
+                    } else {
+                        $('#productImagesGalleryWrapper').addClass('d-none');
+                        $('#productImagesGallery').empty();
+                    }
+                },
+                error: function() {
+                    $('#productImagesGalleryWrapper').addClass('d-none');
+                    $('#productImagesGallery').empty();
+                }
+            });
+        });
+
+        // Click handler for product image thumbnail selection
+        $(document).on('click', '.select-product-image-btn', function() {
+            var imgUrl = $(this).data('imgurl');
+            $('#imageUrl').val(imgUrl);
+            $('#bannerImagePreview').attr('src', imgUrl);
+            
+            // Add active class style
+            $('.select-product-image-btn').css('border', '1px solid #dee2e6');
+            $(this).css('border', '2px solid #4634ff');
+        });
+
         // Add/Remove dynamic description row buttons
         $('.addDescRowBtn').on('click', function() {
             addDescriptionRow();
@@ -431,6 +500,11 @@
 
             clearDescriptions();
             addDescriptionRow(); // Start with one empty row
+
+            // Reset image gallery wrapper
+            $('#productImagesGalleryWrapper').addClass('d-none');
+            $('#productImagesGallery').empty();
+            $('#freeDelivery').val('paid');
 
             // Reset image previews
             $('#bannerImagePreview').attr('src', 'https://placehold.co/300x150?text=Banner+Image');
@@ -479,11 +553,15 @@
 
                 // Populate new fields
                 $('#pageTemplate').val(settings.template || 'template_1');
+                $('#freeDelivery').val(settings.free_delivery || 'paid');
                 $('#hotlineTitle').val(settings.hotline_title || 'প্রয়োজনে কল করুন');
                 $('#hotlinePhone').val(settings.hotline_phone || '');
                 $('#videoTitle').val(settings.video_title || '');
                 $('#whyUsTitle').val(settings.why_us_title || 'পণ্যটির বিস্তারিত বিবরণ');
                 $('#productDescriptionTitle').val(settings.product_description_title || 'পণ্যটি কেন আপনার জন্য প্রয়োজনীয়?');
+
+                // Trigger product image gallery loading
+                $('#productId').trigger('change');
 
                 // Populate dynamic descriptions
                 if (settings.descriptions && settings.descriptions.length > 0) {

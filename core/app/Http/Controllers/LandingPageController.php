@@ -105,6 +105,14 @@ class LandingPageController extends Controller
 
         $subtotal = $price * $quantity;
         $shippingCharge = ($request->shipping_location === 'outside') ? 130.00 : 80.00;
+
+        if ($request->landing_page_id) {
+            $landingPage = ChatbotLandingPage::find($request->landing_page_id);
+            if ($landingPage && isset($landingPage->design_settings['free_delivery']) && $landingPage->design_settings['free_delivery'] === 'free') {
+                $shippingCharge = 0.00;
+            }
+        }
+
         $totalAmount = $subtotal + $shippingCharge;
 
         // Generate unique Order Number

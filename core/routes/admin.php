@@ -490,6 +490,7 @@ Route::middleware('admin')->group(function () {
         Route::get('/', 'index')->name('index');
         Route::post('/generate', 'generate')->name('generate');
         Route::post('/delete/{id}', 'destroy')->name('delete');
+        Route::get('/product-images/{id}', 'getProductImages')->name('product.images');
     });
 
 
