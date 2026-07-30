@@ -253,6 +253,181 @@ class AdminLandingController extends Controller
         };
 
         $imageUrl = $resolveUrl(($data['image_url'] ?? '') ?: $product->mainImage(false));
+
+        $countdownTimerHtml = '
+        <!-- Countdown Timer & Stock Urgency -->
+        <div class="bg-rose-50 border border-rose-100 rounded-2xl p-4 mb-8 max-w-md shadow-sm">
+            <div class="flex items-center gap-2 mb-2 text-rose-700 font-bold text-sm">
+                <i class="fas fa-clock animate-pulse"></i>
+                <span>আজকের অফার শেষ হতে আর মাত্র সময় আছে:</span>
+            </div>
+            <div class="grid grid-cols-4 gap-2 text-center">
+                <div class="bg-white rounded-lg p-2 shadow-xs border border-rose-100/50">
+                    <span class="block text-2xl font-black text-rose-600" id="timer-hours">03</span>
+                    <span class="text-[10px] text-gray-500 font-medium block">ঘণ্টা</span>
+                </div>
+                <div class="bg-white rounded-lg p-2 shadow-xs border border-rose-100/50">
+                    <span class="block text-2xl font-black text-rose-600" id="timer-minutes">45</span>
+                    <span class="text-[10px] text-gray-500 font-medium block">মিনিট</span>
+                </div>
+                <div class="bg-white rounded-lg p-2 shadow-xs border border-rose-100/50">
+                    <span class="block text-2xl font-black text-rose-600" id="timer-seconds">12</span>
+                    <span class="text-[10px] text-gray-500 font-medium block">সেকেন্ড</span>
+                </div>
+                <div class="bg-white rounded-lg p-2 shadow-xs border border-rose-100/50 flex flex-col justify-center items-center">
+                    <span class="inline-block w-2.5 h-2.5 rounded-full bg-red-600 animate-ping mb-1"></span>
+                    <span class="text-[10px] text-red-600 font-bold">লাইভ স্টক</span>
+                </div>
+            </div>
+            <div class="mt-3 flex items-center justify-between text-xs text-rose-700 font-semibold border-t border-rose-100 pt-2">
+                <span><i class="fas fa-fire"></i> স্টক সীমিত! মাত্র <span id="live-stock-val">১২</span> টি বাকি আছে!</span>
+                <span class="animate-pulse">১৫ জন এই মুহূর্তে দেখছেন</span>
+            </div>
+        </div>';
+
+        $faqHtml = '
+        <!-- FAQ Section -->
+        <section class="max-w-4xl mx-auto px-4 py-16 border-t border-gray-100">
+            <h2 class="text-3xl font-extrabold text-gray-900 text-center mb-10">প্রায়শই জিজ্ঞাসিত প্রশ্নাবলী (FAQ)</h2>
+            <div class="space-y-4">
+                <div class="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm transition-all duration-300 hover:shadow-md">
+                    <button onclick="toggleFaq(this)" class="flex justify-between items-center w-full text-left font-bold text-lg text-gray-800 hover:text-primary outline-none">
+                        <span>১. অর্ডার করার কত দিনের মধ্যে ডেলিভারি পাবো?</span>
+                        <i class="fas fa-chevron-down text-sm transition-transform duration-300"></i>
+                    </button>
+                    <div class="faq-answer max-h-0 overflow-hidden transition-all duration-300 ease-in-out mt-3 text-gray-600 text-base leading-relaxed">
+                        ঢাকা সিটির ভেতরে আমরা সর্বোচ্চ ২৪ থেকে ৪৮ ঘণ্টার মধ্যে হোম ডেলিভারি দিয়ে থাকি। আর ঢাকা সিটির বাইরে ৩ থেকে ৫ কার্যদিবসের মধ্যে পেয়ে যাবেন।
+                    </div>
+                </div>
+                
+                <div class="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm transition-all duration-300 hover:shadow-md">
+                    <button onclick="toggleFaq(this)" class="flex justify-between items-center w-full text-left font-bold text-lg text-gray-800 hover:text-primary outline-none">
+                        <span>২. আমি কি অর্ডার করার সময় ডেলিভারি চার্জ আগে পরিশোধ করব?</span>
+                        <i class="fas fa-chevron-down text-sm transition-transform duration-300"></i>
+                    </button>
+                    <div class="faq-answer max-h-0 overflow-hidden transition-all duration-300 ease-in-out mt-3 text-gray-600 text-base leading-relaxed">
+                        না, আমাদের কোনো অগ্রিম পেমেন্ট করতে হবে না। আপনি ডেলিভারি ম্যানের সামনে প্রোডাক্ট দেখে ও চেক করে ক্যাশ অন ডেলিভারিতে সম্পূর্ণ টাকা পরিশোধ করতে পারবেন।
+                    </div>
+                </div>
+
+                <div class="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm transition-all duration-300 hover:shadow-md">
+                    <button onclick="toggleFaq(this)" class="flex justify-between items-center w-full text-left font-bold text-lg text-gray-800 hover:text-primary outline-none">
+                        <span>৩. প্রোডাক্টে কোনো ত্রুটি থাকলে কি ফেরত দেওয়া যাবে?</span>
+                        <i class="fas fa-chevron-down text-sm transition-transform duration-300"></i>
+                    </button>
+                    <div class="faq-answer max-h-0 overflow-hidden transition-all duration-300 ease-in-out mt-3 text-gray-600 text-base leading-relaxed">
+                        অবশ্যই! প্রোডাক্টে কোনো ধরনের সমস্যা থাকলে বা আপনার পছন্দ না হলে ডেলিভারি ম্যান থাকা অবস্থায় আপনি কোনো চার্জ ছাড়া রিটার্ন করতে পারবেন অথবা ৭ দিনের রিফান্ড/এক্সচেঞ্জ সুবিধা পাবেন।
+                    </div>
+                </div>
+            </div>
+        </section>';
+
+        $purchasePopupHtml = '
+        <!-- Real-time Purchase Popup Toast -->
+        <div id="purchase-popup" class="fixed bottom-6 left-6 z-50 bg-white/95 backdrop-blur-md rounded-2xl p-4 shadow-2xl border border-gray-100 flex items-center gap-4 transition-all duration-500 transform translate-y-32 opacity-0 max-w-sm hidden sm:flex">
+            <div class="w-12 h-12 bg-primary-light text-primary rounded-full flex items-center justify-center text-xl flex-shrink-0">
+                <i class="fas fa-bag-shopping"></i>
+            </div>
+            <div class="pr-2">
+                <p class="text-[11px] text-gray-500 font-semibold"><span id="popup-name">আজিম</span>, <span id="popup-city">ঢাকা</span> থেকে</p>
+                <p class="text-xs font-black text-gray-800 mt-0.5"><span class="text-primary">' . $title . '</span></p>
+                <p class="text-[10px] text-emerald-600 font-bold mt-0.5"><i class="fas fa-check-circle"></i> সফলভাবে অর্ডার করেছেন (<span id="popup-time">১ মিনিট আগে</span>)</p>
+            </div>
+            <button onclick="document.getElementById(\'purchase-popup\').classList.add(\'translate-y-32\', \'opacity-0\')" class="text-gray-400 hover:text-gray-600 self-start ml-auto"><i class="fas fa-times text-xs"></i></button>
+        </div>';
+
+        $faqAndUrgencyJs = '
+        <script>
+            // FAQ Accordion toggle
+            function toggleFaq(button) {
+                var answer = button.nextElementSibling;
+                var icon = button.querySelector(\'i\');
+                if (answer.style.maxHeight && answer.style.maxHeight !== \'0px\') {
+                    answer.style.maxHeight = \'0px\';
+                    icon.classList.remove(\'rotate-180\');
+                } else {
+                    answer.style.maxHeight = answer.scrollHeight + \'px\';
+                    icon.classList.add(\'rotate-180\');
+                }
+            }
+
+            // Countdown Timer
+            (function() {
+                var hoursSpan = document.getElementById("timer-hours");
+                var minutesSpan = document.getElementById("timer-minutes");
+                var secondsSpan = document.getElementById("timer-seconds");
+                var stockSpan = document.getElementById("live-stock-val");
+                
+                if (!hoursSpan) return;
+                
+                var target = new Date();
+                target.setHours(23, 59, 59, 999);
+                
+                function updateTimer() {
+                    var current = new Date();
+                    var diff = target - current;
+                    if (diff <= 0) {
+                        target = new Date();
+                        target.setHours(23, 59, 59, 999);
+                        return;
+                    }
+                    
+                    var h = Math.floor(diff / (1000 * 60 * 60));
+                    var m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                    var s = Math.floor((diff % (1000 * 60)) / 1000);
+                    
+                    hoursSpan.innerText = h < 10 ? "0" + h : h;
+                    minutesSpan.innerText = m < 10 ? "0" + m : m;
+                    secondsSpan.innerText = s < 10 ? "0" + s : s;
+                }
+                
+                setInterval(updateTimer, 1000);
+                updateTimer();
+                
+                // Live stock reduction simulation
+                var stock = 12;
+                function reduceStock() {
+                    if (stock > 3) {
+                        stock -= Math.floor(Math.random() * 2);
+                        if (stockSpan) {
+                            stockSpan.innerText = stock;
+                        }
+                    }
+                }
+                setInterval(reduceStock, 25000);
+            })();
+
+            // Purchase Notification Popups
+            (function() {
+                var names = ["আরিফ", "সাকিব", "নাহিদ", "ফারহানা", "আজিম", "জাহিদুল", "সুমাইয়া", "ফয়সাল", "রায়হান", "তাসনিম"];
+                var cities = ["ঢাকা", "চট্টগ্রাম", "সিলেট", "রাজশাহী", "খুলনা", "রংপুর", "বরিশাল", "কুমিল্লা", "গাজীপুর", "ময়মনসিংহ"];
+                var times = ["১ মিনিট আগে", "৩ মিনিট আগে", "৪ মিনিট আগে", "৫ মিনিট আগে", "৭ মিনিট আগে"];
+                
+                var popup = document.getElementById("purchase-popup");
+                if (!popup) return;
+                
+                function showPopup() {
+                    var name = names[Math.floor(Math.random() * names.length)];
+                    var city = cities[Math.floor(Math.random() * cities.length)];
+                    var time = times[Math.floor(Math.random() * times.length)];
+                    
+                    document.getElementById("popup-name").innerText = name;
+                    document.getElementById("popup-city").innerText = city;
+                    document.getElementById("popup-time").innerText = time;
+                    
+                    popup.classList.remove("hidden", "translate-y-32", "opacity-0");
+                    popup.classList.add("translate-y-0", "opacity-100");
+                    
+                    setTimeout(function() {
+                        popup.classList.remove("translate-y-0", "opacity-100");
+                        popup.classList.add("translate-y-32", "opacity-0");
+                    }, 4500);
+                }
+                
+                setTimeout(showPopup, 3000);
+                setInterval(showPopup, 15000);
+            })();
+        </script>';
         
         $baseColor = '#' . (gs('base_color') ?: '4634ff');
 
@@ -474,6 +649,8 @@ class AdminLandingController extends Controller
                 </div>
             </div>
 
+            ' . $countdownTimerHtml . '
+
             <div class="flex flex-col sm:flex-row gap-4 max-w-lg">
                 <a href="#checkout-form" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xl font-bold px-8 py-4 rounded-full transition-all duration-300 shadow-lg text-center flex items-center justify-center gap-3 pulsing-btn">
                     <i class="fas fa-hand-pointer"></i>
@@ -522,6 +699,8 @@ class AdminLandingController extends Controller
             ' . $reviewsHtml . '
         </div>
     </section>
+
+    ' . $faqHtml . '
 
     <!-- COD Checkout Form -->
     <section class="bg-slate-900 text-white py-20 border-t border-slate-800" id="checkout-form">
@@ -606,6 +785,8 @@ class AdminLandingController extends Controller
         </div>
     </footer>
 
+    ' . $purchasePopupHtml . '
+
     <script>
         document.getElementById("shipping_location").addEventListener("change", function() {
             var charge = parseInt(this.options[this.selectedIndex].getAttribute("data-charge"));
@@ -616,6 +797,7 @@ class AdminLandingController extends Controller
     </script>
 
     ' . $sliderJs . '
+    ' . $faqAndUrgencyJs . '
 
 </body>
 </html>';
@@ -645,6 +827,182 @@ class AdminLandingController extends Controller
         };
 
         $imageUrl = $resolveUrl(($data['image_url'] ?? '') ?: $product->mainImage(false));
+
+        $countdownTimerHtml = '
+        <!-- Countdown Timer & Stock Urgency -->
+        <div class="bg-rose-50 border border-rose-100 rounded-2xl p-4 mb-8 max-w-md shadow-sm">
+            <div class="flex items-center gap-2 mb-2 text-rose-700 font-bold text-sm">
+                <i class="fas fa-clock animate-pulse"></i>
+                <span>আজকের অফার শেষ হতে আর মাত্র সময় আছে:</span>
+            </div>
+            <div class="grid grid-cols-4 gap-2 text-center">
+                <div class="bg-white rounded-lg p-2 shadow-xs border border-rose-100/50">
+                    <span class="block text-2xl font-black text-rose-600" id="timer-hours">03</span>
+                    <span class="text-[10px] text-gray-500 font-medium block">ঘণ্টা</span>
+                </div>
+                <div class="bg-white rounded-lg p-2 shadow-xs border border-rose-100/50">
+                    <span class="block text-2xl font-black text-rose-600" id="timer-minutes">45</span>
+                    <span class="text-[10px] text-gray-500 font-medium block">মিনিট</span>
+                </div>
+                <div class="bg-white rounded-lg p-2 shadow-xs border border-rose-100/50">
+                    <span class="block text-2xl font-black text-rose-600" id="timer-seconds">12</span>
+                    <span class="text-[10px] text-gray-500 font-medium block">সেকেন্ড</span>
+                </div>
+                <div class="bg-white rounded-lg p-2 shadow-xs border border-rose-100/50 flex flex-col justify-center items-center">
+                    <span class="inline-block w-2.5 h-2.5 rounded-full bg-red-600 animate-ping mb-1"></span>
+                    <span class="text-[10px] text-red-600 font-bold">লাইভ স্টক</span>
+                </div>
+            </div>
+            <div class="mt-3 flex items-center justify-between text-xs text-rose-700 font-semibold border-t border-rose-100 pt-2">
+                <span><i class="fas fa-fire"></i> স্টক সীমিত! মাত্র <span id="live-stock-val">১২</span> টি বাকি আছে!</span>
+                <span class="animate-pulse">১৫ জন এই মুহূর্তে দেখছেন</span>
+            </div>
+        </div>';
+
+        $faqHtml = '
+        <!-- FAQ Section -->
+        <section class="max-w-4xl mx-auto px-4 py-16 border-t border-gray-100">
+            <h2 class="text-3xl font-extrabold text-gray-900 text-center mb-10">প্রায়শই জিজ্ঞাসিত প্রশ্নাবলী (FAQ)</h2>
+            <div class="space-y-4">
+                <div class="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm transition-all duration-300 hover:shadow-md">
+                    <button onclick="toggleFaq(this)" class="flex justify-between items-center w-full text-left font-bold text-lg text-gray-800 hover:text-primary outline-none">
+                        <span>১. অর্ডার করার কত দিনের মধ্যে ডেলিভারি পাবো?</span>
+                        <i class="fas fa-chevron-down text-sm transition-transform duration-300"></i>
+                    </button>
+                    <div class="faq-answer max-h-0 overflow-hidden transition-all duration-300 ease-in-out mt-3 text-gray-600 text-base leading-relaxed">
+                        ঢাকা সিটির ভেতরে আমরা সর্বোচ্চ ২৪ থেকে ৪৮ ঘণ্টার মধ্যে হোম ডেলিভারি দিয়ে থাকি। আর ঢাকা সিটির বাইরে ৩ থেকে ৫ কার্যদিবসের মধ্যে পেয়ে যাবেন।
+                    </div>
+                </div>
+                
+                <div class="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm transition-all duration-300 hover:shadow-md">
+                    <button onclick="toggleFaq(this)" class="flex justify-between items-center w-full text-left font-bold text-lg text-gray-800 hover:text-primary outline-none">
+                        <span>২. আমি কি অর্ডার করার সময় ডেলিভারি চার্জ আগে পরিশোধ করব?</span>
+                        <i class="fas fa-chevron-down text-sm transition-transform duration-300"></i>
+                    </button>
+                    <div class="faq-answer max-h-0 overflow-hidden transition-all duration-300 ease-in-out mt-3 text-gray-600 text-base leading-relaxed">
+                        না, আমাদের কোনো অগ্রিম পেমেন্ট করতে হবে না। আপনি ডেলিভারি ম্যানের সামনে প্রোডাক্ট দেখে ও চেক করে ক্যাশ অন ডেলিভারিতে সম্পূর্ণ টাকা পরিশোধ করতে পারবেন।
+                    </div>
+                </div>
+
+                <div class="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm transition-all duration-300 hover:shadow-md">
+                    <button onclick="toggleFaq(this)" class="flex justify-between items-center w-full text-left font-bold text-lg text-gray-800 hover:text-primary outline-none">
+                        <span>৩. প্রোডাক্টে কোনো ত্রুটি থাকলে কি ফেরত দেওয়া যাবে?</span>
+                        <i class="fas fa-chevron-down text-sm transition-transform duration-300"></i>
+                    </button>
+                    <div class="faq-answer max-h-0 overflow-hidden transition-all duration-300 ease-in-out mt-3 text-gray-600 text-base leading-relaxed">
+                        অবশ্যই! প্রোডাক্টে কোনো ধরনের সমস্যা থাকলে বা আপনার পছন্দ না হলে ডেলিভারি ম্যান থাকা অবস্থায় আপনি কোনো চার্জ ছাড়া রিটার্ন করতে পারবেন অথবা ৭ দিনের রিফান্ড/এক্সচেঞ্জ সুবিধা পাবেন।
+                    </div>
+                </div>
+            </div>
+        </section>';
+
+        $purchasePopupHtml = '
+        <!-- Real-time Purchase Popup Toast -->
+        <div id="purchase-popup" class="fixed bottom-6 left-6 z-50 bg-white/95 backdrop-blur-md rounded-2xl p-4 shadow-2xl border border-gray-100 flex items-center gap-4 transition-all duration-500 transform translate-y-32 opacity-0 max-w-sm hidden sm:flex">
+            <div class="w-12 h-12 bg-primary-light text-primary rounded-full flex items-center justify-center text-xl flex-shrink-0">
+                <i class="fas fa-bag-shopping"></i>
+            </div>
+            <div class="pr-2">
+                <p class="text-[11px] text-gray-500 font-semibold"><span id="popup-name">আজিম</span>, <span id="popup-city">ঢাকা</span> থেকে</p>
+                <p class="text-xs font-black text-gray-800 mt-0.5"><span class="text-primary">' . $title . '</span></p>
+                <p class="text-[10px] text-emerald-600 font-bold mt-0.5"><i class="fas fa-check-circle"></i> সফলভাবে অর্ডার করেছেন (<span id="popup-time">১ মিনিট আগে</span>)</p>
+            </div>
+            <button onclick="document.getElementById(\'purchase-popup\').classList.add(\'translate-y-32\', \'opacity-0\')" class="text-gray-400 hover:text-gray-600 self-start ml-auto"><i class="fas fa-times text-xs"></i></button>
+        </div>';
+
+        $faqAndUrgencyJs = '
+        <script>
+            // FAQ Accordion toggle
+            function toggleFaq(button) {
+                var answer = button.nextElementSibling;
+                var icon = button.querySelector(\'i\');
+                if (answer.style.maxHeight && answer.style.maxHeight !== \'0px\') {
+                    answer.style.maxHeight = \'0px\';
+                    icon.classList.remove(\'rotate-180\');
+                } else {
+                    answer.style.maxHeight = answer.scrollHeight + \'px\';
+                    icon.classList.add(\'rotate-180\');
+                }
+            }
+
+            // Countdown Timer
+            (function() {
+                var hoursSpan = document.getElementById("timer-hours");
+                var minutesSpan = document.getElementById("timer-minutes");
+                var secondsSpan = document.getElementById("timer-seconds");
+                var stockSpan = document.getElementById("live-stock-val");
+                
+                if (!hoursSpan) return;
+                
+                var target = new Date();
+                target.setHours(23, 59, 59, 999);
+                
+                function updateTimer() {
+                    var current = new Date();
+                    var diff = target - current;
+                    if (diff <= 0) {
+                        target = new Date();
+                        target.setHours(23, 59, 59, 999);
+                        return;
+                    }
+                    
+                    var h = Math.floor(diff / (1000 * 60 * 60));
+                    var m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                    var s = Math.floor((diff % (1000 * 60)) / 1000);
+                    
+                    hoursSpan.innerText = h < 10 ? "0" + h : h;
+                    minutesSpan.innerText = m < 10 ? "0" + m : m;
+                    secondsSpan.innerText = s < 10 ? "0" + s : s;
+                }
+                
+                setInterval(updateTimer, 1000);
+                updateTimer();
+                
+                // Live stock reduction simulation
+                var stock = 12;
+                function reduceStock() {
+                    if (stock > 3) {
+                        stock -= Math.floor(Math.random() * 2);
+                        if (stockSpan) {
+                            stockSpan.innerText = stock;
+                        }
+                    }
+                }
+                setInterval(reduceStock, 25000);
+            })();
+
+            // Purchase Notification Popups
+            (function() {
+                var names = ["আরিফ", "সাকিব", "নাহিদ", "ফারহানা", "আজিম", "জাহিদুল", "সুমাইয়া", "ফয়সাল", "রায়হান", "তাসনিম"];
+                var cities = ["ঢাকা", "চট্টগ্রাম", "সিলেট", "রাজশাহী", "খুলনা", "রংপুর", "বরিশাল", "কুমিল্লা", "গাজীপুর", "ময়মনসিংহ"];
+                var times = ["১ মিনিট আগে", "৩ মিনিট আগে", "৪ মিনিট আগে", "৫ মিনিট আগে", "৭ মিনিট আগে"];
+                
+                var popup = document.getElementById("purchase-popup");
+                if (!popup) return;
+                
+                function showPopup() {
+                    var name = names[Math.floor(Math.random() * names.length)];
+                    var city = cities[Math.floor(Math.random() * cities.length)];
+                    var time = times[Math.floor(Math.random() * times.length)];
+                    
+                    document.getElementById("popup-name").innerText = name;
+                    document.getElementById("popup-city").innerText = city;
+                    document.getElementById("popup-time").innerText = time;
+                    
+                    popup.classList.remove("hidden", "translate-y-32", "opacity-0");
+                    popup.classList.add("translate-y-0", "opacity-100");
+                    
+                    setTimeout(function() {
+                        popup.classList.remove("translate-y-0", "opacity-100");
+                        popup.classList.add("translate-y-32", "opacity-0");
+                    }, 4500);
+                }
+                
+                setTimeout(showPopup, 3000);
+                setInterval(showPopup, 15000);
+            })();
+        </script>';
+
         $hotlineTitle = e($data['hotline_title'] ?? 'প্রয়োজনে কল করুন');
         $hotlinePhone = e($data['hotline_phone'] ?? '');
         
@@ -912,6 +1270,8 @@ class AdminLandingController extends Controller
                 </div>
             </div>
 
+            ' . $countdownTimerHtml . '
+
             <div class="flex flex-col sm:flex-row gap-4 max-w-lg">
                 <a href="#checkout-form" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xl font-bold px-8 py-4 rounded-full transition-all duration-300 shadow-lg text-center flex items-center justify-center gap-3 pulsing-btn">
                     <i class="fas fa-hand-pointer animate-pulse"></i>
@@ -970,6 +1330,8 @@ class AdminLandingController extends Controller
         <h2 class="text-3xl font-extrabold text-gray-900 text-center mb-12">গ্রাহকদের মূল্যবান মতামত (Reviews)</h2>
         ' . $reviewsHtml . '
     </section>
+
+    ' . $faqHtml . '
 
     <!-- COD Checkout Form -->
     <section class="bg-slate-900 text-white py-20 border-t border-slate-800" id="checkout-form">
@@ -1053,6 +1415,8 @@ class AdminLandingController extends Controller
 
     ' . $floatingWidget . '
 
+    ' . $purchasePopupHtml . '
+
     <script>
         document.getElementById("shipping_location").addEventListener("change", function() {
             var charge = parseInt(this.options[this.selectedIndex].getAttribute("data-charge"));
@@ -1063,6 +1427,7 @@ class AdminLandingController extends Controller
     </script>
 
     ' . $sliderJs . '
+    ' . $faqAndUrgencyJs . '
 
 </body>
 </html>';
