@@ -483,7 +483,7 @@ class AdminLandingController extends Controller
         </div>
 
         <div class="lg:col-span-5 flex flex-col justify-center">
-            ' . ($videoEmbedHtml ?: '<img src="' . $imageUrl . '" alt="' . $title . '" class="w-full rounded-2xl shadow-2xl border border-gray-100 hover:scale-[1.02] transition-all duration-300 object-cover aspect-square">') . '
+            ' . $sliderHtml . '
             
             <div class="grid grid-cols-3 gap-3 mt-6 text-center">
                 <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
@@ -507,7 +507,9 @@ class AdminLandingController extends Controller
         <div class="max-w-4xl mx-auto px-4">
             <h2 class="text-3xl font-extrabold text-gray-900 text-center mb-8">পণ্যটির বিস্তারিত বিবরণ</h2>
             
-            ' . ($videoEmbedHtml ? '<div' : '') . ' class="prose max-w-none text-gray-700 text-lg leading-relaxed">
+            ' . ($videoEmbedHtml ? '<div class="mb-12 max-w-3xl mx-auto">' . $videoEmbedHtml . '</div>' : '') . '
+
+            <div class="prose max-w-none text-gray-700 text-lg leading-relaxed">
                 ' . nl2br($description) . '
             </div>
         </div>
@@ -919,7 +921,7 @@ class AdminLandingController extends Controller
         </div>
 
         <div class="lg:col-span-5 flex flex-col justify-center">
-            ' . ($videoEmbedHtml ?: $sliderHtml) . '
+            ' . $sliderHtml . '
             
             <div class="grid grid-cols-3 gap-3 mt-6 text-center">
                 <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
@@ -943,7 +945,7 @@ class AdminLandingController extends Controller
         <div class="max-w-4xl mx-auto px-4">
             <h2 class="text-3xl font-extrabold text-gray-900 text-center mb-8">' . $whyUsTitle . '</h2>
             
-            ' . ($videoEmbedHtml ? '<div class="mb-12"><img src="' . $imageUrl . '" alt="' . $title . '" class="w-full max-w-xl mx-auto rounded-2xl shadow-lg border border-gray-100 object-cover aspect-video"></div>' : '') . '
+            ' . ($videoEmbedHtml ? '<div class="mb-12 max-w-3xl mx-auto">' . $videoEmbedHtml . '</div>' : '') . '
 
             <div class="prose max-w-none text-gray-700 text-lg leading-relaxed">
                 ' . $whyUsDescription . '
