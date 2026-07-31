@@ -302,17 +302,19 @@
                                         <h6 class="mb-0 text-white"><i class="las la-star"></i> @lang('Customer Review (Images Upload)')</h6>
                                     </div>
                                     <div class="card-body p-3">
-                                        <small class="text-muted d-block mb-3"><i>@lang('(Every image max size 2400 x 2400 px)')</i></small>
-                                        <div class="row row-cols-2 row-cols-sm-3 row-cols-md-6 g-3">
-                                            @for($i = 1; $i <= 6; $i++)
-                                                <div class="col text-center">
-                                                    <div class="border rounded p-2 bg-light">
-                                                        <label class="fw-bold mb-1 small d-block">@lang('Image') {{ $i }}</label>
-                                                        <img id="reviewImgPreview_{{ $i }}" src="https://placehold.co/100x100?text=Review+{{ $i }}" class="img-thumbnail d-block mx-auto mb-2" style="height: 80px; width: 80px; object-fit: cover;">
-                                                        <input type="file" name="review_image_{{ $i }}" id="reviewImgFile_{{ $i }}" class="form-control form-control-sm review-img-input" data-index="{{ $i }}" accept="image/*">
-                                                    </div>
-                                                </div>
-                                            @endfor
+                                        <div class="form-group mb-3">
+                                            <label class="fw-bold text-dark"><i class="las la-upload"></i> @lang('Upload Manually Review Images (Multiple)')</label>
+                                            <input type="file" name="manual_review_images[]" id="manualReviewImages" class="form-control form-control-sm" accept="image/*" multiple>
+                                            <small class="text-muted">@lang('You can select multiple local images to upload as customer review photos.')</small>
+                                        </div>
+
+                                        <!-- Active Review Images Container -->
+                                        <div class="form-group mb-3">
+                                            <label class="fw-bold text-success"><i class="las la-images"></i> @lang('Active Review Images')</label>
+                                            <small class="text-muted d-block mb-2">@lang('Click the trash icon to remove any review image.')</small>
+                                            <div class="row g-2 row-cols-3 row-cols-sm-6" id="activeReviewImagesList" style="min-height: 90px; padding: 10px; border: 2px dashed #ddd; border-radius: 8px; background-color: #fafafa;">
+                                                <!-- Review thumbnails will dynamically append here -->
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -513,6 +515,53 @@
             $('#imageUrl').val(firstImg || '');
         });
 
+        // Helper to add active review image
+        function addActiveReviewImage(imgUrl, imgPath) {
+            if (!imgUrl) return;
+            if (!imgPath) {
+                imgPath = imgUrl;
+            }
+            var exists = false;
+            $('#activeReviewImagesList input[name="existing_review_images[]"]').each(function() {
+                if ($(this).val() === imgPath) {
+                    exists = true;
+                }
+            });
+            if (exists) return;
+            
+            var card = `
+                <div class="col active-rev-card position-relative" style="max-width: 90px; margin-bottom: 10px;">
+                    <img src="${imgUrl}" class="img-thumbnail" style="width: 70px; height: 70px; object-fit: cover;">
+                    <input type="hidden" name="existing_review_images[]" value="${imgPath}">
+                    <button type="button" class="btn btn-sm btn-danger remove-active-rev-image-btn" style="position: absolute; top: -5px; right: -5px; padding: 2px 6px; border-radius: 50%; font-size: 10px; line-height: 1;"><i class="las la-times"></i></button>
+                </div>
+            `;
+            $('#activeReviewImagesList').append(card);
+        }
+
+        // Live manual upload review files previews
+        $('#manualReviewImages').on('change', function() {
+            if (this.files) {
+                for (var i = 0; i < this.files.length; i++) {
+                    var file = this.files[i];
+                    var localUrl = URL.createObjectURL(file);
+                    var card = `
+                        <div class="col active-rev-card position-relative" style="max-width: 90px; margin-bottom: 10px;">
+                            <img src="${localUrl}" class="img-thumbnail" style="width: 70px; height: 70px; object-fit: cover; border: 1px dashed #28a745;">
+                            <span class="badge bg-success" style="position: absolute; bottom: 0; left: 0; font-size: 8px; width: 100%; text-align: center; border-radius: 0 0 4px 4px;">Local</span>
+                        </div>
+                    `;
+                    $('#activeReviewImagesList').append(card);
+                }
+            }
+        });
+
+        // Remove active review image click handler
+        $(document).on('click', '.remove-active-rev-image-btn', function(e) {
+            e.preventDefault();
+            $(this).closest('.active-rev-card').remove();
+        });
+
         // Fetch product images when a product is selected
         $('#productId').on('change', function() {
             var productId = $(this).val();
@@ -593,9 +642,8 @@
             $('#activeProductImagesList').empty();
             $('#manualProductImages').val('');
             $('#customImageUrl').val('');
-            for(var i=1; i<=6; i++) {
-                $('#reviewImgPreview_' + i).attr('src', 'https://placehold.co/100x100?text=Review+'+i);
-            }
+            $('#activeReviewImagesList').empty();
+            $('#manualReviewImages').val('');
 
             // Reset WYSIWYG editor
             if (typeof nicEditors !== 'undefined') {
@@ -679,12 +727,16 @@
                 }
 
                 // Populate review images
-                for(var i=1; i<=6; i++) {
-                    var previewSrc = 'https://placehold.co/100x100?text=Review+'+i;
-                    if (settings.review_images && settings.review_images[i-1]) {
-                        previewSrc = settings.review_images[i-1];
-                    }
-                    $('#reviewImgPreview_' + i).attr('src', previewSrc);
+                $('#activeReviewImagesList').empty();
+                $('#manualReviewImages').val('');
+                if (settings.review_images && settings.review_images.length > 0) {
+                    settings.review_images.forEach(function(imgPath) {
+                        var imgUrl = imgPath;
+                        if (imgPath && imgPath.indexOf('http://') !== 0 && imgPath.indexOf('https://') !== 0) {
+                            imgUrl = "{{ asset('') }}" + imgPath;
+                        }
+                        addActiveReviewImage(imgUrl, imgPath);
+                    });
                 }
 
                 // Image inputs already loaded inside activeProductImagesList

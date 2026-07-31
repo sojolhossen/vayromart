@@ -122,22 +122,17 @@ class AdminLandingController extends Controller
             }
         }
 
-        // Upload review images (up to 6)
-        $reviewImages = [];
-        if ($request->id) {
-            $existingPage = ChatbotLandingPage::find($request->id);
-            if ($existingPage && isset($existingPage->design_settings['review_images'])) {
-                $reviewImages = $existingPage->design_settings['review_images'];
-            }
-        }
-        for ($i = 1; $i <= 6; $i++) {
-            $inputName = "review_image_" . $i;
-            if ($request->hasFile($inputName)) {
+        // Process review images
+        $reviewImages = $request->existing_review_images ?? [];
+
+        // Upload manual review images
+        if ($request->hasFile('manual_review_images')) {
+            foreach ($request->file('manual_review_images') as $file) {
                 try {
-                    $imgName = fileUploader($request->file($inputName), 'assets/images/landing');
-                    $reviewImages[$i - 1] = 'assets/images/landing/' . $imgName;
+                    $imgName = fileUploader($file, 'assets/images/landing');
+                    $reviewImages[] = 'assets/images/landing/' . $imgName;
                 } catch (\Exception $e) {
-                    \Log::error("Review Image {$i} Upload Error: " . $e->getMessage());
+                    \Log::error("Manual Review Image Upload Error: " . $e->getMessage());
                 }
             }
         }
