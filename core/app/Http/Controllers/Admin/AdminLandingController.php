@@ -1091,11 +1091,11 @@ class AdminLandingController extends Controller
         $bullets = array_filter(array_map('trim', explode("\n", $data['bullets'] ?? '')));
         $bulletsHtml = '';
         foreach ($bullets as $bullet) {
-            $bulletsHtml .= '<li class="flex items-start gap-3 text-gray-700 text-lg mb-3">
-                <span class="flex-shrink-0 w-6 h-6 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mt-1">
-                    <i class="fas fa-check text-sm"></i>
+            $bulletsHtml .= '<li class="flex items-center gap-3 text-slate-700 text-lg mb-4 hover:translate-x-1 transition-transform duration-200">
+                <span class="flex-shrink-0 w-6 h-6 rounded-full bg-primary-light text-primary flex items-center justify-center">
+                    <i class="fas fa-check text-xs"></i>
                 </span>
-                <span>' . e($bullet) . '</span>
+                <span class="font-semibold">' . e($bullet) . '</span>
             </li>';
         }
 
@@ -1245,24 +1245,24 @@ class AdminLandingController extends Controller
     <!-- Hero Section -->
     <section class="max-w-6xl mx-auto px-4 py-12 lg:py-20 grid lg:grid-cols-12 gap-12 items-center">
         <div class="lg:col-span-7">
-            <span class="inline-block bg-primary-light text-primary font-bold px-4 py-1.5 rounded-full text-sm mb-6 border border-primary-light">
+            <span class="inline-block bg-primary-light text-primary font-bold px-4 py-1.5 rounded-full text-sm mb-6 border border-primary-light animate-pulse">
                 ধামাকা ক্যাশ অন ডেলিভারি অফার!
             </span>
-            <h1 class="text-3xl lg:text-4xl font-extrabold text-gray-900 leading-tight mb-4">
+            <h1 class="text-4xl lg:text-5xl font-black text-slate-900 leading-tight mb-6 tracking-tight">
                 ' . $headline . '
             </h1>
-            <p class="text-lg text-gray-600 mb-8 font-medium">
+            <p class="text-lg text-slate-600 mb-8 font-medium leading-relaxed">
                 ' . $subtitle . '
             </p>
 
-            <ul class="mb-8">
+            <ul class="mb-8 space-y-1">
                 ' . $bulletsHtml . '
             </ul>
 
             <!-- Pricing block -->
-            <div class="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm max-w-md mb-8 flex items-center justify-between">
+            <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-[0_10px_30px_rgba(0,0,0,0.03)] max-w-md mb-8 flex items-center justify-between hover:shadow-md transition-shadow duration-300">
                 <div>
-                    <span class="text-gray-400 line-through text-lg font-medium block">পূর্বে মূল্য: ' . $regularPrice . ' BDT</span>
+                    <span class="text-slate-400 line-through text-lg font-medium block">পূর্বে মূল্য: ' . $regularPrice . ' BDT</span>
                     <span class="text-emerald-600 text-3xl font-black block mt-1">আজকের অফার: ' . $price . ' BDT</span>
                 </div>
                 <div class="bg-emerald-50 text-emerald-700 font-bold px-4 py-2.5 rounded-xl border border-emerald-100 text-center animate-bounce text-sm">
@@ -1273,7 +1273,7 @@ class AdminLandingController extends Controller
             ' . $countdownTimerHtml . '
 
             <div class="flex flex-col sm:flex-row gap-4 max-w-lg">
-                <a href="#checkout-form" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xl font-bold px-8 py-4 rounded-full transition-all duration-300 shadow-lg text-center flex items-center justify-center gap-3 pulsing-btn">
+                <a href="#checkout-form" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xl font-bold px-8 py-4.5 rounded-2xl transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-emerald-600/20 text-center flex items-center justify-center gap-3 pulsing-btn">
                     <i class="fas fa-hand-pointer animate-pulse"></i>
                     <span>অর্ডার করতে ফর্মটি পূরণ করুন</span>
                 </a>
@@ -1281,33 +1281,38 @@ class AdminLandingController extends Controller
         </div>
 
         <div class="lg:col-span-5 flex flex-col justify-center">
-            ' . $sliderHtml . '
+            <div class="relative w-full rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.06)] border border-slate-100 overflow-hidden aspect-square bg-white group mb-6 hover:scale-[1.01] transition-transform duration-300">
+                ' . $sliderHtml . '
+            </div>
             
             <div class="grid grid-cols-3 gap-3 mt-6 text-center">
-                <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-                    <i class="fas fa-truck-fast text-primary text-2xl mb-2"></i>
-                    <p class="text-xs font-bold text-gray-700">ফাস্ট হোম ডেলিভারি</p>
+                <div class="bg-white p-5 rounded-2xl border border-slate-100 hover:border-primary-light hover:shadow-md hover:-translate-y-1 transition-all duration-300 flex flex-col items-center">
+                    <div class="w-12 h-12 rounded-full bg-primary-light text-primary flex items-center justify-center text-xl mb-3"><i class="fas fa-truck-fast"></i></div>
+                    <p class="text-xs font-bold text-slate-700">ফাস্ট হোম ডেলিভারি</p>
                 </div>
-                <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-                    <i class="fas fa-hand-holding-dollar text-primary text-2xl mb-2"></i>
-                    <p class="text-xs font-bold text-gray-700">ক্যাশ অন ডেলিভারি</p>
+                <div class="bg-white p-5 rounded-2xl border border-slate-100 hover:border-primary-light hover:shadow-md hover:-translate-y-1 transition-all duration-300 flex flex-col items-center">
+                    <div class="w-12 h-12 rounded-full bg-primary-light text-primary flex items-center justify-center text-xl mb-3"><i class="fas fa-hand-holding-dollar"></i></div>
+                    <p class="text-xs font-bold text-slate-700">ক্যাশ অন ডেলিভারি</p>
                 </div>
-                <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-                    <i class="fas fa-shield-halved text-primary text-2xl mb-2"></i>
-                    <p class="text-xs font-bold text-gray-700">১০০% অরিজিনাল পণ্য</p>
+                <div class="bg-white p-5 rounded-2xl border border-slate-100 hover:border-primary-light hover:shadow-md hover:-translate-y-1 transition-all duration-300 flex flex-col items-center">
+                    <div class="w-12 h-12 rounded-full bg-primary-light text-primary flex items-center justify-center text-xl mb-3"><i class="fas fa-shield-halved"></i></div>
+                    <p class="text-xs font-bold text-slate-700">১০০% অরিজিনাল পণ্য</p>
                 </div>
             </div>
         </div>
     </section>
 
     <!-- Description & Video Embed -->
-    <section class="bg-white border-y border-gray-100 py-16">
+    <section class="bg-white border-y border-gray-100 py-16 lg:py-24">
         <div class="max-w-4xl mx-auto px-4">
-            <h2 class="text-3xl font-extrabold text-gray-900 text-center mb-8">' . $whyUsTitle . '</h2>
+            <div class="text-center mb-12">
+                <span class="text-primary font-bold tracking-wider text-xs uppercase bg-primary-light px-4 py-1.5 rounded-full border border-primary-light">Product Details</span>
+                <h2 class="text-3xl lg:text-4xl font-black text-slate-900 mt-4">' . $whyUsTitle . '</h2>
+            </div>
             
-            ' . ($videoEmbedHtml ? '<div class="mb-12 max-w-3xl mx-auto">' . $videoEmbedHtml . '</div>' : '') . '
+            ' . ($videoEmbedHtml ? '<div class="mb-16 max-w-3xl mx-auto rounded-3xl overflow-hidden shadow-2xl border border-slate-100 aspect-video">' . $videoEmbedHtml . '</div>' : '') . '
 
-            <div class="prose max-w-none text-gray-700 text-lg leading-relaxed">
+            <div class="prose max-w-none text-slate-700 text-lg leading-relaxed">
                 ' . $whyUsDescription . '
             </div>
         </div>
@@ -1326,8 +1331,11 @@ class AdminLandingController extends Controller
     ' : '') . '
 
     <!-- Social Proof / Reviews -->
-    <section class="max-w-6xl mx-auto px-4 py-16">
-        <h2 class="text-3xl font-extrabold text-gray-900 text-center mb-12">গ্রাহকদের মূল্যবান মতামত (Reviews)</h2>
+    <section class="max-w-6xl mx-auto px-4 py-16 lg:py-24">
+        <div class="text-center mb-16">
+            <span class="text-primary font-bold tracking-wider text-xs uppercase bg-primary-light px-4 py-1.5 rounded-full border border-primary-light">Reviews</span>
+            <h2 class="text-3xl lg:text-4xl font-black text-slate-900 mt-4">গ্রাহকদের মূল্যবান মতামত (Reviews)</h2>
+        </div>
         ' . $reviewsHtml . '
     </section>
 
@@ -1338,13 +1346,13 @@ class AdminLandingController extends Controller
         <div class="max-w-2xl mx-auto px-4">
             ' . $hotlineBlock . '
 
-            <div class="bg-white text-gray-900 p-8 lg:p-12 rounded-3xl shadow-2xl border border-gray-100">
+            <div class="bg-white text-slate-800 p-8 lg:p-12 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.1)] border border-slate-100">
                 <div class="text-center mb-8">
                     <span class="bg-emerald-50 text-emerald-700 font-bold px-4 py-1.5 rounded-full text-xs border border-emerald-100 tracking-wide uppercase">
                         ক্যাশ অন ডেলিভারি (হাতে পেয়ে মূল্য পরিশোধ)
                     </span>
                     <h3 class="text-2xl lg:text-3xl font-black mt-4 mb-2">অর্ডার করতে ফর্মটি পূরণ করুন</h3>
-                    <p class="text-gray-500 font-medium">ডেলিভারি ম্যানের কাছ থেকে প্রোডাক্ট বুঝে পেয়ে টাকা পরিশোধ করুন।</p>
+                    <p class="text-slate-500 font-medium">ডেলিভারি ম্যানের কাছ থেকে প্রোডাক্ট বুঝে পেয়ে টাকা পরিশোধ করুন।</p>
                 </div>
 
                 <form action="' . $checkoutUrl . '" method="POST" class="space-y-6">
@@ -1353,46 +1361,47 @@ class AdminLandingController extends Controller
                     <input type="hidden" name="landing_page_id" value="' . ($data['id'] ?? '') . '">
 
                     <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-2">আপনার নাম <span class="text-rose-500">*</span></label>
+                        <label class="block text-sm font-bold text-slate-700 mb-2">আপনার নাম <span class="text-rose-500">*</span></label>
                         <div class="relative">
-                            <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-gray-400"><i class="fas fa-user"></i></span>
-                            <input type="text" name="name" required placeholder="আপনার সম্পূর্ণ নাম লিখুন" class="w-full pl-11 pr-4 py-3.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all duration-200">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400"><i class="fas fa-user"></i></span>
+                            <input type="text" name="name" required placeholder="আপনার সম্পূর্ণ নাম লিখুন" class="w-full pl-12 pr-4 py-4 rounded-2xl border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary-light outline-none transition-all duration-200 text-slate-800 bg-slate-50/50 hover:bg-white font-medium shadow-sm">
                         </div>
                     </div>
 
                     <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-2">মোবাইল নম্বর <span class="text-rose-500">*</span></label>
+                        <label class="block text-sm font-bold text-slate-700 mb-2">মোবাইল নম্বর <span class="text-rose-500">*</span></label>
                         <div class="relative">
-                            <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-gray-400"><i class="fas fa-phone"></i></span>
-                            <input type="tel" name="mobile" required placeholder="১১ ডিজিটের মোবাইল নম্বর লিখুন" class="w-full pl-11 pr-4 py-3.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all duration-200">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400"><i class="fas fa-phone"></i></span>
+                            <input type="tel" name="mobile" required placeholder="১১ ডিজিটের মোবাইল নম্বর লিখুন" class="w-full pl-12 pr-4 py-4 rounded-2xl border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary-light outline-none transition-all duration-200 text-slate-800 bg-slate-50/50 hover:bg-white font-medium shadow-sm">
                         </div>
                     </div>
 
                     <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-2">ডেলিভারি এলাকা <span class="text-rose-500">*</span></label>
+                        <label class="block text-sm font-bold text-slate-700 mb-2">ডেলিভারি এলাকা <span class="text-rose-500">*</span></label>
                         <div class="relative">
-                            <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-gray-400"><i class="fas fa-truck"></i></span>
-                            <select name="shipping_location" id="shipping_location" required class="w-full pl-11 pr-4 py-3.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all duration-200">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400"><i class="fas fa-truck"></i></span>
+                            <select name="shipping_location" id="shipping_location" required class="w-full pl-12 pr-10 py-4 rounded-2xl border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary-light outline-none transition-all duration-200 text-slate-800 bg-slate-50/50 hover:bg-white font-medium appearance-none shadow-sm">
                                 <option value="inside" data-charge="' . $insideCharge . '">ঢাকা সিটির ভেতরে (' . ($isFreeDelivery ? 'ফ্রি' : $insideCharge . ' BDT') . ')</option>
                                 <option value="outside" data-charge="' . $outsideCharge . '">ঢাকা সিটির বাইরে (' . ($isFreeDelivery ? 'ফ্রি' : $outsideCharge . ' BDT') . ')</option>
                             </select>
+                            <span class="absolute inset-y-0 right-0 flex items-center pr-4 text-slate-400 pointer-events-none"><i class="fas fa-chevron-down text-xs"></i></span>
                         </div>
                     </div>
 
                     <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-2">ডেলিভারি ঠিকানা <span class="text-rose-500">*</span></label>
+                        <label class="block text-sm font-bold text-slate-700 mb-2">ডেলিভারি ঠিকানা <span class="text-rose-500">*</span></label>
                         <div class="relative">
-                            <span class="absolute top-4 left-0 flex items-start pl-4 text-gray-400"><i class="fas fa-map-marker-alt mt-1"></i></span>
-                            <textarea name="address" required placeholder="আপনার জেলা, থানা ও গ্রামের নাম বা বাসা নম্বর লিখুন" class="w-full pl-11 pr-4 py-3.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all duration-200" rows="3"></textarea>
+                            <span class="absolute top-4 left-0 flex items-start pl-4 text-slate-400"><i class="fas fa-map-marker-alt mt-1"></i></span>
+                            <textarea name="address" required placeholder="আপনার জেলা, থানা ও গ্রামের নাম বা বাসা নম্বর লিখুন" class="w-full pl-12 pr-4 py-4 rounded-2xl border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary-light outline-none transition-all duration-200 text-slate-800 bg-slate-50/50 hover:bg-white font-medium shadow-sm" rows="3"></textarea>
                         </div>
                     </div>
 
-                    <div class="bg-gray-50 p-6 rounded-2xl border border-gray-100 flex items-center justify-between text-base">
-                        <span class="font-bold text-gray-600">ডেলিভারি চার্জ: <span id="delivery_charge_val">' . ($isFreeDelivery ? 'ফ্রি' : $insideCharge . ' BDT') . '</span></span>
-                        <span class="font-black text-indigo-600 text-xl">সর্বমোট বিল: <span id="total_bill_val">' . ($price + $insideCharge) . ' BDT</span></span>
+                    <div class="bg-slate-50 p-6 rounded-2xl border border-slate-100 flex items-center justify-between text-base">
+                        <span class="font-bold text-slate-600">ডেলিভারি চার্জ: <span id="delivery_charge_val" class="text-primary font-extrabold">' . ($isFreeDelivery ? 'ফ্রি' : $insideCharge . ' BDT') . '</span></span>
+                        <span class="font-black text-slate-800 text-xl">সর্বমোট বিল: <span id="total_bill_val" class="text-emerald-600 font-black">' . ($price + $insideCharge) . ' BDT</span></span>
                     </div>
 
-                    <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-lg py-4 rounded-xl shadow-lg transition-all duration-300 flex items-center justify-center gap-2 pulsing-btn">
+                    <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xl py-4.5 rounded-2xl shadow-lg hover:shadow-xl hover:shadow-emerald-600/20 active:scale-95 transition-all duration-300 flex items-center justify-center gap-3 pulsing-btn">
                         <i class="fas fa-circle-check"></i>
                         <span>অর্ডার নিশ্চিত করুন</span>
                     </button>
