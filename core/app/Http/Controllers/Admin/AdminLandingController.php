@@ -569,7 +569,7 @@ class AdminLandingController extends Controller
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>' . $title . '</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -681,12 +681,12 @@ class AdminLandingController extends Controller
 
     <!-- Description & Video Embed -->
     <section class="bg-white border-y border-gray-100 py-16">
-        <div class="max-w-4xl mx-auto px-4">
+        <div class="max-w-6xl mx-auto px-6">
             <h2 class="text-3xl font-extrabold text-gray-900 text-center mb-8">পণ্যটির বিস্তারিত বিবরণ</h2>
             
             ' . ($videoEmbedHtml ? '<div class="mb-12 max-w-3xl mx-auto">' . $videoEmbedHtml . '</div>' : '') . '
 
-            <div class="prose max-w-none text-gray-700 text-lg leading-relaxed">
+            <div class="prose max-w-none text-gray-800 text-xl font-medium leading-relaxed">
                 ' . nl2br($description) . '
             </div>
         </div>
@@ -1190,7 +1190,7 @@ class AdminLandingController extends Controller
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>' . $title . '</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -1304,7 +1304,7 @@ class AdminLandingController extends Controller
 
     <!-- Description & Video Embed -->
     <section class="bg-white border-y border-gray-100 py-16 lg:py-24">
-        <div class="max-w-4xl mx-auto px-4">
+        <div class="max-w-6xl mx-auto px-6">
             <div class="text-center mb-12">
                 <span class="text-primary font-bold tracking-wider text-xs uppercase bg-primary-light px-4 py-1.5 rounded-full border border-primary-light">Product Details</span>
                 <h2 class="text-3xl lg:text-4xl font-black text-slate-900 mt-4">' . $whyUsTitle . '</h2>
@@ -1312,7 +1312,7 @@ class AdminLandingController extends Controller
             
             ' . ($videoEmbedHtml ? '<div class="mb-16 max-w-3xl mx-auto rounded-3xl overflow-hidden shadow-2xl border border-slate-100 aspect-video">' . $videoEmbedHtml . '</div>' : '') . '
 
-            <div class="prose max-w-none text-slate-700 text-lg leading-relaxed">
+            <div class="prose max-w-none text-slate-800 text-xl font-medium leading-relaxed">
                 ' . $whyUsDescription . '
             </div>
         </div>
