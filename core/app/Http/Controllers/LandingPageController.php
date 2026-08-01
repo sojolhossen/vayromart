@@ -49,6 +49,24 @@ class LandingPageController extends Controller
         $quantity = 1; // Default quantity is 1 for direct landing page purchase
         $variantId = 0; // Default variant is 0
 
+        // Resolve product variant
+        if ($product->product_type == 2) {
+            if (!$request->variant || !is_array($request->variant)) {
+                $notify[] = ['error', 'অনুগ্রহ করে পণ্যটির সাইজ বা কালার সিলেক্ট করুন।'];
+                return back()->withNotify($notify)->withInput();
+            }
+            $attributeValuesJson = prepareAttributeValues($request->variant);
+            $variant = ProductVariant::where('product_id', $product->id)
+                ->published()
+                ->where('attribute_values', $attributeValuesJson)
+                ->first();
+            if (!$variant) {
+                $notify[] = ['error', 'দুঃখিত, এই ভ্যারিয়েন্টটি এই মুহূর্তে উপলব্ধ নেই।'];
+                return back()->withNotify($notify)->withInput();
+            }
+            $variantId = $variant->id;
+        }
+
         // Check stock
         if ($product->track_inventory) {
             $stockQuantity = $product->inStock(null);

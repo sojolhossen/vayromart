@@ -529,6 +529,32 @@ class AdminLandingController extends Controller
         $insideCharge = $isFreeDelivery ? 0 : 80;
         $outsideCharge = $isFreeDelivery ? 0 : 130;
 
+        // Variants HTML for Template 1
+        $variantsHtml = '';
+        if ($product->product_type == 2 && $product->attributes->count() > 0) {
+            $variantsHtml .= '<div class="space-y-4 mb-6 border-b border-gray-100 pb-6 text-left text-gray-900">';
+            $variantsHtml .= '<h4 class="text-sm font-bold text-gray-800 mb-3 flex items-center gap-2">
+                <i class="fas fa-tags text-primary"></i>
+                <span>পছন্দের ভ্যারিয়েন্ট সিলেক্ট করুন:</span>
+            </h4>';
+            foreach ($product->attributes as $attribute) {
+                $attributeValues = $product->attributeValues->where('attribute_id', $attribute->id);
+                $variantsHtml .= '<div class="form-group mb-4">
+                    <label class="block text-xs font-bold text-gray-600 mb-2">' . e($attribute->name) . ' <span class="text-rose-500">*</span></label>
+                    <div class="relative">
+                        <select name="variant[' . $attribute->id . ']" required class="w-full pl-4 pr-10 py-3.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all duration-200 text-gray-800 bg-white font-medium appearance-none shadow-sm text-sm">
+                            <option value="">-- ' . e($attribute->name) . ' সিলেক্ট করুন --</option>';
+                foreach ($attributeValues as $attributeValue) {
+                    $variantsHtml .= '<option value="' . $attributeValue->id . '">' . e($attributeValue->value) . '</option>';
+                }
+                $variantsHtml .= '</select>
+                        <span class="absolute inset-y-0 right-0 flex items-center pr-4 text-slate-400 pointer-events-none"><i class="fas fa-chevron-down text-xs"></i></span>
+                    </div>
+                </div>';
+            }
+            $variantsHtml .= '</div>';
+        }
+
         // Reviews HTML
         $reviewsHtml = '';
         $reviewers = [
@@ -713,6 +739,8 @@ class AdminLandingController extends Controller
                     <input type="hidden" name="_token" value="' . $csrfToken . '">
                     <input type="hidden" name="product_id" value="' . $product->id . '">
                     <input type="hidden" name="landing_page_id" value="' . ($data['id'] ?? '') . '">
+
+                    ' . $variantsHtml . '
 
                     <div>
                         <label class="block text-sm font-bold text-gray-700 mb-2">আপনার নাম <span class="text-rose-500">*</span></label>
@@ -1120,6 +1148,32 @@ class AdminLandingController extends Controller
         $insideCharge = $isFreeDelivery ? 0 : 80;
         $outsideCharge = $isFreeDelivery ? 0 : 130;
 
+        // Variants HTML for Template 2
+        $variantsHtml = '';
+        if ($product->product_type == 2 && $product->attributes->count() > 0) {
+            $variantsHtml .= '<div class="space-y-4 mb-6 border-b border-slate-100 pb-6 text-left">';
+            $variantsHtml .= '<h4 class="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
+                <i class="fas fa-tags text-primary"></i>
+                <span>পছন্দের ভ্যারিয়েন্ট সিলেক্ট করুন:</span>
+            </h4>';
+            foreach ($product->attributes as $attribute) {
+                $attributeValues = $product->attributeValues->where('attribute_id', $attribute->id);
+                $variantsHtml .= '<div class="form-group mb-4">
+                    <label class="block text-xs font-bold text-slate-600 mb-2">' . e($attribute->name) . ' <span class="text-rose-500">*</span></label>
+                    <div class="relative">
+                        <select name="variant[' . $attribute->id . ']" required class="w-full pl-4 pr-10 py-3.5 rounded-xl border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary-light outline-none transition-all duration-200 text-slate-800 bg-slate-50/50 hover:bg-white font-medium appearance-none shadow-sm text-sm">
+                            <option value="">-- ' . e($attribute->name) . ' সিলেক্ট করুন --</option>';
+                foreach ($attributeValues as $attributeValue) {
+                    $variantsHtml .= '<option value="' . $attributeValue->id . '">' . e($attributeValue->value) . '</option>';
+                }
+                $variantsHtml .= '</select>
+                        <span class="absolute inset-y-0 right-0 flex items-center pr-4 text-slate-400 pointer-events-none"><i class="fas fa-chevron-down text-xs"></i></span>
+                    </div>
+                </div>';
+            }
+            $variantsHtml .= '</div>';
+        }
+
         // Review images
         $reviewsHtml = '';
         if (!empty($data['review_images'])) {
@@ -1354,6 +1408,8 @@ class AdminLandingController extends Controller
                     <input type="hidden" name="_token" value="' . $csrfToken . '">
                     <input type="hidden" name="product_id" value="' . $product->id . '">
                     <input type="hidden" name="landing_page_id" value="' . ($data['id'] ?? '') . '">
+
+                    ' . $variantsHtml . '
 
                     <div>
                         <label class="block text-sm font-bold text-slate-700 mb-2">আপনার নাম <span class="text-rose-500">*</span></label>
