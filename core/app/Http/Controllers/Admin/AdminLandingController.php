@@ -625,6 +625,18 @@ class AdminLandingController extends Controller
             border-color: rgba(' . hexdec(substr($baseColor, 1, 2)) . ', ' . hexdec(substr($baseColor, 3, 2)) . ', ' . hexdec(substr($baseColor, 5, 2)) . ', 0.2) !important;
         }
     </style>
+    ' . loadExtension('facebook-pixel') . '
+    <script>
+        if (typeof fbq !== "undefined") {
+            fbq("track", "ViewContent", {
+                content_name: "' . e($title) . '",
+                content_ids: ["' . $product->id . '"],
+                content_type: "product",
+                value: ' . $price . ',
+                currency: "BDT"
+            });
+        }
+    </script>
 </head>
 <body class="bg-gray-50 text-gray-900 scroll-smooth">
 
@@ -1286,6 +1298,18 @@ class AdminLandingController extends Controller
             border-color: rgba(' . hexdec(substr($baseColor, 1, 2)) . ', ' . hexdec(substr($baseColor, 3, 2)) . ', ' . hexdec(substr($baseColor, 5, 2)) . ', 0.2) !important;
         }
     </style>
+    ' . loadExtension('facebook-pixel') . '
+    <script>
+        if (typeof fbq !== "undefined") {
+            fbq("track", "ViewContent", {
+                content_name: "' . e($title) . '",
+                content_ids: ["' . $product->id . '"],
+                content_type: "product",
+                value: ' . $price . ',
+                currency: "BDT"
+            });
+        }
+    </script>
 </head>
 <body class="bg-slate-50 text-slate-800 scroll-smooth">
 

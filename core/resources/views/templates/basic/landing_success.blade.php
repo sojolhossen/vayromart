@@ -13,6 +13,18 @@
             font-family: 'Inter', 'Poppins', sans-serif;
         }
     </style>
+    @php echo loadExtension('facebook-pixel') @endphp
+    <script>
+        if (typeof fbq !== 'undefined') {
+            fbq('track', 'Purchase', {
+                value: {{ $totalAmount }},
+                currency: 'BDT',
+                content_ids: ['{{ $product->id }}'],
+                content_type: 'product',
+                num_items: 1
+            });
+        }
+    </script>
 </head>
 <body class="bg-gray-50 flex items-center justify-center min-h-screen p-4">
 

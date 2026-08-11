@@ -118,6 +118,28 @@ class LandingPageController extends Controller
         $content = str_replace('<div class="lg:col-span-7">', '<div class="lg:col-span-7 order-2 lg:order-1">', $content);
         $content = str_replace('<div class="lg:col-span-5 flex flex-col justify-center">', '<div class="lg:col-span-5 order-1 lg:order-2 flex flex-col justify-center">', $content);
 
+        // 7. Dynamically inject Meta Pixel and ViewContent tracking event for existing pages
+        if (strpos($content, 'fbevents.js') === false) {
+            $pixelCode = loadExtension('facebook-pixel');
+            $viewContentScript = '';
+            if ($landingPage->product) {
+                $productPrice = !empty($landingPage->design_settings['custom_price']) ? floatval($landingPage->design_settings['custom_price']) : ($landingPage->product->sale_price ?: $landingPage->product->regular_price);
+                $viewContentScript = '
+    <script>
+        if (typeof fbq !== "undefined") {
+            fbq("track", "ViewContent", {
+                content_name: ' . json_encode($landingPage->product->name) . ',
+                content_ids: ["' . $landingPage->product->id . '"],
+                content_type: "product",
+                value: ' . $productPrice . ',
+                currency: "BDT"
+            });
+        }
+    </script>';
+            }
+            $content = str_replace('</head>', $pixelCode . "\n" . $viewContentScript . "\n</head>", $content);
+        }
+
         return response($content)
             ->header('Content-Type', 'text/html');
     }
