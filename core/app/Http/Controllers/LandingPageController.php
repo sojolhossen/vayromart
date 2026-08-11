@@ -175,6 +175,21 @@ class LandingPageController extends Controller
             );
         }
 
+        // 9. Dynamically resolve YouTube video embeds (including YouTube Shorts URLs)
+        $videoUrl = $landingPage->design_settings['video_url'] ?? '';
+        if ($videoUrl) {
+            if (preg_match('/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?|shorts)\/|.*[?&]v=)|youtu\.be\/)([^\"&?\/ ]{11})/i', $videoUrl, $match)) {
+                $embedCode = $match[1];
+                $embedIframe = '<iframe class="w-full aspect-video rounded-2xl shadow-lg" src="https://www.youtube.com/embed/' . $embedCode . '" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>';
+                
+                if (strpos($content, 'src="https://www.youtube.com/embed/' . $embedCode . '"') === false) {
+                    if (preg_match('/<iframe[^>]*src="https:\/\/www\.youtube\.com\/embed\/[^"]*"[^>]*><\/iframe>/i', $content)) {
+                        $content = preg_replace('/<iframe[^>]*src="https:\/\/www\.youtube\.com\/embed\/[^"]*"[^>]*><\/iframe>/i', $embedIframe, $content);
+                    }
+                }
+            }
+        }
+
         return response($content)
             ->header('Content-Type', 'text/html');
     }
