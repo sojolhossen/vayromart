@@ -195,20 +195,25 @@ class LandingPageController extends Controller
             return 'src="' . $m[1] . '?autoplay=1&mute=1&enablejsapi=1&playsinline=1"';
         }, $content);
 
-        // 10. Auto unmute YouTube video sound on first user interaction (click, touch, scroll)
+        // 10. Auto unmute YouTube video sound on scroll, touch, or click
         $unmuteScript = '
     <script>
         (function() {
+            var hasUnmuted = false;
             function unmuteVideos() {
+                if (hasUnmuted) return;
                 var iframes = document.querySelectorAll("iframe[src*=\'youtube.com/embed\']");
                 iframes.forEach(function(iframe) {
                     if (iframe.contentWindow) {
                         iframe.contentWindow.postMessage(\'{"event":"command","func":"unMute","args":""}\', \'*\');
+                        iframe.contentWindow.postMessage(\'{"event":"command","func":"setVolume","args":[100]}\', \'*\');
                     }
                 });
+                hasUnmuted = true;
             }
-            ["click", "touchstart", "scroll", "keydown"].forEach(function(evt) {
-                window.addEventListener(evt, unmuteVideos, { once: true, capture: true });
+            ["scroll", "touchmove", "touchstart", "wheel", "click", "keydown", "mousemove"].forEach(function(evt) {
+                window.addEventListener(evt, unmuteVideos, { capture: true, passive: true });
+                document.addEventListener(evt, unmuteVideos, { capture: true, passive: true });
             });
         })();
     </script>';
