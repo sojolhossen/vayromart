@@ -175,20 +175,25 @@ class LandingPageController extends Controller
             );
         }
 
-        // 9. Dynamically resolve YouTube video embeds (including YouTube Shorts URLs)
+        // 9. Dynamically resolve YouTube video embeds (including YouTube Shorts URLs & Autoplay)
         $videoUrl = $landingPage->design_settings['video_url'] ?? '';
         if ($videoUrl) {
             if (preg_match('/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?|shorts)\/|.*[?&]v=)|youtu\.be\/)([^\"&?\/ ]{11})/i', $videoUrl, $match)) {
                 $embedCode = $match[1];
-                $embedIframe = '<iframe class="w-full aspect-video rounded-2xl shadow-lg" src="https://www.youtube.com/embed/' . $embedCode . '" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>';
+                $embedIframe = '<iframe class="w-full aspect-video rounded-2xl shadow-lg" src="https://www.youtube.com/embed/' . $embedCode . '?autoplay=1&mute=1&enablejsapi=1&playsinline=1" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>';
                 
-                if (strpos($content, 'src="https://www.youtube.com/embed/' . $embedCode . '"') === false) {
+                if (strpos($content, 'src="https://www.youtube.com/embed/' . $embedCode) === false) {
                     if (preg_match('/<iframe[^>]*src="https:\/\/www\.youtube\.com\/embed\/[^"]*"[^>]*><\/iframe>/i', $content)) {
                         $content = preg_replace('/<iframe[^>]*src="https:\/\/www\.youtube\.com\/embed\/[^"]*"[^>]*><\/iframe>/i', $embedIframe, $content);
                     }
                 }
             }
         }
+
+        // Dynamically append autoplay=1&mute=1&enablejsapi=1&playsinline=1 to any existing YouTube embed iframe
+        $content = preg_replace_callback('/src=["\'](https:\/\/www\.youtube\.com\/embed\/[a-zA-Z0-9_-]{11})(?:\?[^"\']*)?["\']/i', function($m) {
+            return 'src="' . $m[1] . '?autoplay=1&mute=1&enablejsapi=1&playsinline=1"';
+        }, $content);
 
         return response($content)
             ->header('Content-Type', 'text/html');
