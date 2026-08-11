@@ -22,7 +22,71 @@ class LandingPageController extends Controller
     {
         $landingPage = ChatbotLandingPage::where('slug', $slug)->firstOrFail();
         
-        return response($landingPage->content)
+        $content = $landingPage->content;
+
+        // 1. Dynamically replace CSRF token to prevent "Session Expired" (419 error)
+        $content = preg_replace_callback('/<input\s+[^>]*name=["\']_token["\'][^>]*>/i', function($match) {
+            return '<input type="hidden" name="_token" value="' . csrf_token() . '">';
+        }, $content);
+        
+        $content = preg_replace_callback('/<input\s+[^>]*value=["\'][^"\']*["\'][^>]*name=["\']_token["\'][^>]*>/i', function($match) {
+            return '<input type="hidden" name="_token" value="' . csrf_token() . '">';
+        }, $content);
+
+        // Dynamically replace color codes with human-readable color names in dropdowns for existing pages
+        if ($landingPage->product_id) {
+            $product = Product::with('attributeValues')->find($landingPage->product_id);
+            if ($product && $product->attributeValues) {
+                foreach ($product->attributeValues as $attrVal) {
+                    $attrName = !empty($attrVal->name) ? $attrVal->name : $attrVal->value;
+                    $content = preg_replace(
+                        '/<option\s+value=["\']' . $attrVal->id . '["\'][^>]*>.*?<\/option>/i',
+                        '<option value="' . $attrVal->id . '">' . e($attrName) . '</option>',
+                        $content
+                    );
+                }
+            }
+        }
+
+        // 2. Replace the old scaling & blinking pulse animation with a modern glowing shadow pulse
+        $content = preg_replace('/@keyframes pulse-ring\s*\{[^}]*\}/is', '@keyframes pulse-glow {
+            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.6); }
+            70% { box-shadow: 0 0 0 15px rgba(16, 185, 129, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }', $content);
+
+        $content = preg_replace('/\.pulsing-btn\s*\{[^}]*\}/is', '.pulsing-btn {
+            animation: pulse-glow 2s infinite;
+        }', $content);
+
+        // 3. Dynamically replace old button styles with the premium green gradient styling
+        // Order form buttons
+        $content = str_replace(
+            'class="bg-emerald-600 hover:bg-emerald-700 text-white text-xl font-bold px-8 py-4 rounded-full transition-all duration-300 shadow-lg text-center flex items-center justify-center gap-3 pulsing-btn"',
+            'class="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 hover:scale-[1.02] active:scale-[0.98] text-white text-xl font-bold px-8 py-4 rounded-full transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-emerald-500/20 text-center flex items-center justify-center gap-3 pulsing-btn"',
+            $content
+        );
+
+        $content = str_replace(
+            'class="bg-emerald-600 hover:bg-emerald-700 text-white text-xl font-bold px-8 py-4.5 rounded-2xl transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-emerald-600/20 text-center flex items-center justify-center gap-3 pulsing-btn"',
+            'class="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 hover:scale-[1.02] active:scale-[0.98] text-white text-xl font-bold px-8 py-4.5 rounded-2xl transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-emerald-600/20 text-center flex items-center justify-center gap-3 pulsing-btn"',
+            $content
+        );
+
+        // Confirm Order buttons
+        $content = str_replace(
+            'class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-lg py-4 rounded-xl shadow-lg transition-all duration-300 flex items-center justify-center gap-2 pulsing-btn"',
+            'class="w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 hover:scale-[1.01] active:scale-[0.99] text-white font-bold text-xl py-4 rounded-xl shadow-lg hover:shadow-xl hover:shadow-emerald-500/20 transition-all duration-300 flex items-center justify-center gap-2 pulsing-btn"',
+            $content
+        );
+
+        $content = str_replace(
+            'class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xl py-4.5 rounded-2xl shadow-lg hover:shadow-xl hover:shadow-emerald-600/20 active:scale-95 transition-all duration-300 flex items-center justify-center gap-3 pulsing-btn"',
+            'class="w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 hover:scale-[1.01] active:scale-[0.99] text-white font-black text-xl py-4.5 rounded-2xl shadow-lg hover:shadow-xl hover:shadow-emerald-500/20 transition-all duration-300 flex items-center justify-center gap-3 pulsing-btn"',
+            $content
+        );
+
+        return response($content)
             ->header('Content-Type', 'text/html');
     }
 

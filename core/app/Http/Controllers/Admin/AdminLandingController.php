@@ -545,7 +545,8 @@ class AdminLandingController extends Controller
                         <select name="variant[' . $attribute->id . ']" required class="w-full pl-4 pr-10 py-3.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all duration-200 text-gray-800 bg-white font-medium appearance-none shadow-sm text-sm">
                             <option value="">-- ' . e($attribute->name) . ' সিলেক্ট করুন --</option>';
                 foreach ($attributeValues as $attributeValue) {
-                    $variantsHtml .= '<option value="' . $attributeValue->id . '">' . e($attributeValue->value) . '</option>';
+                    $attrValName = !empty($attributeValue->name) ? $attributeValue->name : $attributeValue->value;
+                    $variantsHtml .= '<option value="' . $attributeValue->id . '">' . e($attrValName) . '</option>';
                 }
                 $variantsHtml .= '</select>
                         <span class="absolute inset-y-0 right-0 flex items-center pr-4 text-slate-400 pointer-events-none"><i class="fas fa-chevron-down text-xs"></i></span>
@@ -600,14 +601,13 @@ class AdminLandingController extends Controller
         body {
             font-family: \'Hind Siliguri\', \'Inter\', sans-serif;
         }
-        @keyframes pulse-ring {
-            0% { transform: scale(0.95); opacity: 0.5; }
-            50% { transform: scale(1.05); opacity: 0.8; }
-            100% { transform: scale(0.95); opacity: 0.5; }
+        @keyframes pulse-glow {
+            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.6); }
+            70% { box-shadow: 0 0 0 15px rgba(16, 185, 129, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
         }
         .pulsing-btn {
-            animation: pulse-ring 2s infinite ease-in-out;
-            background-color: var(--primary-color) !important;
+            animation: pulse-glow 2s infinite;
         }
         .bg-primary {
             background-color: var(--primary-color) !important;
@@ -673,7 +673,7 @@ class AdminLandingController extends Controller
             ' . $countdownTimerHtml . '
 
             <div class="flex flex-col sm:flex-row gap-4 max-w-lg">
-                <a href="#checkout-form" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xl font-bold px-8 py-4 rounded-full transition-all duration-300 shadow-lg text-center flex items-center justify-center gap-3 pulsing-btn">
+                <a href="#checkout-form" class="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 hover:scale-[1.02] active:scale-[0.98] text-white text-xl font-bold px-8 py-4 rounded-full transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-emerald-500/20 text-center flex items-center justify-center gap-3 pulsing-btn">
                     <i class="fas fa-hand-pointer"></i>
                     <span>অর্ডার করতে ফর্মটি পূরণ করুন</span>
                 </a>
@@ -782,7 +782,7 @@ class AdminLandingController extends Controller
                         <span class="font-black text-indigo-600 text-xl">সর্বমোট বিল: <span id="total_bill_val">' . ($price + $insideCharge) . ' BDT</span></span>
                     </div>
 
-                    <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-lg py-4 rounded-xl shadow-lg transition-all duration-300 flex items-center justify-center gap-2 pulsing-btn">
+                    <button type="submit" class="w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 hover:scale-[1.01] active:scale-[0.99] text-white font-bold text-xl py-4 rounded-xl shadow-lg hover:shadow-xl hover:shadow-emerald-500/20 transition-all duration-300 flex items-center justify-center gap-2 pulsing-btn">
                         <i class="fas fa-circle-check"></i>
                         <span>অর্ডার নিশ্চিত করুন</span>
                     </button>
@@ -1164,7 +1164,8 @@ class AdminLandingController extends Controller
                         <select name="variant[' . $attribute->id . ']" required class="w-full pl-4 pr-10 py-3.5 rounded-xl border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary-light outline-none transition-all duration-200 text-slate-800 bg-slate-50/50 hover:bg-white font-medium appearance-none shadow-sm text-sm">
                             <option value="">-- ' . e($attribute->name) . ' সিলেক্ট করুন --</option>';
                 foreach ($attributeValues as $attributeValue) {
-                    $variantsHtml .= '<option value="' . $attributeValue->id . '">' . e($attributeValue->value) . '</option>';
+                    $attrValName = !empty($attributeValue->name) ? $attributeValue->name : $attributeValue->value;
+                    $variantsHtml .= '<option value="' . $attributeValue->id . '">' . e($attrValName) . '</option>';
                 }
                 $variantsHtml .= '</select>
                         <span class="absolute inset-y-0 right-0 flex items-center pr-4 text-slate-400 pointer-events-none"><i class="fas fa-chevron-down text-xs"></i></span>
@@ -1249,14 +1250,13 @@ class AdminLandingController extends Controller
         body {
             font-family: \'Noto Sans Bengali\', \'Inter\', sans-serif;
         }
-        @keyframes pulse-ring {
-            0% { transform: scale(0.95); opacity: 0.5; }
-            50% { transform: scale(1.05); opacity: 0.8; }
-            100% { transform: scale(0.95); opacity: 0.5; }
+        @keyframes pulse-glow {
+            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.6); }
+            70% { box-shadow: 0 0 0 15px rgba(16, 185, 129, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
         }
         .pulsing-btn {
-            animation: pulse-ring 2s infinite ease-in-out;
-            background-color: var(--primary-color) !important;
+            animation: pulse-glow 2s infinite;
         }
         .bg-primary {
             background-color: var(--primary-color) !important;
@@ -1322,8 +1322,8 @@ class AdminLandingController extends Controller
             ' . $countdownTimerHtml . '
 
             <div class="flex flex-col sm:flex-row gap-4 max-w-lg">
-                <a href="#checkout-form" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xl font-bold px-8 py-4.5 rounded-2xl transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-emerald-600/20 text-center flex items-center justify-center gap-3 pulsing-btn">
-                    <i class="fas fa-hand-pointer animate-pulse"></i>
+                <a href="#checkout-form" class="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 hover:scale-[1.02] active:scale-[0.98] text-white text-xl font-bold px-8 py-4.5 rounded-2xl transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-emerald-500/20 text-center flex items-center justify-center gap-3 pulsing-btn">
+                    <i class="fas fa-hand-pointer"></i>
                     <span>অর্ডার করতে ফর্মটি পূরণ করুন</span>
                 </a>
             </div>
@@ -1452,7 +1452,7 @@ class AdminLandingController extends Controller
                         <span class="font-black text-slate-800 text-xl">সর্বমোট বিল: <span id="total_bill_val" class="text-emerald-600 font-black">' . ($price + $insideCharge) . ' BDT</span></span>
                     </div>
 
-                    <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xl py-4.5 rounded-2xl shadow-lg hover:shadow-xl hover:shadow-emerald-600/20 active:scale-95 transition-all duration-300 flex items-center justify-center gap-3 pulsing-btn">
+                    <button type="submit" class="w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 hover:scale-[1.01] active:scale-[0.99] text-white font-black text-xl py-4.5 rounded-2xl shadow-lg hover:shadow-xl hover:shadow-emerald-600/20 transition-all duration-300 flex items-center justify-center gap-3 pulsing-btn">
                         <i class="fas fa-circle-check"></i>
                         <span>অর্ডার নিশ্চিত করুন</span>
                     </button>
