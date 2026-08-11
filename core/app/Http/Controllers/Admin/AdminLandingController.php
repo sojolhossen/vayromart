@@ -502,7 +502,16 @@ class AdminLandingController extends Controller
         if ($videoUrl) {
             if (preg_match('/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?|shorts)\/|.*[?&]v=)|youtu\.be\/)([^\"&?\/ ]{11})/i', $videoUrl, $match)) {
                 $embedCode = $match[1];
-                $videoEmbedHtml = '<iframe class="w-full aspect-video rounded-2xl shadow-lg" src="https://www.youtube.com/embed/' . $embedCode . '?autoplay=1&mute=1&enablejsapi=1&playsinline=1" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>';
+                $videoEmbedHtml = '
+                <div class="relative group">
+                    <div class="mb-3 text-center">
+                        <span class="inline-flex items-center gap-1.5 bg-amber-50 text-amber-800 text-xs font-bold px-3.5 py-1.5 rounded-full border border-amber-200 shadow-xs animate-pulse">
+                            <i class="fas fa-volume-high text-amber-600"></i>
+                            <span>সাউন্ড শুনতে স্ক্রিনে অথবা ভিডিওতে একবার ক্লিক করুন</span>
+                        </span>
+                    </div>
+                    <iframe class="w-full aspect-video rounded-2xl shadow-lg" src="https://www.youtube.com/embed/' . $embedCode . '?autoplay=1&mute=1&enablejsapi=1&playsinline=1" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+                </div>';
             }
         }
 
@@ -1132,7 +1141,16 @@ class AdminLandingController extends Controller
         if ($videoUrl) {
             if (preg_match('/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?|shorts)\/|.*[?&]v=)|youtu\.be\/)([^\"&?\/ ]{11})/i', $videoUrl, $match)) {
                 $embedCode = $match[1];
-                $videoEmbedHtml = '<iframe class="w-full aspect-video rounded-2xl shadow-lg" src="https://www.youtube.com/embed/' . $embedCode . '?autoplay=1&mute=1&enablejsapi=1&playsinline=1" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>';
+                $videoEmbedHtml = '
+                <div class="relative group">
+                    <div class="mb-3 text-center">
+                        <span class="inline-flex items-center gap-1.5 bg-amber-50 text-amber-800 text-xs font-bold px-3.5 py-1.5 rounded-full border border-amber-200 shadow-xs animate-pulse">
+                            <i class="fas fa-volume-high text-amber-600"></i>
+                            <span>সাউন্ড শুনতে স্ক্রিনে অথবা ভিডিওতে একবার ক্লিক করুন</span>
+                        </span>
+                    </div>
+                    <iframe class="w-full aspect-video rounded-2xl shadow-lg" src="https://www.youtube.com/embed/' . $embedCode . '?autoplay=1&mute=1&enablejsapi=1&playsinline=1" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+                </div>';
             }
         }
 
