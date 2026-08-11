@@ -195,13 +195,37 @@ class LandingPageController extends Controller
             return 'src="' . $m[1] . '?autoplay=1&mute=1&enablejsapi=1&playsinline=1"';
         }, $content);
 
-        // 10. Auto unmute YouTube video sound on scroll, touch, or click
+        // 10. Inject CSS performance optimizations for 60fps smooth scrolling
+        $smoothScrollCss = '
+    <style>
+        html {
+            scroll-behavior: smooth !important;
+            -webkit-overflow-scrolling: touch !important;
+        }
+        body {
+            -webkit-font-smoothing: antialiased !important;
+            -moz-osx-font-smoothing: grayscale !important;
+            text-rendering: optimizeLegibility !important;
+            overflow-x: hidden !important;
+        }
+        #mobile-sticky-bar, header, .pulsing-btn {
+            will-change: transform;
+            transform: translateZ(0);
+            -webkit-transform: translateZ(0);
+        }
+    </style>';
+        $content = str_replace('</head>', $smoothScrollCss . "\n</head>", $content);
+
+        // 11. Auto unmute YouTube video sound on first interaction with passive, unbinding listeners
         $unmuteScript = '
     <script>
         (function() {
-            var hasUnmuted = false;
+            var events = ["touchstart", "touchmove", "scroll", "wheel", "click", "keydown"];
             function unmuteVideos() {
-                if (hasUnmuted) return;
+                events.forEach(function(evt) {
+                    window.removeEventListener(evt, unmuteVideos, { passive: true });
+                    document.removeEventListener(evt, unmuteVideos, { passive: true });
+                });
                 var iframes = document.querySelectorAll("iframe[src*=\'youtube.com/embed\']");
                 iframes.forEach(function(iframe) {
                     if (iframe.contentWindow) {
@@ -209,11 +233,10 @@ class LandingPageController extends Controller
                         iframe.contentWindow.postMessage(\'{"event":"command","func":"setVolume","args":[100]}\', \'*\');
                     }
                 });
-                hasUnmuted = true;
             }
-            ["scroll", "touchmove", "touchstart", "wheel", "click", "keydown", "mousemove"].forEach(function(evt) {
-                window.addEventListener(evt, unmuteVideos, { capture: true, passive: true });
-                document.addEventListener(evt, unmuteVideos, { capture: true, passive: true });
+            events.forEach(function(evt) {
+                window.addEventListener(evt, unmuteVideos, { passive: true, once: true });
+                document.addEventListener(evt, unmuteVideos, { passive: true, once: true });
             });
         })();
     </script>';
