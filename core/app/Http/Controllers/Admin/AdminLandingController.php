@@ -746,7 +746,7 @@ class AdminLandingController extends Controller
                         <label class="block text-sm font-bold text-gray-700 mb-2">আপনার নাম <span class="text-rose-500">*</span></label>
                         <div class="relative">
                             <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-gray-400"><i class="fas fa-user"></i></span>
-                            <input type="text" name="name" required placeholder="আপনার সম্পূর্ণ নাম লিখুন" class="w-full pl-11 pr-4 py-3.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all duration-200">
+                            <input type="text" name="name" required autocomplete="name" placeholder="আপনার সম্পূর্ণ নাম লিখুন" class="w-full pl-11 pr-4 py-3.5 text-base sm:text-sm rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all duration-200">
                         </div>
                     </div>
 
@@ -754,7 +754,7 @@ class AdminLandingController extends Controller
                         <label class="block text-sm font-bold text-gray-700 mb-2">মোবাইল নম্বর <span class="text-rose-500">*</span></label>
                         <div class="relative">
                             <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-gray-400"><i class="fas fa-phone"></i></span>
-                            <input type="tel" name="mobile" required placeholder="১১ ডিজিটের মোবাইল নম্বর লিখুন" class="w-full pl-11 pr-4 py-3.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all duration-200">
+                            <input type="tel" name="mobile" required inputmode="numeric" pattern="[0-9]*" autocomplete="tel" placeholder="১১ ডিজিটের মোবাইল নম্বর লিখুন" class="w-full pl-11 pr-4 py-3.5 text-base sm:text-sm rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all duration-200">
                         </div>
                     </div>
 
@@ -807,6 +807,18 @@ class AdminLandingController extends Controller
             <p class="text-xs">&copy; ' . date('Y') . ' Vayromart. All rights reserved.</p>
         </div>
     </footer>
+
+    <!-- Mobile Sticky Floating Order Bar -->
+    <div id="mobile-sticky-bar" class="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-gray-200 p-2.5 shadow-[0_-4px_20px_rgba(0,0,0,0.15)] flex items-center justify-between gap-3 sm:hidden">
+        <div class="pl-2">
+            <span class="text-[10px] text-gray-500 font-semibold block leading-tight">বিশেষ অফার</span>
+            <span class="text-base font-black text-emerald-600 leading-tight block">' . $price . ' BDT</span>
+        </div>
+        <a href="#checkout-form" class="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold py-2.5 px-4 rounded-xl shadow-md text-sm flex items-center justify-center gap-2 pulsing-btn flex-1 active:scale-95 transition-all">
+            <i class="fas fa-cart-shopping"></i>
+            <span>অর্ডার করুন</span>
+        </a>
+    </div>
 
     ' . $purchasePopupHtml . '
 
@@ -1228,8 +1240,8 @@ class AdminLandingController extends Controller
         $floatingWidget = '';
         if ($hotlinePhone) {
             $floatingWidget = '
-            <a href="tel:' . $hotlinePhone . '" class="fixed bottom-6 left-6 z-50 bg-emerald-600 hover:bg-emerald-700 text-white p-4 rounded-full shadow-2xl flex items-center gap-3 transition-all hover:scale-110 active:scale-95 group">
-                <span class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center text-xl animate-pulse"><i class="fas fa-phone"></i></span>
+            <a href="tel:' . $hotlinePhone . '" class="fixed bottom-16 sm:bottom-6 left-4 sm:left-6 z-50 bg-emerald-600 hover:bg-emerald-700 text-white p-3.5 sm:p-4 rounded-full shadow-2xl flex items-center gap-3 transition-all hover:scale-110 active:scale-95 group">
+                <span class="w-9 h-9 sm:w-10 sm:h-10 bg-white/20 rounded-full flex items-center justify-center text-lg sm:text-xl animate-pulse"><i class="fas fa-phone"></i></span>
                 <span class="max-w-0 overflow-hidden group-hover:max-w-xs transition-all duration-500 ease-out font-bold text-sm whitespace-nowrap">কল করুন</span>
             </a>';
         }
@@ -1415,7 +1427,7 @@ class AdminLandingController extends Controller
                         <label class="block text-sm font-bold text-slate-700 mb-2">আপনার নাম <span class="text-rose-500">*</span></label>
                         <div class="relative">
                             <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400"><i class="fas fa-user"></i></span>
-                            <input type="text" name="name" required placeholder="আপনার সম্পূর্ণ নাম লিখুন" class="w-full pl-12 pr-4 py-4 rounded-2xl border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary-light outline-none transition-all duration-200 text-slate-800 bg-slate-50/50 hover:bg-white font-medium shadow-sm">
+                            <input type="text" name="name" required autocomplete="name" placeholder="আপনার সম্পূর্ণ নাম লিখুন" class="w-full pl-12 pr-4 py-4 text-base sm:text-sm rounded-2xl border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary-light outline-none transition-all duration-200 text-slate-800 bg-slate-50/50 hover:bg-white font-medium shadow-sm">
                         </div>
                     </div>
 
@@ -1423,7 +1435,7 @@ class AdminLandingController extends Controller
                         <label class="block text-sm font-bold text-slate-700 mb-2">মোবাইল নম্বর <span class="text-rose-500">*</span></label>
                         <div class="relative">
                             <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400"><i class="fas fa-phone"></i></span>
-                            <input type="tel" name="mobile" required placeholder="১১ ডিজিটের মোবাইল নম্বর লিখুন" class="w-full pl-12 pr-4 py-4 rounded-2xl border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary-light outline-none transition-all duration-200 text-slate-800 bg-slate-50/50 hover:bg-white font-medium shadow-sm">
+                            <input type="tel" name="mobile" required inputmode="numeric" pattern="[0-9]*" autocomplete="tel" placeholder="১১ ডিজিটের মোবাইল নম্বর লিখুন" class="w-full pl-12 pr-4 py-4 text-base sm:text-sm rounded-2xl border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary-light outline-none transition-all duration-200 text-slate-800 bg-slate-50/50 hover:bg-white font-medium shadow-sm">
                         </div>
                     </div>
 
@@ -1472,6 +1484,18 @@ class AdminLandingController extends Controller
             <p class="text-xs">&copy; ' . date('Y') . ' ' . gs('site_name') . '. All rights reserved.</p>
         </div>
     </footer>
+
+    <!-- Mobile Sticky Floating Order Bar -->
+    <div id="mobile-sticky-bar" class="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 p-2.5 shadow-[0_-4px_20px_rgba(0,0,0,0.15)] flex items-center justify-between gap-3 sm:hidden">
+        <div class="pl-2">
+            <span class="text-[10px] text-slate-500 font-semibold block leading-tight">বিশেষ অফার</span>
+            <span class="text-base font-black text-emerald-600 leading-tight block">' . $price . ' BDT</span>
+        </div>
+        <a href="#checkout-form" class="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold py-2.5 px-4 rounded-xl shadow-md text-sm flex items-center justify-center gap-2 pulsing-btn flex-1 active:scale-95 transition-all">
+            <i class="fas fa-cart-shopping"></i>
+            <span>অর্ডার করুন</span>
+        </a>
+    </div>
 
     ' . $floatingWidget . '
 

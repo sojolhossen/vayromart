@@ -86,6 +86,34 @@ class LandingPageController extends Controller
             $content
         );
 
+        // 4. Enhance mobile form inputs (numeric keypad trigger on mobile and autocomplete)
+        $content = str_replace(
+            '<input type="tel" name="mobile"',
+            '<input type="tel" name="mobile" inputmode="numeric" pattern="[0-9]*" autocomplete="tel"',
+            $content
+        );
+        $content = str_replace(
+            '<input type="text" name="name"',
+            '<input type="text" name="name" autocomplete="name"',
+            $content
+        );
+
+        // Reposition floating call button on mobile so it doesn't overlap the mobile sticky bar
+        $content = str_replace('class="fixed bottom-6 left-6 z-50', 'class="fixed bottom-16 sm:bottom-6 left-4 sm:left-6 z-50', $content);
+
+        // 5. Dynamically inject floating Mobile Sticky Order Bar for existing pages if not present
+        if (strpos($content, 'id="mobile-sticky-bar"') === false) {
+            $mobileBarHtml = '
+    <!-- Mobile Sticky Floating Order Bar -->
+    <div id="mobile-sticky-bar" class="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-gray-200 p-2.5 shadow-[0_-4px_20px_rgba(0,0,0,0.15)] flex items-center justify-between gap-3 sm:hidden">
+        <a href="#checkout-form" class="w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold py-3 px-4 rounded-xl shadow-md text-base flex items-center justify-center gap-2 pulsing-btn active:scale-95 transition-all">
+            <i class="fas fa-cart-shopping"></i>
+            <span>অর্ডার করতে ক্লিক করুন</span>
+        </a>
+    </div>';
+            $content = str_replace('</body>', $mobileBarHtml . "\n</body>", $content);
+        }
+
         return response($content)
             ->header('Content-Type', 'text/html');
     }
