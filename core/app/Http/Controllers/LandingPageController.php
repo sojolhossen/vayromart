@@ -114,6 +114,10 @@ class LandingPageController extends Controller
             $content = str_replace('</body>', $mobileBarHtml . "\n</body>", $content);
         }
 
+        // 6. Ensure product image displays FIRST on mobile screens
+        $content = str_replace('<div class="lg:col-span-7">', '<div class="lg:col-span-7 order-2 lg:order-1">', $content);
+        $content = str_replace('<div class="lg:col-span-5 flex flex-col justify-center">', '<div class="lg:col-span-5 order-1 lg:order-2 flex flex-col justify-center">', $content);
+
         return response($content)
             ->header('Content-Type', 'text/html');
     }

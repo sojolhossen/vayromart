@@ -644,7 +644,7 @@ class AdminLandingController extends Controller
 
     <!-- Hero Section -->
     <section class="max-w-6xl mx-auto px-4 py-12 lg:py-20 grid lg:grid-cols-12 gap-12 items-center">
-        <div class="lg:col-span-7">
+        <div class="lg:col-span-7 order-2 lg:order-1">
             <span class="inline-block bg-primary-light text-primary font-bold px-4 py-1.5 rounded-full text-sm mb-6 border border-primary-light">
                 ধামাকা ক্যাশ অন ডেলিভারি অফার!
             </span>
@@ -680,7 +680,7 @@ class AdminLandingController extends Controller
             </div>
         </div>
 
-        <div class="lg:col-span-5 flex flex-col justify-center">
+        <div class="lg:col-span-5 order-1 lg:order-2 flex flex-col justify-center">
             ' . $sliderHtml . '
             
             <div class="grid grid-cols-3 gap-3 mt-6 text-center">
@@ -1305,7 +1305,7 @@ class AdminLandingController extends Controller
 
     <!-- Hero Section -->
     <section class="max-w-6xl mx-auto px-4 py-12 lg:py-20 grid lg:grid-cols-12 gap-12 items-center">
-        <div class="lg:col-span-7">
+        <div class="lg:col-span-7 order-2 lg:order-1">
             <span class="inline-block bg-primary-light text-primary font-bold px-4 py-1.5 rounded-full text-sm mb-6 border border-primary-light animate-pulse">
                 ধামাকা ক্যাশ অন ডেলিভারি অফার!
             </span>
@@ -1341,7 +1341,7 @@ class AdminLandingController extends Controller
             </div>
         </div>
 
-        <div class="lg:col-span-5 flex flex-col justify-center">
+        <div class="lg:col-span-5 order-1 lg:order-2 flex flex-col justify-center">
             <div class="relative w-full rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.06)] border border-slate-100 overflow-hidden aspect-square bg-white group mb-6 hover:scale-[1.01] transition-transform duration-300">
                 ' . $sliderHtml . '
             </div>
