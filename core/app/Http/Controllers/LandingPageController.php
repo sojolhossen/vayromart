@@ -242,6 +242,73 @@ class LandingPageController extends Controller
     </script>';
         $content = str_replace('</body>', $unmuteScript . "\n</body>", $content);
 
+        // 12. Dynamically inject Review Image Lightbox Modal for existing landing pages
+        if (strpos($content, 'review-image-modal') === false) {
+            $lightboxModalHtml = '
+    <!-- Review Image Lightbox Modal -->
+    <div id="review-image-modal" class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/90 backdrop-blur-md p-4 transition-all duration-300 opacity-0 pointer-events-none">
+        <button type="button" id="review-modal-close" class="absolute top-5 right-5 text-white/80 hover:text-white bg-white/10 hover:bg-white/20 w-12 h-12 rounded-full flex items-center justify-center text-2xl transition-all z-10 focus:outline-none cursor-pointer">
+            <i class="fas fa-xmark"></i>
+        </button>
+        <div class="relative max-w-5xl max-h-[90vh] w-full flex items-center justify-center p-2">
+            <img id="review-modal-img" src="" alt="Review Image Full View" class="max-h-[85vh] max-w-full object-contain rounded-2xl shadow-2xl border border-white/20 transform transition-transform duration-300 scale-95">
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            var modal = document.getElementById("review-image-modal");
+            var modalImg = document.getElementById("review-modal-img");
+            var closeBtn = document.getElementById("review-modal-close");
+
+            function openReviewModal(src) {
+                if (!modal || !modalImg) return;
+                modalImg.src = src;
+                modal.classList.remove("hidden", "pointer-events-none");
+                setTimeout(function() {
+                    modal.classList.remove("opacity-0");
+                    modalImg.classList.remove("scale-95");
+                    modalImg.classList.add("scale-100");
+                }, 10);
+                document.body.style.overflow = "hidden";
+            }
+
+            function closeReviewModal() {
+                if (!modal || !modalImg) return;
+                modal.classList.add("opacity-0");
+                if (modalImg) modalImg.classList.remove("scale-100");
+                if (modalImg) modalImg.classList.add("scale-95");
+                setTimeout(function() {
+                    modal.classList.add("hidden", "pointer-events-none");
+                    modalImg.src = "";
+                    document.body.style.overflow = "";
+                }, 300);
+            }
+
+            document.querySelectorAll(".image-popup, .cursor-zoom-in, [alt=\'Customer Review\']").forEach(function(img) {
+                img.classList.add("cursor-pointer");
+                img.addEventListener("click", function(e) {
+                    e.preventDefault();
+                    openReviewModal(this.src || this.getAttribute("data-src") || this.href);
+                });
+            });
+
+            if (closeBtn) closeBtn.addEventListener("click", closeReviewModal);
+            if (modal) {
+                modal.addEventListener("click", function(e) {
+                    if (e.target === modal || e.target.parentElement === modal) {
+                        closeReviewModal();
+                    }
+                });
+            }
+            document.addEventListener("keydown", function(e) {
+                if (e.key === "Escape") closeReviewModal();
+            });
+        });
+    </script>';
+            $content = str_replace('</body>', $lightboxModalHtml . "\n</body>", $content);
+        }
+
         return response($content)
             ->header('Content-Type', 'text/html');
     }
