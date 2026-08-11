@@ -658,7 +658,7 @@ class AdminLandingController extends Controller
     <section class="max-w-6xl mx-auto px-4 py-12 lg:py-20 grid lg:grid-cols-12 gap-12 items-center">
         <div class="lg:col-span-7 order-2 lg:order-1">
             <span class="inline-block bg-primary-light text-primary font-bold px-4 py-1.5 rounded-full text-sm mb-6 border border-primary-light">
-                ধামাকা ক্যাশ অন ডেলিভারি অফার!
+                ' . ($isFreeDelivery ? '<i class="fas fa-truck-fast text-emerald-600 mr-1 animate-bounce"></i> <span class="text-emerald-700 font-black">১০০% ফ্রি হোম ডেলিভারি অফার!</span>' : 'ধামাকা ক্যাশ অন ডেলিভারি অফার!') . '
             </span>
             <h1 class="text-4xl lg:text-5xl font-extrabold text-gray-900 leading-tight mb-4">
                 ' . $headline . '
@@ -676,6 +676,7 @@ class AdminLandingController extends Controller
                 <div>
                     <span class="text-gray-400 line-through text-lg font-medium block">পূর্বে মূল্য: ' . $regularPrice . ' BDT</span>
                     <span class="text-emerald-600 text-3xl font-black block mt-1">আজকের অফার: ' . $price . ' BDT</span>
+                    ' . ($isFreeDelivery ? '<div class="mt-2 inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 text-xs font-black px-3 py-1 rounded-full border border-emerald-200 animate-pulse"><i class="fas fa-truck-fast"></i> <span>সারা বাংলাদেশে ফ্রি ডেলিভারি!</span></div>' : '') . '
                 </div>
                 <div class="bg-emerald-50 text-emerald-700 font-bold px-4 py-2.5 rounded-xl border border-emerald-100 text-center animate-bounce text-sm">
                     সঞ্চয়: ' . $discountAmount . ' BDT!
@@ -696,9 +697,9 @@ class AdminLandingController extends Controller
             ' . $sliderHtml . '
             
             <div class="grid grid-cols-3 gap-3 mt-6 text-center">
-                <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-                    <i class="fas fa-truck-fast text-primary text-2xl mb-2"></i>
-                    <p class="text-xs font-bold text-gray-700">ফাস্ট হোম ডেলিভারি</p>
+                <div class="bg-white p-4 rounded-xl border ' . ($isFreeDelivery ? 'border-emerald-200 bg-emerald-50/40 shadow-emerald-500/10' : 'border-gray-100') . ' shadow-sm">
+                    <i class="fas fa-truck-fast ' . ($isFreeDelivery ? 'text-emerald-600 animate-bounce' : 'text-primary') . ' text-2xl mb-2"></i>
+                    <p class="text-xs font-bold ' . ($isFreeDelivery ? 'text-emerald-700' : 'text-gray-700') . '">' . ($isFreeDelivery ? '১০০% ফ্রি ডেলিভারি' : 'ফাস্ট হোম ডেলিভারি') . '</p>
                 </div>
                 <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
                     <i class="fas fa-hand-holding-dollar text-primary text-2xl mb-2"></i>
@@ -741,7 +742,7 @@ class AdminLandingController extends Controller
             <div class="bg-white text-gray-900 p-8 lg:p-12 rounded-3xl shadow-2xl border border-gray-100">
                 <div class="text-center mb-8">
                     <span class="bg-emerald-50 text-emerald-700 font-bold px-4 py-1.5 rounded-full text-xs border border-emerald-100 tracking-wide uppercase">
-                        ক্যাশ অন ডেলিভারি (হাতে পেয়ে মূল্য পরিশোধ)
+                        ' . ($isFreeDelivery ? '🚚 ১০০% ফ্রি হোম ডেলিভারি (কোনো ডেলিভারি চার্জ নেই)' : 'ক্যাশ অন ডেলিভারি (হাতে পেয়ে মূল্য পরিশোধ)') . '
                     </span>
                     <h3 class="text-2xl lg:text-3xl font-black mt-4 mb-2">অর্ডার করতে ফর্মটি পূরণ করুন</h3>
                     <p class="text-gray-500 font-medium">ডেলিভারি ম্যানের কাছ থেকে প্রোডাক্ট বুঝে পেয়ে টাকা পরিশোধ করুন।</p>
@@ -823,7 +824,7 @@ class AdminLandingController extends Controller
     <!-- Mobile Sticky Floating Order Bar -->
     <div id="mobile-sticky-bar" class="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-gray-200 p-2.5 shadow-[0_-4px_20px_rgba(0,0,0,0.15)] flex items-center justify-between gap-3 sm:hidden">
         <div class="pl-2">
-            <span class="text-[10px] text-gray-500 font-semibold block leading-tight">বিশেষ অফার</span>
+            <span class="text-[10px] ' . ($isFreeDelivery ? 'text-emerald-600 font-black' : 'text-gray-500 font-semibold') . ' block leading-tight">' . ($isFreeDelivery ? '🚚 ফ্রি ডেলিভারি' : 'বিশেষ অফার') . '</span>
             <span class="text-base font-black text-emerald-600 leading-tight block">' . $price . ' BDT</span>
         </div>
         <a href="#checkout-form" class="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold py-2.5 px-4 rounded-xl shadow-md text-sm flex items-center justify-center gap-2 pulsing-btn flex-1 active:scale-95 transition-all">
@@ -1331,7 +1332,7 @@ class AdminLandingController extends Controller
     <section class="max-w-6xl mx-auto px-4 py-12 lg:py-20 grid lg:grid-cols-12 gap-12 items-center">
         <div class="lg:col-span-7 order-2 lg:order-1">
             <span class="inline-block bg-primary-light text-primary font-bold px-4 py-1.5 rounded-full text-sm mb-6 border border-primary-light animate-pulse">
-                ধামাকা ক্যাশ অন ডেলিভারি অফার!
+                ' . ($isFreeDelivery ? '<i class="fas fa-truck-fast text-emerald-600 mr-1 animate-bounce"></i> <span class="text-emerald-700 font-black">১০০% ফ্রি হোম ডেলিভারি অফার!</span>' : 'ধামাকা ক্যাশ অন ডেলিভারি অফার!') . '
             </span>
             <h1 class="text-4xl lg:text-5xl font-black text-slate-900 leading-tight mb-6 tracking-tight">
                 ' . $headline . '
@@ -1349,6 +1350,7 @@ class AdminLandingController extends Controller
                 <div>
                     <span class="text-slate-400 line-through text-lg font-medium block">পূর্বে মূল্য: ' . $regularPrice . ' BDT</span>
                     <span class="text-emerald-600 text-3xl font-black block mt-1">আজকের অফার: ' . $price . ' BDT</span>
+                    ' . ($isFreeDelivery ? '<div class="mt-2 inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 text-xs font-black px-3 py-1 rounded-full border border-emerald-200 animate-pulse"><i class="fas fa-truck-fast"></i> <span>সারা বাংলাদেশে ফ্রি ডেলিভারি!</span></div>' : '') . '
                 </div>
                 <div class="bg-emerald-50 text-emerald-700 font-bold px-4 py-2.5 rounded-xl border border-emerald-100 text-center animate-bounce text-sm">
                     সঞ্চয়: ' . $discountAmount . ' BDT!
@@ -1371,9 +1373,9 @@ class AdminLandingController extends Controller
             </div>
             
             <div class="grid grid-cols-3 gap-3 mt-6 text-center">
-                <div class="bg-white p-5 rounded-2xl border border-slate-100 hover:border-primary-light hover:shadow-md hover:-translate-y-1 transition-all duration-300 flex flex-col items-center">
-                    <div class="w-12 h-12 rounded-full bg-primary-light text-primary flex items-center justify-center text-xl mb-3"><i class="fas fa-truck-fast"></i></div>
-                    <p class="text-xs font-bold text-slate-700">ফাস্ট হোম ডেলিভারি</p>
+                <div class="bg-white p-5 rounded-2xl border ' . ($isFreeDelivery ? 'border-emerald-200 bg-emerald-50/40 shadow-emerald-500/10' : 'border-slate-100') . ' hover:border-primary-light hover:shadow-md hover:-translate-y-1 transition-all duration-300 flex flex-col items-center">
+                    <div class="w-12 h-12 rounded-full ' . ($isFreeDelivery ? 'bg-emerald-100 text-emerald-600' : 'bg-primary-light text-primary') . ' flex items-center justify-center text-xl mb-3"><i class="fas fa-truck-fast ' . ($isFreeDelivery ? 'animate-bounce' : '') . '"></i></div>
+                    <p class="text-xs font-bold ' . ($isFreeDelivery ? 'text-emerald-700' : 'text-slate-700') . '">' . ($isFreeDelivery ? '১০০% ফ্রি ডেলিভারি' : 'ফাস্ট হোম ডেলিভারি') . '</p>
                 </div>
                 <div class="bg-white p-5 rounded-2xl border border-slate-100 hover:border-primary-light hover:shadow-md hover:-translate-y-1 transition-all duration-300 flex flex-col items-center">
                     <div class="w-12 h-12 rounded-full bg-primary-light text-primary flex items-center justify-center text-xl mb-3"><i class="fas fa-hand-holding-dollar"></i></div>
@@ -1434,7 +1436,7 @@ class AdminLandingController extends Controller
             <div class="bg-white text-slate-800 p-8 lg:p-12 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.1)] border border-slate-100">
                 <div class="text-center mb-8">
                     <span class="bg-emerald-50 text-emerald-700 font-bold px-4 py-1.5 rounded-full text-xs border border-emerald-100 tracking-wide uppercase">
-                        ক্যাশ অন ডেলিভারি (হাতে পেয়ে মূল্য পরিশোধ)
+                        ' . ($isFreeDelivery ? '🚚 ১০০% ফ্রি হোম ডেলিভারি (কোনো ডেলিভারি চার্জ নেই)' : 'ক্যাশ অন ডেলিভারি (হাতে পেয়ে মূল্য পরিশোধ)') . '
                     </span>
                     <h3 class="text-2xl lg:text-3xl font-black mt-4 mb-2">অর্ডার করতে ফর্মটি পূরণ করুন</h3>
                     <p class="text-slate-500 font-medium">ডেলিভারি ম্যানের কাছ থেকে প্রোডাক্ট বুঝে পেয়ে টাকা পরিশোধ করুন।</p>
@@ -1512,7 +1514,7 @@ class AdminLandingController extends Controller
     <!-- Mobile Sticky Floating Order Bar -->
     <div id="mobile-sticky-bar" class="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 p-2.5 shadow-[0_-4px_20px_rgba(0,0,0,0.15)] flex items-center justify-between gap-3 sm:hidden">
         <div class="pl-2">
-            <span class="text-[10px] text-slate-500 font-semibold block leading-tight">বিশেষ অফার</span>
+            <span class="text-[10px] ' . ($isFreeDelivery ? 'text-emerald-600 font-black' : 'text-slate-500 font-semibold') . ' block leading-tight">' . ($isFreeDelivery ? '🚚 ফ্রি ডেলিভারি' : 'বিশেষ অফার') . '</span>
             <span class="text-base font-black text-emerald-600 leading-tight block">' . $price . ' BDT</span>
         </div>
         <a href="#checkout-form" class="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold py-2.5 px-4 rounded-xl shadow-md text-sm flex items-center justify-center gap-2 pulsing-btn flex-1 active:scale-95 transition-all">

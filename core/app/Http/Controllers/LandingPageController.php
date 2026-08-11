@@ -140,6 +140,41 @@ class LandingPageController extends Controller
             $content = str_replace('</head>', $pixelCode . "\n" . $viewContentScript . "\n</head>", $content);
         }
 
+        // 8. Dynamically highlight Free Delivery if free_delivery is enabled
+        $isFree = isset($landingPage->design_settings['free_delivery']) && $landingPage->design_settings['free_delivery'] === 'free';
+        if ($isFree) {
+            $content = str_replace(
+                'ধামাকা ক্যাশ অন ডেলিভারি অফার!',
+                '<i class="fas fa-truck-fast text-emerald-600 mr-1 animate-bounce"></i> <span class="text-emerald-700 font-black">১০০% ফ্রি হোম ডেলিভারি অফার!</span>',
+                $content
+            );
+            $content = str_replace(
+                '<p class="text-xs font-bold text-gray-700">ফাস্ট হোম ডেলিভারি</p>',
+                '<p class="text-xs font-bold text-emerald-700">১০০% ফ্রি ডেলিভারি</p>',
+                $content
+            );
+            $content = str_replace(
+                '<p class="text-xs font-bold text-slate-700">ফাস্ট হোম ডেলিভারি</p>',
+                '<p class="text-xs font-bold text-emerald-700">১০০% ফ্রি ডেলিভারি</p>',
+                $content
+            );
+            $content = str_replace(
+                'ক্যাশ অন ডেলিভারি (হাতে পেয়ে মূল্য পরিশোধ)',
+                '🚚 ১০০% ফ্রি হোম ডেলিভারি (কোনো ডেলিভারি চার্জ নেই)',
+                $content
+            );
+            $content = str_replace(
+                '<span class="text-[10px] text-gray-500 font-semibold block leading-tight">বিশেষ অফার</span>',
+                '<span class="text-[10px] text-emerald-600 font-black block leading-tight">🚚 ফ্রি ডেলিভারি</span>',
+                $content
+            );
+            $content = str_replace(
+                '<span class="text-[10px] text-slate-500 font-semibold block leading-tight">বিশেষ অফার</span>',
+                '<span class="text-[10px] text-emerald-600 font-black block leading-tight">🚚 ফ্রি ডেলিভারি</span>',
+                $content
+            );
+        }
+
         return response($content)
             ->header('Content-Type', 'text/html');
     }
