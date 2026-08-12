@@ -942,6 +942,20 @@ class AdminLandingController extends Controller
         });
     </script>
     ' . loadExtension('tawk-chat') . '
+    <script type="text/javascript">
+        var Tawk_API = Tawk_API || {};
+        Tawk_API.onLoad = function(){
+            if (typeof Tawk_API.hideWidget === "function") {
+                Tawk_API.hideWidget();
+            }
+        };
+    </script>
+    <style>
+        #tawk-default-container, iframe[title*="chat widget"], .tawk-min-container {
+            display: none !important;
+            visibility: hidden !important;
+        }
+    </style>
 </body>
 </html>';
 
@@ -1752,6 +1766,20 @@ class AdminLandingController extends Controller
         });
     </script>
     ' . loadExtension('tawk-chat') . '
+    <script type="text/javascript">
+        var Tawk_API = Tawk_API || {};
+        Tawk_API.onLoad = function(){
+            if (typeof Tawk_API.hideWidget === "function") {
+                Tawk_API.hideWidget();
+            }
+        };
+    </script>
+    <style>
+        #tawk-default-container, iframe[title*="chat widget"], .tawk-min-container {
+            display: none !important;
+            visibility: hidden !important;
+        }
+    </style>
 </body>
 </html>';
 

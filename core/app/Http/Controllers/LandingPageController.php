@@ -333,11 +333,26 @@ class LandingPageController extends Controller
             $content
         );
 
-        // 15. Dynamically inject Tawk.to Live Chat & Visitor Monitoring for existing landing pages
-        if (strpos($content, 'embed.tawk.to') === false && strpos($content, 'Tawk_API') === false) {
+        // 15. Dynamically inject Tawk.to Visitor Monitoring (with hidden chat widget icon) for existing landing pages
+        if (strpos($content, 'embed.tawk.to') === false) {
             $tawkScript = loadExtension('tawk-chat');
             if ($tawkScript) {
-                $content = str_replace('</body>', $tawkScript . "\n</body>", $content);
+                $hideWidgetScript = '
+    <script type="text/javascript">
+        var Tawk_API = Tawk_API || {};
+        Tawk_API.onLoad = function(){
+            if (typeof Tawk_API.hideWidget === "function") {
+                Tawk_API.hideWidget();
+            }
+        };
+    </script>
+    <style>
+        #tawk-default-container, iframe[title*="chat widget"], .tawk-min-container {
+            display: none !important;
+            visibility: hidden !important;
+        }
+    </style>';
+                $content = str_replace('</body>', $tawkScript . "\n" . $hideWidgetScript . "\n</body>", $content);
             }
         }
 
