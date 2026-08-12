@@ -119,8 +119,8 @@ class LandingPageController extends Controller
         $content = str_replace('<div class="lg:col-span-5 flex flex-col justify-center">', '<div class="lg:col-span-5 order-1 lg:order-2 flex flex-col justify-center">', $content);
 
         // 7. Dynamically inject Meta Pixel and ViewContent tracking event for existing pages
-        $pixelCode = loadExtension('facebook-pixel');
-        if ($pixelCode && strpos($content, '1012202121425400') === false) {
+        if (strpos($content, 'fbevents.js') === false) {
+            $pixelCode = loadExtension('facebook-pixel');
             $viewContentScript = '';
             if ($landingPage->product) {
                 $productPrice = !empty($landingPage->design_settings['custom_price']) ? floatval($landingPage->design_settings['custom_price']) : ($landingPage->product->sale_price ?: $landingPage->product->regular_price);
@@ -333,23 +333,12 @@ class LandingPageController extends Controller
             $content
         );
 
-        // 15. Dynamically polish Order Form styling for existing landing pages
-        $content = str_replace(
-            'class="bg-gray-50 p-6 rounded-2xl border border-gray-100 flex items-center justify-between text-base"',
-            'class="bg-emerald-50/50 p-5 rounded-2xl border border-emerald-100/80 flex items-center justify-between text-sm"',
-            $content
-        );
-        $content = str_replace(
-            'class="bg-slate-50 p-6 rounded-2xl border border-slate-100 flex items-center justify-between text-base"',
-            'class="bg-emerald-50/50 p-5 rounded-2xl border border-emerald-100/80 flex items-center justify-between text-sm"',
-            $content
-        );
-        if (strpos($content, 'fa-lock text-emerald-500') === false) {
-            $content = str_replace(
-                '</button>',
-                '</button><p class="text-xs text-center text-gray-400 mt-2 flex items-center justify-center gap-1.5 font-medium"><i class="fas fa-lock text-emerald-500 text-xs"></i><span>১০০% নিরাপদ অর্ডার • প্রোডাক্ট বুঝে পেয়ে টাকা পরিশোধ করুন</span></p>',
-                $content
-            );
+        // 15. Dynamically inject Tawk.to Live Chat & Visitor Monitoring for existing landing pages
+        if (strpos($content, 'embed.tawk.to') === false && strpos($content, 'Tawk_API') === false) {
+            $tawkScript = loadExtension('tawk-chat');
+            if ($tawkScript) {
+                $content = str_replace('</body>', $tawkScript . "\n</body>", $content);
+            }
         }
 
         return response($content)
