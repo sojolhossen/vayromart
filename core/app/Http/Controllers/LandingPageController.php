@@ -119,8 +119,8 @@ class LandingPageController extends Controller
         $content = str_replace('<div class="lg:col-span-5 flex flex-col justify-center">', '<div class="lg:col-span-5 order-1 lg:order-2 flex flex-col justify-center">', $content);
 
         // 7. Dynamically inject Meta Pixel and ViewContent tracking event for existing pages
-        if (strpos($content, 'fbevents.js') === false) {
-            $pixelCode = loadExtension('facebook-pixel');
+        $pixelCode = loadExtension('facebook-pixel');
+        if ($pixelCode && strpos($content, '1012202121425400') === false) {
             $viewContentScript = '';
             if ($landingPage->product) {
                 $productPrice = !empty($landingPage->design_settings['custom_price']) ? floatval($landingPage->design_settings['custom_price']) : ($landingPage->product->sale_price ?: $landingPage->product->regular_price);
