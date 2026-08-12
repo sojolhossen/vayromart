@@ -620,6 +620,23 @@ class AdminLandingController extends Controller
             transform: translateZ(0);
             -webkit-transform: translateZ(0);
         }
+        .reveal-init {
+            opacity: 0;
+            transform: translateY(35px) scale(0.98);
+            transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+            will-change: opacity, transform;
+        }
+        .reveal-active {
+            opacity: 1 !important;
+            transform: translateY(0) translateX(0) scale(1) !important;
+        }
+        .hover-lift {
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .hover-lift:hover {
+            transform: translateY(-6px) scale(1.01);
+            box-shadow: 0 20px 35px -10px rgba(0,0,0,0.08);
+        }
         @keyframes pulse-glow {
             0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.5); }
             50% { transform: scale(1.015); box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
@@ -924,6 +941,31 @@ class AdminLandingController extends Controller
             }
             document.addEventListener("keydown", function(e) {
                 if (e.key === "Escape") closeReviewModal();
+            });
+
+            // Scroll Reveal IntersectionObserver
+            var selectors = ["section > div", ".lg\\:col-span-7", ".lg\\:col-span-5", "#checkout-form", ".grid > div", "iframe", ".prose"];
+            selectors.forEach(function(sel) {
+                document.querySelectorAll(sel).forEach(function(el, index) {
+                    if (!el.classList.contains("reveal-init") && !el.closest("#mobile-sticky-bar")) {
+                        el.classList.add("reveal-init");
+                        if (el.parentElement && el.parentElement.classList.contains("grid")) {
+                            var delay = (index % 3) * 0.15;
+                            el.style.transitionDelay = delay + "s";
+                        }
+                    }
+                });
+            });
+            var observer = new IntersectionObserver(function(entries) {
+                entries.forEach(function(entry) {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add("reveal-active");
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, { threshold: 0.08, rootMargin: "0px 0px -40px 0px" });
+            document.querySelectorAll(".reveal-init").forEach(function(el) {
+                observer.observe(el);
             });
         });
     </script>
@@ -1374,6 +1416,23 @@ class AdminLandingController extends Controller
             transform: translateZ(0);
             -webkit-transform: translateZ(0);
         }
+        .reveal-init {
+            opacity: 0;
+            transform: translateY(35px) scale(0.98);
+            transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+            will-change: opacity, transform;
+        }
+        .reveal-active {
+            opacity: 1 !important;
+            transform: translateY(0) translateX(0) scale(1) !important;
+        }
+        .hover-lift {
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .hover-lift:hover {
+            transform: translateY(-6px) scale(1.01);
+            box-shadow: 0 20px 35px -10px rgba(0,0,0,0.08);
+        }
         @keyframes pulse-glow {
             0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.5); }
             50% { transform: scale(1.015); box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
@@ -1696,6 +1755,31 @@ class AdminLandingController extends Controller
             }
             document.addEventListener("keydown", function(e) {
                 if (e.key === "Escape") closeReviewModal();
+            });
+
+            // Scroll Reveal IntersectionObserver
+            var selectors = ["section > div", ".lg\\:col-span-7", ".lg\\:col-span-5", "#checkout-form", ".grid > div", "iframe", ".prose"];
+            selectors.forEach(function(sel) {
+                document.querySelectorAll(sel).forEach(function(el, index) {
+                    if (!el.classList.contains("reveal-init") && !el.closest("#mobile-sticky-bar")) {
+                        el.classList.add("reveal-init");
+                        if (el.parentElement && el.parentElement.classList.contains("grid")) {
+                            var delay = (index % 3) * 0.15;
+                            el.style.transitionDelay = delay + "s";
+                        }
+                    }
+                });
+            });
+            var observer = new IntersectionObserver(function(entries) {
+                entries.forEach(function(entry) {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add("reveal-active");
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, { threshold: 0.08, rootMargin: "0px 0px -40px 0px" });
+            document.querySelectorAll(".reveal-init").forEach(function(el) {
+                observer.observe(el);
             });
         });
     </script>
