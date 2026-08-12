@@ -467,6 +467,201 @@ class LandingPageController extends Controller
             $content
         );
 
+        // 20. Dynamically inject Order Progress Modal & Duplicate Order Prevention Script
+        $orderProgressModalHtml = '
+<!-- Order Progress & Success Modal -->
+<div id="order-process-modal" class="fixed inset-0 z-[150] hidden items-center justify-center bg-black/80 backdrop-blur-md p-4 transition-all duration-300 opacity-0 pointer-events-none">
+    <div class="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-emerald-100 text-center relative overflow-hidden transform transition-all duration-300 scale-95" id="modal-card">
+        
+        <!-- Loading State -->
+        <div id="order-loading-state" class="py-4">
+            <div class="relative w-24 h-24 mx-auto mb-6 flex items-center justify-center">
+                <div class="absolute inset-0 rounded-full border-4 border-emerald-100"></div>
+                <div class="absolute inset-0 rounded-full border-4 border-emerald-500 border-t-transparent animate-spin"></div>
+                <div class="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center text-2xl font-bold">
+                    <i class="fas fa-truck-fast"></i>
+                </div>
+            </div>
+
+            <h3 class="text-xl sm:text-2xl font-black text-gray-800 mb-2">আপনার অর্ডার প্রসেস করা হচ্ছে...</h3>
+            <p class="text-xs font-semibold text-gray-500 mb-6">অনুগ্রহ করে কয়েক সেকেন্ড অপেক্ষা করুন</p>
+
+            <!-- Progress Bar -->
+            <div class="w-full bg-gray-100 rounded-full h-3 mb-6 overflow-hidden p-0.5 border border-gray-200">
+                <div id="order-progress-bar" class="bg-gradient-to-r from-emerald-500 to-teal-500 h-full rounded-full transition-all duration-500 w-[15%] shadow-sm"></div>
+            </div>
+
+            <!-- Steps Checklist -->
+            <div class="space-y-3 text-left max-w-xs mx-auto text-xs font-bold">
+                <div id="step-1" class="flex items-center gap-3 text-emerald-600 transition-all">
+                    <span class="w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center text-xs flex-shrink-0"><i class="fas fa-circle-notch animate-spin"></i></span>
+                    <span>১. আপনার তথ্য যাচাই করা হচ্ছে...</span>
+                </div>
+                <div id="step-2" class="flex items-center gap-3 text-gray-400 transition-all">
+                    <span class="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-xs flex-shrink-0"><i class="fas fa-box"></i></span>
+                    <span>২. প্রোডাক্ট স্টক চেক করা হচ্ছে...</span>
+                </div>
+                <div id="step-3" class="flex items-center gap-3 text-gray-400 transition-all">
+                    <span class="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-xs flex-shrink-0"><i class="fas fa-truck"></i></span>
+                    <span>৩. ক্যাশ অন ডেলিভারি কনফার্ম হচ্ছে...</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Success State -->
+        <div id="order-success-state" class="hidden py-2">
+            <div class="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center text-4xl mx-auto mb-4 shadow-inner border-2 border-emerald-300">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            
+            <span class="inline-block bg-emerald-50 text-emerald-700 font-bold px-3 py-1 rounded-full text-xs border border-emerald-200 mb-2">🎉 অর্ডার সফল হয়েছে!</span>
+            <h3 class="text-2xl font-black text-gray-800 mb-1">আপনার অর্ডার সফলভাবে গৃহীত হয়েছে</h3>
+            <p class="text-xs font-medium text-gray-500 mb-4">আমাদের প্রতিনিধি শীঘ্রই আপনার সাথে কথা বলবেন।</p>
+
+            <!-- Order Details Box -->
+            <div class="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 text-left text-xs space-y-2 mb-6">
+                <div class="flex justify-between border-b border-gray-200 pb-2">
+                    <span class="text-gray-500 font-semibold">অর্ডার নম্বর:</span>
+                    <span id="succ_order_number" class="font-black text-gray-800 text-sm">#OID-XXXXX</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-500 font-semibold">নাম:</span>
+                    <span id="succ_customer_name" class="font-bold text-gray-800"></span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-500 font-semibold">মোবাইল:</span>
+                    <span id="succ_customer_mobile" class="font-bold text-gray-800"></span>
+                </div>
+                <div class="flex justify-between border-t border-gray-200 pt-2 font-bold text-sm">
+                    <span class="text-gray-800">সর্বমোট মূল্য:</span>
+                    <span id="succ_total_amount" class="text-emerald-600 font-black text-base">৳ 0</span>
+                </div>
+            </div>
+
+            <button type="button" id="close-success-modal" class="w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-extrabold py-3.5 rounded-xl shadow-lg transition-all cursor-pointer text-sm">
+                ঠিক আছে, ধন্যবাদ!
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    var checkoutForm = document.querySelector("form[action*=\'landing/checkout\']") || document.querySelector("#checkout-form form");
+    if (!checkoutForm) return;
+
+    checkoutForm.addEventListener("submit", function(e) {
+        e.preventDefault();
+        
+        var submitBtn = checkoutForm.querySelector("button[type=\'submit\']");
+        var modal = document.getElementById("order-process-modal");
+        var modalCard = document.getElementById("modal-card");
+        var progressBar = document.getElementById("order-progress-bar");
+        var loadingState = document.getElementById("order-loading-state");
+        var successState = document.getElementById("order-success-state");
+
+        var step1 = document.getElementById("step-1");
+        var step2 = document.getElementById("step-2");
+        var step3 = document.getElementById("step-3");
+
+        // 1. Immediately disable button & prevent duplicate clicks
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.classList.add("opacity-50", "cursor-not-allowed");
+            submitBtn.innerHTML = \'<i class="fas fa-spinner animate-spin"></i> <span>প্রক্রিয়াকরণ করা হচ্ছে...</span>\';
+        }
+
+        // 2. Open Progress Modal
+        if (modal) {
+            modal.classList.remove("hidden", "pointer-events-none");
+            setTimeout(function() {
+                modal.classList.remove("opacity-0");
+                if (modalCard) modalCard.classList.remove("scale-95");
+            }, 10);
+        }
+
+        if (progressBar) progressBar.style.width = "35%";
+
+        setTimeout(function() {
+            if (progressBar) progressBar.style.width = "65%";
+            if (step1) step1.innerHTML = \'<span class="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center text-xs flex-shrink-0"><i class="fas fa-check"></i></span><span>১. আপনার তথ্য যাচাই সম্পন্ন</span>\';
+            if (step2) {
+                step2.classList.remove("text-gray-400");
+                step2.classList.add("text-emerald-600");
+                step2.innerHTML = \'<span class="w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center text-xs flex-shrink-0"><i class="fas fa-circle-notch animate-spin"></i></span><span>২. স্টক নিশ্চিত করা হচ্ছে...</span>\';
+            }
+        }, 500);
+
+        var formData = new FormData(checkoutForm);
+        fetch(checkoutForm.action, {
+            method: "POST",
+            headers: {
+                "X-Requested-With": "XMLHttpRequest",
+                "X-CSRF-TOKEN": formData.get("_token") || ""
+            },
+            body: formData
+        })
+        .then(function(res) {
+            return res.json();
+        })
+        .then(function(data) {
+            if (data.status === "success") {
+                if (progressBar) progressBar.style.width = "100%";
+                if (step2) step2.innerHTML = \'<span class="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center text-xs flex-shrink-0"><i class="fas fa-check"></i></span><span>২. প্রোডাক্ট স্টক নিশ্চিত</span>\';
+                if (step3) {
+                    step3.classList.remove("text-gray-400");
+                    step3.classList.add("text-emerald-600");
+                    step3.innerHTML = \'<span class="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center text-xs flex-shrink-0"><i class="fas fa-check"></i></span><span>৩. অর্ডার সফলভাবে নথিভুক্ত!</span>\';
+                }
+
+                // 3. Clear Form Inputs completely so accidental re-click submits NOTHING!
+                checkoutForm.reset();
+                var nameInput = checkoutForm.querySelector("input[name=\'name\']");
+                var phoneInput = checkoutForm.querySelector("input[name=\'mobile\']");
+                var addressInput = checkoutForm.querySelector("textarea[name=\'address\']");
+                if (nameInput) nameInput.value = "";
+                if (phoneInput) phoneInput.value = "";
+                if (addressInput) addressInput.value = "";
+
+                // Show Success State after 600ms
+                setTimeout(function() {
+                    if (loadingState) loadingState.classList.add("hidden");
+                    if (successState) successState.classList.remove("hidden");
+
+                    document.getElementById("succ_order_number").innerText = "#" + (data.order_number || "");
+                    document.getElementById("succ_customer_name").innerText = data.customer_name || "";
+                    document.getElementById("succ_customer_mobile").innerText = data.customer_mobile || "";
+                    document.getElementById("succ_total_amount").innerText = "৳ " + (data.total_amount || "0");
+                }, 600);
+
+            } else {
+                alert(data.message || "অর্ডার প্রসেস করতে একটি সমস্যা হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।");
+                if (modal) modal.classList.add("hidden", "pointer-events-none", "opacity-0");
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.classList.remove("opacity-50", "cursor-not-allowed");
+                    submitBtn.innerHTML = \'<i class="fas fa-circle-check"></i> <span>অর্ডার নিশ্চিত করুন</span>\';
+                }
+            }
+        })
+        .catch(function(err) {
+            checkoutForm.submit();
+        });
+    });
+
+    var closeBtn = document.getElementById("close-success-modal");
+    if (closeBtn) {
+        closeBtn.addEventListener("click", function() {
+            var modal = document.getElementById("order-process-modal");
+            if (modal) modal.classList.add("hidden", "pointer-events-none", "opacity-0");
+            window.location.reload();
+        });
+    }
+});
+</script>';
+
+        $content = str_replace('</body>', $orderProgressModalHtml . "\n</body>", $content);
+
         return response($content)
             ->header('Content-Type', 'text/html');
     }
@@ -664,7 +859,19 @@ class LandingPageController extends Controller
             $adminNotification->save();
         } catch (\Exception $e) {}
 
-        // Show a premium order success page
+        // Show a premium order success page or return JSON for AJAX progress modal
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'status' => 'success',
+                'message' => 'আপনার অর্ডারটি সফলভাবে সম্পন্ন হয়েছে!',
+                'order_number' => $order->order_number,
+                'total_amount' => showAmount($totalAmount),
+                'customer_name' => $request->name,
+                'customer_mobile' => $request->mobile,
+                'shipping_address' => $request->address,
+            ]);
+        }
+
         return view('templates.basic.landing_success', compact('order', 'product', 'totalAmount'));
     }
 }
