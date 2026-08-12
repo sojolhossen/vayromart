@@ -442,6 +442,9 @@ class LandingPageController extends Controller
             $content = str_replace('</body>', $qtyScript . "\n</body>", $content);
         }
 
+        // 17. Dynamically remove pattern="[0-9]*" so +880 format is allowed in existing HTML forms
+        $content = str_replace('pattern="[0-9]*"', 'inputmode="tel"', $content);
+
         return response($content)
             ->header('Content-Type', 'text/html');
     }
@@ -451,10 +454,16 @@ class LandingPageController extends Controller
      */
     public function placeOrder(Request $request)
     {
+        // Sanitize mobile input (remove spaces, hyphens, parentheses, trim whitespace)
+        if ($request->has('mobile')) {
+            $sanitizedMobile = preg_replace('/[^\d+]/', '', trim($request->mobile));
+            $request->merge(['mobile' => $sanitizedMobile]);
+        }
+
         $request->validate([
             'product_id' => 'required|integer|exists:products,id',
             'name' => 'required|string|max:255',
-            'mobile' => 'required|string|regex:/^(?:\+?88)?01[3-9]\d{8}$/',
+            'mobile' => ['required', 'string', 'regex:/^(?:\+?88)?01[3-9]\d{8}$/'],
             'address' => 'required|string|max:500',
             'quantity' => 'nullable|integer|min:1|max:99',
             'shipping_location' => 'nullable|string|in:inside,outside',
@@ -462,7 +471,7 @@ class LandingPageController extends Controller
         ], [
             'name.required' => 'অনুগ্রহ করে আপনার নাম লিখুন।',
             'mobile.required' => 'অনুগ্রহ করে আপনার মোবাইল নম্বর লিখুন।',
-            'mobile.regex' => 'অনুগ্রহ করে একটি সঠিক ১১ ডিজিটের মোবাইল নম্বর লিখুন।',
+            'mobile.regex' => 'অনুগ্রহ করে একটি সঠিক ১১ ডিজিটের মোবাইল নম্বর লিখুন (যেমন: 017XXXXXXXX বা +88017XXXXXXXX)।',
             'address.required' => 'অনুগ্রহ করে আপনার ডেলিভারি ঠিকানা লিখুন।',
         ]);
 

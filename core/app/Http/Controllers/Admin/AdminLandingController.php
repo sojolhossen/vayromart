@@ -818,7 +818,7 @@ class AdminLandingController extends Controller
                         <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">মোবাইল নম্বর <span class="text-rose-500">*</span></label>
                         <div class="relative">
                             <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-emerald-600"><i class="fas fa-phone"></i></span>
-                            <input type="tel" name="mobile" required inputmode="numeric" pattern="[0-9]*" autocomplete="tel" placeholder="১১ ডিজিটের মোবাইল নম্বর লিখুন" class="w-full pl-11 pr-4 py-3.5 text-base sm:text-sm rounded-xl border border-gray-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none transition-all duration-200 font-medium">
+                            <input type="tel" name="mobile" required inputmode="tel" autocomplete="tel" placeholder="১১ ডিজিটের মোবাইল নম্বর (যেমন: 017... বা +88017...)" class="w-full pl-11 pr-4 py-3.5 text-base sm:text-sm rounded-xl border border-gray-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none transition-all duration-200 font-medium">
                         </div>
                     </div>
 
@@ -1644,7 +1644,7 @@ class AdminLandingController extends Controller
                         <label class="block text-sm font-bold text-slate-700 mb-2">মোবাইল নম্বর <span class="text-rose-500">*</span></label>
                         <div class="relative">
                             <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400"><i class="fas fa-phone"></i></span>
-                            <input type="tel" name="mobile" required inputmode="numeric" pattern="[0-9]*" autocomplete="tel" placeholder="১১ ডিজিটের মোবাইল নম্বর লিখুন" class="w-full pl-12 pr-4 py-4 text-base sm:text-sm rounded-2xl border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary-light outline-none transition-all duration-200 text-slate-800 bg-slate-50/50 hover:bg-white font-medium shadow-sm">
+                            <input type="tel" name="mobile" required inputmode="tel" autocomplete="tel" placeholder="১১ ডিজিটের মোবাইল নম্বর (যেমন: 017... বা +88017...)" class="w-full pl-12 pr-4 py-4 text-base sm:text-sm rounded-2xl border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary-light outline-none transition-all duration-200 text-slate-800 bg-slate-50/50 hover:bg-white font-medium shadow-sm">
                         </div>
                     </div>
 
