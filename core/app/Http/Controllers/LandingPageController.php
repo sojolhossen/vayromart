@@ -357,6 +357,7 @@ class LandingPageController extends Controller
         }
 
         // 16. Dynamically inject Quantity Selector for existing landing pages if missing
+        // 16. Dynamically inject Quantity Selector HTML & JS for landing pages
         if (strpos($content, 'name="quantity"') === false) {
             $qtySelectorHtml = '
                     <div>
@@ -370,31 +371,26 @@ class LandingPageController extends Controller
                         </div>
                     </div>';
 
-            $qtyScript = '
+            $content = str_replace('<label class="block text-sm font-bold text-gray-700 mb-2">আপনার নাম', $qtySelectorHtml . "\n" . '<label class="block text-sm font-bold text-gray-700 mb-2">আপনার নাম', $content);
+            $content = str_replace('<label class="block text-sm font-bold text-slate-700 mb-2">আপনার নাম', $qtySelectorHtml . "\n" . '<label class="block text-sm font-bold text-slate-700 mb-2">আপনার নাম', $content);
+        }
+
+        $qtyScript = '
     <script>
-        function changeQuantity(change) {
-            var inputs = document.querySelectorAll("input[name=\'quantity\']");
+        window.changeQuantity = function(change) {
+            var inputs = document.querySelectorAll("input[name=\'quantity\'], #quantity_input");
             inputs.forEach(function(input) {
                 var current = parseInt(input.value) || 1;
                 var newQty = current + change;
                 if (newQty < 1) newQty = 1;
                 if (newQty > 99) newQty = 99;
                 input.value = newQty;
+                input.setAttribute("value", newQty);
             });
+            window.updateBillTotal();
+        };
 
-            var qtyInput = document.getElementById("quantity_input");
-            if (qtyInput) {
-                var current = parseInt(qtyInput.value) || 1;
-                var newQty = current + change;
-                if (newQty < 1) newQty = 1;
-                if (newQty > 99) newQty = 99;
-                qtyInput.value = newQty;
-            }
-
-            updateBillTotal();
-        }
-
-        function updateBillTotal() {
+        window.updateBillTotal = function() {
             var qtyInput = document.getElementById("quantity_input") || document.querySelector("input[name=\'quantity\']");
             var totalBillElem = document.getElementById("total_bill_val");
             var shippingSelect = document.getElementById("shipping_location");
@@ -410,9 +406,9 @@ class LandingPageController extends Controller
             }
 
             var shippingCharge = 0;
-            if (shippingSelect && shippingSelect.options[shippingSelect.selectedIndex]) {
+            if (shippingSelect && shippingSelect.options && shippingSelect.selectedIndex >= 0) {
                 var selectedOpt = shippingSelect.options[shippingSelect.selectedIndex];
-                if (selectedOpt.getAttribute("data-charge") !== null) {
+                if (selectedOpt && selectedOpt.getAttribute("data-charge") !== null) {
                     shippingCharge = parseFloat(selectedOpt.getAttribute("data-charge")) || 0;
                 }
             }
@@ -421,24 +417,30 @@ class LandingPageController extends Controller
                 var total = (unitPrice * qty) + shippingCharge;
                 totalBillElem.innerText = total + " BDT";
             }
-        }
+        };
+
+        document.addEventListener("click", function(e) {
+            var btn = e.target.closest("#qty_plus, #qty_minus, .qty-plus, .qty-minus");
+            if (btn) {
+                e.preventDefault();
+                e.stopPropagation();
+                if (btn.id === "qty_plus" || btn.classList.contains("qty-plus")) {
+                    window.changeQuantity(1);
+                } else if (btn.id === "qty_minus" || btn.classList.contains("qty-minus")) {
+                    window.changeQuantity(-1);
+                }
+            }
+        });
 
         document.addEventListener("DOMContentLoaded", function() {
             var shippingSelect = document.getElementById("shipping_location");
             if (shippingSelect) {
-                shippingSelect.addEventListener("change", updateBillTotal);
+                shippingSelect.addEventListener("change", window.updateBillTotal);
             }
-            var minusBtn = document.getElementById("qty_minus");
-            var plusBtn = document.getElementById("qty_plus");
-            if (minusBtn) minusBtn.addEventListener("click", function() { changeQuantity(-1); });
-            if (plusBtn) plusBtn.addEventListener("click", function() { changeQuantity(1); });
         });
     </script>';
 
-            $content = str_replace('<label class="block text-sm font-bold text-gray-700 mb-2">আপনার নাম', $qtySelectorHtml . "\n" . '<label class="block text-sm font-bold text-gray-700 mb-2">আপনার নাম', $content);
-            $content = str_replace('<label class="block text-sm font-bold text-slate-700 mb-2">আপনার নাম', $qtySelectorHtml . "\n" . '<label class="block text-sm font-bold text-slate-700 mb-2">আপনার নাম', $content);
-            $content = str_replace('</body>', $qtyScript . "\n</body>", $content);
-        }
+        $content = str_replace('</body>', $qtyScript . "\n</body>", $content);
 
         // 17. Dynamically remove pattern="[0-9]*" so +880 format is allowed in existing HTML forms
         $content = str_replace('pattern="[0-9]*"', 'inputmode="tel"', $content);
