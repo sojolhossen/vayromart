@@ -213,15 +213,14 @@ class LandingPageController extends Controller
             transform: translateZ(0);
             -webkit-transform: translateZ(0);
         }
-        .reveal-init {
+        html.js-reveal .reveal-init {
             opacity: 0;
-            transform: translateY(35px) scale(0.98);
-            transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
-            will-change: opacity, transform;
+            transform: translateY(25px);
+            transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1), transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
         }
-        .reveal-active {
+        html.js-reveal .reveal-active {
             opacity: 1 !important;
-            transform: translateY(0) translateX(0) scale(1) !important;
+            transform: translateY(0) !important;
         }
         .hover-lift {
             transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1);
@@ -330,31 +329,43 @@ class LandingPageController extends Controller
         if (strpos($content, 'reveal-init') === false) {
             $scrollRevealJs = '
     <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            var selectors = ["section > div", ".lg\\:col-span-7", ".lg\\:col-span-5", "#checkout-form", ".grid > div", "iframe", ".prose"];
-            selectors.forEach(function(sel) {
-                document.querySelectorAll(sel).forEach(function(el, index) {
-                    if (!el.classList.contains("reveal-init") && !el.closest("#mobile-sticky-bar")) {
-                        el.classList.add("reveal-init");
-                        if (el.parentElement && el.parentElement.classList.contains("grid")) {
-                            var delay = (index % 3) * 0.15;
-                            el.style.transitionDelay = delay + "s";
+        if ("IntersectionObserver" in window) {
+            document.documentElement.classList.add("js-reveal");
+            var initReveal = function() {
+                var selectors = ["section:nth-child(n+3) > div", ".grid > div", "#checkout-form"];
+                selectors.forEach(function(sel) {
+                    document.querySelectorAll(sel).forEach(function(el, index) {
+                        if (!el.classList.contains("reveal-init") && !el.closest("#mobile-sticky-bar")) {
+                            el.classList.add("reveal-init");
+                            if (el.parentElement && el.parentElement.classList.contains("grid")) {
+                                el.style.transitionDelay = ((index % 3) * 0.1) + "s";
+                            }
                         }
-                    }
+                    });
                 });
-            });
-            var observer = new IntersectionObserver(function(entries) {
-                entries.forEach(function(entry) {
-                    if (entry.isIntersecting) {
-                        entry.target.classList.add("reveal-active");
-                        observer.unobserve(entry.target);
-                    }
+                var observer = new IntersectionObserver(function(entries) {
+                    entries.forEach(function(entry) {
+                        if (entry.isIntersecting) {
+                            entry.target.classList.add("reveal-active");
+                            observer.unobserve(entry.target);
+                        }
+                    });
+                }, { threshold: 0.05, rootMargin: "50px" });
+                document.querySelectorAll(".reveal-init").forEach(function(el) {
+                    observer.observe(el);
                 });
-            }, { threshold: 0.08, rootMargin: "0px 0px -40px 0px" });
-            document.querySelectorAll(".reveal-init").forEach(function(el) {
-                observer.observe(el);
-            });
-        });
+                setTimeout(function() {
+                    document.querySelectorAll(".reveal-init").forEach(function(el) {
+                        el.classList.add("reveal-active");
+                    });
+                }, 200);
+            };
+            if (document.readyState === "loading") {
+                document.addEventListener("DOMContentLoaded", initReveal);
+            } else {
+                initReveal();
+            }
+        }
     </script>';
             $content = str_replace('</body>', $scrollRevealJs . "\n</body>", $content);
         }
