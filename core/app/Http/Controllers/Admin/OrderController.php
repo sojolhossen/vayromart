@@ -245,6 +245,19 @@ class OrderController extends Controller
 
     private function sendOrderMail($order)
     {
+        $user = $order->user_id ? $order->user : $order->guest;
+
+        // Skip email & status notifications for guest accounts or dummy guest emails
+        if ($user && !empty($user->email)) {
+            $email = strtolower(trim($user->email));
+            if (strpos($email, 'guest_') === 0 || stristr($email, '.local') !== false || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                return;
+            }
+        } elseif (!$order->user_id) {
+            // Guest order without registered user email
+            return;
+        }
+
         $shortCode = [
             'site_name' => gs('sitename'),
             'order_id'  => $order->order_number,
@@ -272,7 +285,6 @@ class OrderController extends Controller
         $userNotification->click_url =  urlPath($order->user_id ? 'user.orders.details' : 'orders.details', $order->order_number);
         $userNotification->save();
 
-        $user = $order->user_id ? $order->user : $order->guest;
         notify($user, $template, $shortCode);
     }
 }

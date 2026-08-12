@@ -45,6 +45,11 @@ class Email extends NotifyProcess implements Notifiable
             return false;
         }
 
+        // Skip sending email for dummy guest email addresses (e.g. guest_landing_..., @vayromart.local)
+        if (empty($this->email) || !filter_var($this->email, FILTER_VALIDATE_EMAIL) || strpos($this->email, 'guest_') === 0 || stristr($this->email, '.local') !== false) {
+            return false;
+        }
+
         //get message from parent
         $message = $this->getMessage();
         if ($message) {
@@ -55,8 +60,11 @@ class Email extends NotifyProcess implements Notifiable
                 $this->$method();
                 $this->createLog('email');
             } catch (\Throwable $e) {
-                $this->createErrorLog($e->getMessage());
-                session()->flash('mail_error', $e->getMessage());
+                // Do not create admin error logs for invalid guest addresses
+                if (stristr($e->getMessage(), 'Invalid address') === false) {
+                    $this->createErrorLog($e->getMessage());
+                    session()->flash('mail_error', $e->getMessage());
+                }
             }
         }
     }
