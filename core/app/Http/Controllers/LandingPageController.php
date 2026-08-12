@@ -356,6 +356,92 @@ class LandingPageController extends Controller
             }
         }
 
+        // 16. Dynamically inject Quantity Selector for existing landing pages if missing
+        if (strpos($content, 'name="quantity"') === false) {
+            $qtySelectorHtml = '
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">পণ্যের পরিমাণ (Quantity) <span class="text-rose-500">*</span></label>
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="inline-flex items-center rounded-xl border border-gray-200 bg-white p-1 shadow-sm">
+                                <button type="button" id="qty_minus" class="w-10 h-10 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-lg flex items-center justify-center transition-all cursor-pointer">-</button>
+                                <input type="number" name="quantity" id="quantity_input" value="1" min="1" max="99" readonly class="w-14 text-center font-bold text-lg text-gray-800 outline-none border-none bg-transparent">
+                                <button type="button" id="qty_plus" class="w-10 h-10 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-lg flex items-center justify-center transition-all cursor-pointer shadow-sm">+</button>
+                            </div>
+                        </div>
+                    </div>';
+
+            $qtyScript = '
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            var qtyInput = document.getElementById("quantity_input");
+            var qtyPlus = document.getElementById("qty_plus");
+            var qtyMinus = document.getElementById("qty_minus");
+            var totalBillElem = document.getElementById("total_bill_val");
+            var shippingSelect = document.getElementById("shipping_location");
+
+            function getUnitPrice() {
+                var unitElem = document.getElementById("unit_price_val");
+                if (unitElem) {
+                    var p = parseFloat(unitElem.innerText.replace(/[^0-9.]/g, ""));
+                    if (p > 0) return p;
+                }
+                var billText = totalBillElem ? totalBillElem.innerText : "";
+                var match = billText.match(/([0-9.]+)/);
+                if (match) {
+                    var total = parseFloat(match[1]) || 0;
+                    var charge = 0;
+                    if (shippingSelect && shippingSelect.options[shippingSelect.selectedIndex]) {
+                        charge = parseFloat(shippingSelect.options[shippingSelect.selectedIndex].getAttribute("data-charge")) || 0;
+                    }
+                    return Math.max(0, total - charge);
+                }
+                return 0;
+            }
+
+            var unitPriceVal = getUnitPrice();
+
+            function updateBill() {
+                if (!qtyInput || !totalBillElem) return;
+                var qty = parseInt(qtyInput.value) || 1;
+                var shippingCharge = 0;
+                if (shippingSelect && shippingSelect.options[shippingSelect.selectedIndex]) {
+                    var selectedOpt = shippingSelect.options[shippingSelect.selectedIndex];
+                    if (selectedOpt && selectedOpt.getAttribute("data-charge")) {
+                        shippingCharge = parseFloat(selectedOpt.getAttribute("data-charge")) || 0;
+                    }
+                }
+                if (unitPriceVal === 0) unitPriceVal = getUnitPrice();
+                var total = (unitPriceVal * qty) + shippingCharge;
+                totalBillElem.innerText = total + " BDT";
+            }
+
+            if (qtyPlus) {
+                qtyPlus.addEventListener("click", function() {
+                    var current = parseInt(qtyInput.value) || 1;
+                    qtyInput.value = current + 1;
+                    updateBill();
+                });
+            }
+            if (qtyMinus) {
+                qtyMinus.addEventListener("click", function() {
+                    var current = parseInt(qtyInput.value) || 1;
+                    if (current > 1) {
+                        qtyInput.value = current - 1;
+                        updateBill();
+                    }
+                });
+            }
+            if (shippingSelect) {
+                shippingSelect.addEventListener("change", updateBill);
+            }
+        });
+    </script>';
+
+            $content = str_replace('<label class="block text-sm font-bold text-gray-700 mb-2">আপনার নাম', $qtySelectorHtml . "\n" . '<label class="block text-sm font-bold text-gray-700 mb-2">আপনার নাম', $content);
+            $content = str_replace('<label class="block text-sm font-bold text-slate-700 mb-2">আপনার নাম', $qtySelectorHtml . "\n" . '<label class="block text-sm font-bold text-slate-700 mb-2">আপনার নাম', $content);
+            $content = str_replace('</body>', $qtyScript . "\n</body>", $content);
+        }
+
         return response($content)
             ->header('Content-Type', 'text/html');
     }
@@ -370,6 +456,7 @@ class LandingPageController extends Controller
             'name' => 'required|string|max:255',
             'mobile' => 'required|string|regex:/^(?:\+?88)?01[3-9]\d{8}$/',
             'address' => 'required|string|max:500',
+            'quantity' => 'nullable|integer|min:1|max:99',
             'shipping_location' => 'nullable|string|in:inside,outside',
             'landing_page_id' => 'nullable|integer|exists:chatbot_landing_pages,id',
         ], [
@@ -380,7 +467,7 @@ class LandingPageController extends Controller
         ]);
 
         $product = Product::published()->findOrFail($request->product_id);
-        $quantity = 1; // Default quantity is 1 for direct landing page purchase
+        $quantity = max(1, (int) $request->input('quantity', 1));
         $variantId = 0; // Default variant is 0
 
         // Resolve product variant

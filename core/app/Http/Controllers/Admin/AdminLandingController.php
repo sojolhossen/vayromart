@@ -787,6 +787,18 @@ class AdminLandingController extends Controller
                     ' . $variantsHtml . '
 
                     <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">পণ্যের পরিমাণ (Quantity) <span class="text-rose-500">*</span></label>
+                        <div class="flex items-center gap-3">
+                            <div class="inline-flex items-center rounded-xl border border-gray-200 bg-white p-1 shadow-sm">
+                                <button type="button" id="qty_minus" class="w-10 h-10 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-lg flex items-center justify-center transition-all cursor-pointer">-</button>
+                                <input type="number" name="quantity" id="quantity_input" value="1" min="1" max="99" readonly class="w-14 text-center font-bold text-lg text-gray-800 outline-none border-none bg-transparent">
+                                <button type="button" id="qty_plus" class="w-10 h-10 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-lg flex items-center justify-center transition-all cursor-pointer shadow-sm">+</button>
+                            </div>
+                            <span class="text-sm font-semibold text-gray-500">(৳ <span id="unit_price_val">' . $price . '</span> / টি)</span>
+                        </div>
+                    </div>
+
+                    <div>
                         <label class="block text-sm font-bold text-gray-700 mb-2">আপনার নাম <span class="text-rose-500">*</span></label>
                         <div class="relative">
                             <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-gray-400"><i class="fas fa-user"></i></span>
@@ -1588,6 +1600,18 @@ class AdminLandingController extends Controller
                     <input type="hidden" name="landing_page_id" value="' . ($data['id'] ?? '') . '">
 
                     ' . $variantsHtml . '
+
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 mb-2">পণ্যের পরিমাণ (Quantity) <span class="text-rose-500">*</span></label>
+                        <div class="flex items-center gap-3">
+                            <div class="inline-flex items-center rounded-xl border border-gray-200 bg-white p-1 shadow-sm">
+                                <button type="button" id="qty_minus" class="w-10 h-10 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-lg flex items-center justify-center transition-all cursor-pointer">-</button>
+                                <input type="number" name="quantity" id="quantity_input" value="1" min="1" max="99" readonly class="w-14 text-center font-bold text-lg text-gray-800 outline-none border-none bg-transparent">
+                                <button type="button" id="qty_plus" class="w-10 h-10 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-lg flex items-center justify-center transition-all cursor-pointer shadow-sm">+</button>
+                            </div>
+                            <span class="text-sm font-semibold text-gray-500">(৳ <span id="unit_price_val">' . $price . '</span> / টি)</span>
+                        </div>
+                    </div>
 
                     <div>
                         <label class="block text-sm font-bold text-slate-700 mb-2">আপনার নাম <span class="text-rose-500">*</span></label>
