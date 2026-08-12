@@ -333,6 +333,25 @@ class LandingPageController extends Controller
             $content
         );
 
+        // 15. Dynamically polish Order Form styling for existing landing pages
+        $content = str_replace(
+            'class="bg-gray-50 p-6 rounded-2xl border border-gray-100 flex items-center justify-between text-base"',
+            'class="bg-emerald-50/50 p-5 rounded-2xl border border-emerald-100/80 flex items-center justify-between text-sm"',
+            $content
+        );
+        $content = str_replace(
+            'class="bg-slate-50 p-6 rounded-2xl border border-slate-100 flex items-center justify-between text-base"',
+            'class="bg-emerald-50/50 p-5 rounded-2xl border border-emerald-100/80 flex items-center justify-between text-sm"',
+            $content
+        );
+        if (strpos($content, 'fa-lock text-emerald-500') === false) {
+            $content = str_replace(
+                '</button>',
+                '</button><p class="text-xs text-center text-gray-400 mt-2 flex items-center justify-center gap-1.5 font-medium"><i class="fas fa-lock text-emerald-500 text-xs"></i><span>১০০% নিরাপদ অর্ডার • প্রোডাক্ট বুঝে পেয়ে টাকা পরিশোধ করুন</span></p>',
+                $content
+            );
+        }
+
         return response($content)
             ->header('Content-Type', 'text/html');
     }

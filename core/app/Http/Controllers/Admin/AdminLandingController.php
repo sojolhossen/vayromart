@@ -770,16 +770,16 @@ class AdminLandingController extends Controller
     <!-- COD Checkout Form -->
     <section class="bg-slate-900 text-white py-20 border-t border-slate-800" id="checkout-form">
         <div class="max-w-2xl mx-auto px-4">
-            <div class="bg-white text-gray-900 p-8 lg:p-12 rounded-3xl shadow-2xl border border-gray-100">
+            <div class="bg-white text-gray-900 p-6 sm:p-10 rounded-3xl shadow-2xl border border-gray-100/80">
                 <div class="text-center mb-8">
-                    <span class="bg-emerald-50 text-emerald-700 font-bold px-4 py-1.5 rounded-full text-xs border border-emerald-100 tracking-wide uppercase">
-                        ' . ($isFreeDelivery ? '🚚 ১০০% ফ্রি হোম ডেলিভারি (কোনো ডেলিভারি চার্জ নেই)' : 'ক্যাশ অন ডেলিভারি (হাতে পেয়ে মূল্য পরিশোধ)') . '
+                    <span class="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 font-extrabold px-4 py-1.5 rounded-full text-xs border border-emerald-100 tracking-wide uppercase">
+                        ' . ($isFreeDelivery ? '🚚 ১০০% ফ্রি হোম ডেলিভারি (কোনো চার্জ নেই)' : 'ক্যাশ অন ডেলিভারি (হাতে পেয়ে টাকা পরিশোধ)') . '
                     </span>
-                    <h3 class="text-2xl lg:text-3xl font-black mt-4 mb-2">অর্ডার করতে ফর্মটি পূরণ করুন</h3>
-                    <p class="text-gray-500 font-medium">ডেলিভারি ম্যানের কাছ থেকে প্রোডাক্ট বুঝে পেয়ে টাকা পরিশোধ করুন।</p>
+                    <h3 class="text-2xl lg:text-3xl font-black text-gray-900 mt-4 mb-1 tracking-tight">অর্ডার করতে ফর্মটি পূরণ করুন</h3>
+                    <p class="text-gray-500 text-xs sm:text-sm font-medium">ক্যাশ অন ডেলিভারি - কোনো অগ্রিম টাকা দেওয়া লাগে না</p>
                 </div>
 
-                <form action="' . $checkoutUrl . '" method="POST" class="space-y-6">
+                <form action="' . $checkoutUrl . '" method="POST" class="space-y-5">
                     <input type="hidden" name="_token" value="' . $csrfToken . '">
                     <input type="hidden" name="product_id" value="' . $product->id . '">
                     <input type="hidden" name="landing_page_id" value="' . ($data['id'] ?? '') . '">
@@ -787,49 +787,60 @@ class AdminLandingController extends Controller
                     ' . $variantsHtml . '
 
                     <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-2">আপনার নাম <span class="text-rose-500">*</span></label>
+                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">আপনার সম্পূর্ণ নাম <span class="text-rose-500">*</span></label>
                         <div class="relative">
-                            <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-gray-400"><i class="fas fa-user"></i></span>
-                            <input type="text" name="name" required autocomplete="name" placeholder="আপনার সম্পূর্ণ নাম লিখুন" class="w-full pl-11 pr-4 py-3.5 text-base sm:text-sm rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all duration-200">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-gray-400"><i class="fas fa-user text-sm"></i></span>
+                            <input type="text" name="name" required autocomplete="name" placeholder="আপনার পুরো নাম লিখুন" class="w-full pl-11 pr-4 py-3.5 text-sm rounded-2xl border border-gray-200/90 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none transition-all duration-200 bg-gray-50/40 hover:bg-white text-gray-900 font-medium">
                         </div>
                     </div>
 
                     <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-2">মোবাইল নম্বর <span class="text-rose-500">*</span></label>
+                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">মোবাইল নম্বর <span class="text-rose-500">*</span></label>
                         <div class="relative">
-                            <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-gray-400"><i class="fas fa-phone"></i></span>
-                            <input type="tel" name="mobile" required inputmode="numeric" pattern="[0-9]*" autocomplete="tel" placeholder="১১ ডিজিটের মোবাইল নম্বর লিখুন" class="w-full pl-11 pr-4 py-3.5 text-base sm:text-sm rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all duration-200">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-gray-400"><i class="fas fa-phone text-sm"></i></span>
+                            <input type="tel" name="mobile" required inputmode="numeric" pattern="[0-9]*" autocomplete="tel" placeholder="১১ ডিজিটের মোবাইল নম্বর লিখুন" class="w-full pl-11 pr-4 py-3.5 text-sm rounded-2xl border border-gray-200/90 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none transition-all duration-200 bg-gray-50/40 hover:bg-white text-gray-900 font-medium">
                         </div>
                     </div>
 
                     <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-2">ডেলিভারি এলাকা <span class="text-rose-500">*</span></label>
+                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">ডেলিভারি এলাকা <span class="text-rose-500">*</span></label>
                         <div class="relative">
-                            <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-gray-400"><i class="fas fa-truck"></i></span>
-                            <select name="shipping_location" id="shipping_location" required class="w-full pl-11 pr-4 py-3.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all duration-200">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-gray-400"><i class="fas fa-truck text-sm"></i></span>
+                            <select name="shipping_location" id="shipping_location" required class="w-full pl-11 pr-10 py-3.5 text-sm rounded-2xl border border-gray-200/90 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none transition-all duration-200 bg-gray-50/40 hover:bg-white text-gray-900 font-medium appearance-none cursor-pointer">
                                 <option value="inside" data-charge="' . $insideCharge . '">ঢাকা সিটির ভেতরে (' . ($isFreeDelivery ? 'ফ্রি' : $insideCharge . ' BDT') . ')</option>
                                 <option value="outside" data-charge="' . $outsideCharge . '">ঢাকা সিটির বাইরে (' . ($isFreeDelivery ? 'ফ্রি' : $outsideCharge . ' BDT') . ')</option>
                             </select>
+                            <span class="absolute inset-y-0 right-0 flex items-center pr-4 text-slate-400 pointer-events-none"><i class="fas fa-chevron-down text-xs"></i></span>
                         </div>
                     </div>
 
                     <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-2">ডেলিভারি ঠিকানা <span class="text-rose-500">*</span></label>
+                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">পূর্ণাঙ্গ ঠিকানা <span class="text-rose-500">*</span></label>
                         <div class="relative">
-                            <span class="absolute top-4 left-0 flex items-start pl-4 text-gray-400"><i class="fas fa-map-marker-alt mt-1"></i></span>
-                            <textarea name="address" required placeholder="আপনার জেলা, থানা ও গ্রামের নাম বা বাসা নম্বর লিখুন" class="w-full pl-11 pr-4 py-3.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all duration-200" rows="3"></textarea>
+                            <span class="absolute top-4 left-0 flex items-start pl-4 text-gray-400"><i class="fas fa-location-dot text-sm mt-0.5"></i></span>
+                            <textarea name="address" required placeholder="আপনার জেলা, থানা ও এলাকার নাম বা বাসা নম্বর লিখুন" class="w-full pl-11 pr-4 py-3.5 text-sm rounded-2xl border border-gray-200/90 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none transition-all duration-200 bg-gray-50/40 hover:bg-white text-gray-900 font-medium" rows="3"></textarea>
                         </div>
                     </div>
 
-                    <div class="bg-gray-50 p-6 rounded-2xl border border-gray-100 flex items-center justify-between text-base">
-                        <span class="font-bold text-gray-600">ডেলিভারি চার্জ: <span id="delivery_charge_val">' . ($isFreeDelivery ? 'ফ্রি' : $insideCharge . ' BDT') . '</span></span>
-                        <span class="font-black text-indigo-600 text-xl">সর্বমোট বিল: <span id="total_bill_val">' . ($price + $insideCharge) . ' BDT</span></span>
+                    <div class="bg-emerald-50/50 p-5 rounded-2xl border border-emerald-100/80 flex items-center justify-between text-sm">
+                        <div>
+                            <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider block">ডেলিভারি চার্জ</span>
+                            <span id="delivery_charge_val" class="font-bold text-gray-800 text-sm mt-0.5 block">' . ($isFreeDelivery ? 'ফ্রি (০ BDT)' : $insideCharge . ' BDT') . '</span>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-xs font-semibold text-emerald-700 uppercase tracking-wider block">মোট পরিশোধযোগ্য মূল্য</span>
+                            <span id="total_bill_val" class="font-black text-emerald-600 text-2xl font-mono mt-0.5 block">' . ($price + $insideCharge) . ' BDT</span>
+                        </div>
                     </div>
 
-                    <button type="submit" class="w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 hover:scale-[1.01] active:scale-[0.99] text-white font-bold text-xl py-4 rounded-xl shadow-lg hover:shadow-xl hover:shadow-emerald-500/20 transition-all duration-300 flex items-center justify-center gap-2 pulsing-btn">
-                        <i class="fas fa-circle-check"></i>
+                    <button type="submit" class="w-full bg-gradient-to-r from-emerald-500 via-teal-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 active:scale-[0.99] text-white font-extrabold text-lg sm:text-xl py-4 px-6 rounded-2xl shadow-lg shadow-emerald-500/20 transition-all duration-300 flex items-center justify-center gap-3 pulsing-btn cursor-pointer">
+                        <i class="fas fa-circle-check text-xl"></i>
                         <span>অর্ডার নিশ্চিত করুন</span>
                     </button>
+                    <p class="text-xs text-center text-gray-400 mt-2 flex items-center justify-center gap-1.5 font-medium">
+                        <i class="fas fa-lock text-emerald-500 text-xs"></i>
+                        <span>১০০% নিরাপদ অর্ডার • প্রোডাক্ট বুঝে পেয়ে টাকা পরিশোধ করুন</span>
+                    </p>
                 </form>
             </div>
         </div>
@@ -1558,16 +1569,16 @@ class AdminLandingController extends Controller
         <div class="max-w-2xl mx-auto px-4">
             ' . $hotlineBlock . '
 
-            <div class="bg-white text-slate-800 p-8 lg:p-12 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.1)] border border-slate-100">
+            <div class="bg-white text-slate-800 p-6 sm:p-10 rounded-3xl shadow-2xl border border-slate-100/80">
                 <div class="text-center mb-8">
-                    <span class="bg-emerald-50 text-emerald-700 font-bold px-4 py-1.5 rounded-full text-xs border border-emerald-100 tracking-wide uppercase">
-                        ' . ($isFreeDelivery ? '🚚 ১০০% ফ্রি হোম ডেলিভারি (কোনো ডেলিভারি চার্জ নেই)' : 'ক্যাশ অন ডেলিভারি (হাতে পেয়ে মূল্য পরিশোধ)') . '
+                    <span class="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 font-extrabold px-4 py-1.5 rounded-full text-xs border border-emerald-100 tracking-wide uppercase">
+                        ' . ($isFreeDelivery ? '🚚 ১০০% ফ্রি হোম ডেলিভারি (কোনো চার্জ নেই)' : 'ক্যাশ অন ডেলিভারি (হাতে পেয়ে টাকা পরিশোধ)') . '
                     </span>
-                    <h3 class="text-2xl lg:text-3xl font-black mt-4 mb-2">অর্ডার করতে ফর্মটি পূরণ করুন</h3>
-                    <p class="text-slate-500 font-medium">ডেলিভারি ম্যানের কাছ থেকে প্রোডাক্ট বুঝে পেয়ে টাকা পরিশোধ করুন।</p>
+                    <h3 class="text-2xl lg:text-3xl font-black text-slate-900 mt-4 mb-1 tracking-tight">অর্ডার করতে ফর্মটি পূরণ করুন</h3>
+                    <p class="text-slate-500 text-xs sm:text-sm font-medium">ক্যাশ অন ডেলিভারি - কোনো অগ্রিম টাকা দেওয়া লাগে না</p>
                 </div>
 
-                <form action="' . $checkoutUrl . '" method="POST" class="space-y-6">
+                <form action="' . $checkoutUrl . '" method="POST" class="space-y-5">
                     <input type="hidden" name="_token" value="' . $csrfToken . '">
                     <input type="hidden" name="product_id" value="' . $product->id . '">
                     <input type="hidden" name="landing_page_id" value="' . ($data['id'] ?? '') . '">
@@ -1575,26 +1586,26 @@ class AdminLandingController extends Controller
                     ' . $variantsHtml . '
 
                     <div>
-                        <label class="block text-sm font-bold text-slate-700 mb-2">আপনার নাম <span class="text-rose-500">*</span></label>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">আপনার সম্পূর্ণ নাম <span class="text-rose-500">*</span></label>
                         <div class="relative">
-                            <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400"><i class="fas fa-user"></i></span>
-                            <input type="text" name="name" required autocomplete="name" placeholder="আপনার সম্পূর্ণ নাম লিখুন" class="w-full pl-12 pr-4 py-4 text-base sm:text-sm rounded-2xl border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary-light outline-none transition-all duration-200 text-slate-800 bg-slate-50/50 hover:bg-white font-medium shadow-sm">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400"><i class="fas fa-user text-sm"></i></span>
+                            <input type="text" name="name" required autocomplete="name" placeholder="আপনার পুরো নাম লিখুন" class="w-full pl-11 pr-4 py-3.5 text-sm rounded-2xl border border-slate-200/90 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none transition-all duration-200 bg-slate-50/40 hover:bg-white text-slate-900 font-medium">
                         </div>
                     </div>
 
                     <div>
-                        <label class="block text-sm font-bold text-slate-700 mb-2">মোবাইল নম্বর <span class="text-rose-500">*</span></label>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">মোবাইল নম্বর <span class="text-rose-500">*</span></label>
                         <div class="relative">
-                            <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400"><i class="fas fa-phone"></i></span>
-                            <input type="tel" name="mobile" required inputmode="numeric" pattern="[0-9]*" autocomplete="tel" placeholder="১১ ডিজিটের মোবাইল নম্বর লিখুন" class="w-full pl-12 pr-4 py-4 text-base sm:text-sm rounded-2xl border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary-light outline-none transition-all duration-200 text-slate-800 bg-slate-50/50 hover:bg-white font-medium shadow-sm">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400"><i class="fas fa-phone text-sm"></i></span>
+                            <input type="tel" name="mobile" required inputmode="numeric" pattern="[0-9]*" autocomplete="tel" placeholder="১১ ডিজিটের মোবাইল নম্বর লিখুন" class="w-full pl-11 pr-4 py-3.5 text-sm rounded-2xl border border-slate-200/90 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none transition-all duration-200 bg-slate-50/40 hover:bg-white text-slate-900 font-medium">
                         </div>
                     </div>
 
                     <div>
-                        <label class="block text-sm font-bold text-slate-700 mb-2">ডেলিভারি এলাকা <span class="text-rose-500">*</span></label>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">ডেলিভারি এলাকা <span class="text-rose-500">*</span></label>
                         <div class="relative">
-                            <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400"><i class="fas fa-truck"></i></span>
-                            <select name="shipping_location" id="shipping_location" required class="w-full pl-12 pr-10 py-4 rounded-2xl border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary-light outline-none transition-all duration-200 text-slate-800 bg-slate-50/50 hover:bg-white font-medium appearance-none shadow-sm">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400"><i class="fas fa-truck text-sm"></i></span>
+                            <select name="shipping_location" id="shipping_location" required class="w-full pl-11 pr-10 py-3.5 text-sm rounded-2xl border border-slate-200/90 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none transition-all duration-200 bg-slate-50/40 hover:bg-white text-slate-900 font-medium appearance-none cursor-pointer">
                                 <option value="inside" data-charge="' . $insideCharge . '">ঢাকা সিটির ভেতরে (' . ($isFreeDelivery ? 'ফ্রি' : $insideCharge . ' BDT') . ')</option>
                                 <option value="outside" data-charge="' . $outsideCharge . '">ঢাকা সিটির বাইরে (' . ($isFreeDelivery ? 'ফ্রি' : $outsideCharge . ' BDT') . ')</option>
                             </select>
@@ -1603,22 +1614,32 @@ class AdminLandingController extends Controller
                     </div>
 
                     <div>
-                        <label class="block text-sm font-bold text-slate-700 mb-2">ডেলিভারি ঠিকানা <span class="text-rose-500">*</span></label>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">পূর্ণাঙ্গ ঠিকানা <span class="text-rose-500">*</span></label>
                         <div class="relative">
-                            <span class="absolute top-4 left-0 flex items-start pl-4 text-slate-400"><i class="fas fa-map-marker-alt mt-1"></i></span>
-                            <textarea name="address" required placeholder="আপনার জেলা, থানা ও গ্রামের নাম বা বাসা নম্বর লিখুন" class="w-full pl-12 pr-4 py-4 rounded-2xl border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary-light outline-none transition-all duration-200 text-slate-800 bg-slate-50/50 hover:bg-white font-medium shadow-sm" rows="3"></textarea>
+                            <span class="absolute top-4 left-0 flex items-start pl-4 text-slate-400"><i class="fas fa-location-dot text-sm mt-0.5"></i></span>
+                            <textarea name="address" required placeholder="আপনার জেলা, থানা ও এলাকার নাম বা বাসা নম্বর লিখুন" class="w-full pl-11 pr-4 py-3.5 text-sm rounded-2xl border border-slate-200/90 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none transition-all duration-200 bg-slate-50/40 hover:bg-white text-slate-900 font-medium" rows="3"></textarea>
                         </div>
                     </div>
 
-                    <div class="bg-slate-50 p-6 rounded-2xl border border-slate-100 flex items-center justify-between text-base">
-                        <span class="font-bold text-slate-600">ডেলিভারি চার্জ: <span id="delivery_charge_val" class="text-primary font-extrabold">' . ($isFreeDelivery ? 'ফ্রি' : $insideCharge . ' BDT') . '</span></span>
-                        <span class="font-black text-slate-800 text-xl">সর্বমোট বিল: <span id="total_bill_val" class="text-emerald-600 font-black">' . ($price + $insideCharge) . ' BDT</span></span>
+                    <div class="bg-emerald-50/50 p-5 rounded-2xl border border-emerald-100/80 flex items-center justify-between text-sm">
+                        <div>
+                            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider block">ডেলিভারি চার্জ</span>
+                            <span id="delivery_charge_val" class="font-bold text-slate-800 text-sm mt-0.5 block">' . ($isFreeDelivery ? 'ফ্রি (০ BDT)' : $insideCharge . ' BDT') . '</span>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-xs font-semibold text-emerald-700 uppercase tracking-wider block">মোট পরিশোধযোগ্য মূল্য</span>
+                            <span id="total_bill_val" class="font-black text-emerald-600 text-2xl font-mono mt-0.5 block">' . ($price + $insideCharge) . ' BDT</span>
+                        </div>
                     </div>
 
-                    <button type="submit" class="w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 hover:scale-[1.01] active:scale-[0.99] text-white font-black text-xl py-4.5 rounded-2xl shadow-lg hover:shadow-xl hover:shadow-emerald-600/20 transition-all duration-300 flex items-center justify-center gap-3 pulsing-btn">
-                        <i class="fas fa-circle-check"></i>
+                    <button type="submit" class="w-full bg-gradient-to-r from-emerald-500 via-teal-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 active:scale-[0.99] text-white font-extrabold text-lg sm:text-xl py-4 px-6 rounded-2xl shadow-lg shadow-emerald-500/20 transition-all duration-300 flex items-center justify-center gap-3 pulsing-btn cursor-pointer">
+                        <i class="fas fa-circle-check text-xl"></i>
                         <span>অর্ডার নিশ্চিত করুন</span>
                     </button>
+                    <p class="text-xs text-center text-slate-400 mt-2 flex items-center justify-center gap-1.5 font-medium">
+                        <i class="fas fa-lock text-emerald-500 text-xs"></i>
+                        <span>১০০% নিরাপদ অর্ডার • প্রোডাক্ট বুঝে পেয়ে টাকা পরিশোধ করুন</span>
+                    </p>
                 </form>
             </div>
         </div>
