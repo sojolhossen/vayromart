@@ -606,6 +606,22 @@ document.addEventListener("DOMContentLoaded", function() {
         })
         .then(function(data) {
             if (data.status === "success") {
+                // Fire Facebook Pixel Purchase Event on Client Browser
+                if (typeof fbq === "function") {
+                    try {
+                        fbq("track", "Purchase", {
+                            value: parseFloat(data.total_amount_num || data.total_amount) || 0,
+                            currency: "BDT",
+                            content_ids: [String(data.product_id || "")],
+                            content_name: data.product_name || "",
+                            content_type: "product",
+                            num_items: parseInt(data.quantity) || 1
+                        }, {
+                            eventID: data.order_number || ""
+                        });
+                    } catch (fbErr) {}
+                }
+
                 if (progressBar) progressBar.style.width = "100%";
                 if (step2) step2.innerHTML = \'<span class="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center text-xs flex-shrink-0"><i class="fas fa-check"></i></span><span>২. প্রোডাক্ট স্টক নিশ্চিত</span>\';
                 if (step3) {
@@ -661,6 +677,14 @@ document.addEventListener("DOMContentLoaded", function() {
 </script>';
 
         $content = str_replace('</body>', $orderProgressModalHtml . "\n</body>", $content);
+
+        // 21. Inject Facebook Pixel script if not present
+        if (strpos($content, 'connect.facebook.net') === false && strpos($content, 'fbevents.js') === false) {
+            $fbPixelScript = loadExtension('facebook-pixel');
+            if ($fbPixelScript) {
+                $content = str_replace('</head>', $fbPixelScript . "\n</head>", $content);
+            }
+        }
 
         return response($content)
             ->header('Content-Type', 'text/html');
@@ -841,15 +865,18 @@ document.addEventListener("DOMContentLoaded", function() {
 
         // Send Facebook Conversions API (CAPI) Purchase Event
         sendFbCapiEvent('Purchase', [
-            'value' => $totalAmount,
+            'value' => (float)$totalAmount,
+            'currency' => 'BDT',
             'content_ids' => [(string)$product->id],
+            'content_name' => $product->name,
             'content_type' => 'product',
             'num_items' => $quantity
         ], [
             'name' => $request->name,
             'phone' => $request->mobile,
-            'email' => $shippingAddressObj['email'] ?? null
-        ]);
+            'email' => $shippingAddressObj['email'] ?? null,
+            'address' => $request->address
+        ], $order->order_number);
 
         // Send Admin notification (which automatically sends detailed Telegram alert via AdminNotification model hook)
         try {
@@ -866,6 +893,10 @@ document.addEventListener("DOMContentLoaded", function() {
                 'message' => 'আপনার অর্ডারটি সফলভাবে সম্পন্ন হয়েছে!',
                 'order_number' => $order->order_number,
                 'total_amount' => showAmount($totalAmount),
+                'total_amount_num' => (float)$totalAmount,
+                'product_id' => $product->id,
+                'product_name' => $product->name,
+                'quantity' => $quantity,
                 'customer_name' => $request->name,
                 'customer_mobile' => $request->mobile,
                 'shipping_address' => $request->address,

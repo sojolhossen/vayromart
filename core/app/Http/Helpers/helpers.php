@@ -187,7 +187,7 @@ function loadExtension($key) {
 /**
  * Send Facebook Conversions API (CAPI) Server-Side Event
  */
-function sendFbCapiEvent($eventName, $customData = [], $userData = []) {
+function sendFbCapiEvent($eventName, $customData = [], $userData = [], $eventId = null) {
     try {
         $extension = \App\Models\Extension::where('act', 'facebook-pixel')->first();
 
@@ -195,6 +195,10 @@ function sendFbCapiEvent($eventName, $customData = [], $userData = []) {
         $pixelId = !empty($shortcode['pixel_id']['value']) ? $shortcode['pixel_id']['value'] : '1012202121425400';
         $accessToken = !empty($shortcode['access_token']['value']) ? $shortcode['access_token']['value'] : 'EAAXVtFuQjQ4BSNOSa3J0Lxr3TX6emEzggxcaP1mnHYqZAiZCfeq7Ro9AVm3ZCUYLGI66InUQL6XPDg1cQZAR0NZAjO8frZCztOX83Betz8j1fnETjSx3kBjUPrQgmVRfsN324HUhbNTXETlbqGTW3UWASLAH1ozkwCfFrRZBxxbg1Lm2vGgxreedOzgMa92JbNzAAZDZD';
         $testEventCode = !empty($shortcode['test_event_code']['value']) ? $shortcode['test_event_code']['value'] : 'TEST89704';
+
+        if (!$pixelId || !$accessToken) {
+            return false;
+        }
 
         // Prepare User Data with SHA256 hashes according to Facebook CAPI spec
         $userPayload = [
@@ -232,6 +236,10 @@ function sendFbCapiEvent($eventName, $customData = [], $userData = []) {
             'user_data' => $userPayload,
             'custom_data' => array_merge(['currency' => 'BDT'], $customData)
         ];
+
+        if ($eventId) {
+            $eventPayload['event_id'] = (string)$eventId;
+        }
 
         $body = [
             'data' => [$eventPayload]
