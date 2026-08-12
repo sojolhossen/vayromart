@@ -538,12 +538,16 @@ class LandingPageController extends Controller
             'email' => $shippingAddressObj['email'] ?? null
         ]);
 
-        // Send Admin notification
+        // Send Admin notification & Detailed Telegram Alert
         try {
             $adminNotification = new AdminNotification();
             $adminNotification->title = 'New order #' . $order->order_number . ' has been created via AI Landing Page';
             $adminNotification->click_url = urlPath('admin.order.index') . '?search=' . $order->order_number;
             $adminNotification->save();
+        } catch (\Exception $e) {}
+
+        try {
+            sendTelegramOrderNotification($order);
         } catch (\Exception $e) {}
 
         // Show a premium order success page

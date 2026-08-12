@@ -1166,3 +1166,107 @@ function hexToHsl($hex)
     $hsl['l']   = $lightness;
     return $hsl;
 }
+
+function sendTelegramOrderNotification($order) {
+    try {
+        $botToken = env('TELEGRAM_BOT_TOKEN');
+        $chatId = env('TELEGRAM_CHAT_ID');
+
+        if (!$botToken || !$chatId) {
+            return false;
+        }
+
+        $orderObj = null;
+        if (is_object($order) && isset($order->id)) {
+            $orderObj = \App\Models\Order::with(['orderDetail.product', 'orderDetail.productVariant', 'user', 'guest'])->find($order->id);
+        } else {
+            $orderObj = \App\Models\Order::with(['orderDetail.product', 'orderDetail.productVariant', 'user', 'guest'])->find($order);
+        }
+
+        if (!$orderObj) {
+            return false;
+        }
+
+        $shippingAddress = $orderObj->shipping_address;
+        if (is_string($shippingAddress)) {
+            $shippingAddress = json_decode($shippingAddress, true) ?? [];
+        } elseif (is_object($shippingAddress)) {
+            $shippingAddress = (array) $shippingAddress;
+        }
+
+        $customerName = trim(($shippingAddress['firstname'] ?? '') . ' ' . ($shippingAddress['lastname'] ?? ''));
+        if (empty($customerName)) {
+            $customerName = $shippingAddress['name'] ?? ($orderObj->user->fullname ?? ($orderObj->guest->fullname ?? 'GUEST CUSTOMER'));
+        }
+
+        $customerPhone = $shippingAddress['mobile'] ?? ($shippingAddress['phone'] ?? ($orderObj->user->mobile ?? ($orderObj->guest->mobile ?? 'N/A')));
+        
+        $addressParts = [];
+        if (!empty($shippingAddress['address'])) $addressParts[] = $shippingAddress['address'];
+        if (!empty($shippingAddress['city'])) $addressParts[] = $shippingAddress['city'];
+        if (!empty($shippingAddress['state'])) $addressParts[] = $shippingAddress['state'];
+        $customerAddress = !empty($addressParts) ? implode(', ', $addressParts) : 'N/A';
+
+        $productLines = [];
+        if ($orderObj->orderDetail && count($orderObj->orderDetail) > 0) {
+            foreach ($orderObj->orderDetail as $detail) {
+                $pName = $detail->product->name ?? 'Product';
+                if ($detail->productVariant && !empty($detail->productVariant->name)) {
+                    $pName .= ' (' . $detail->productVariant->name . ')';
+                }
+                $productLines[] = "• " . e($pName) . " × " . $detail->quantity . " Pcs (৳" . showAmount($detail->price) . ")";
+            }
+        }
+        $productsText = !empty($productLines) ? implode("\n", $productLines) : "• N/A";
+
+        $shippingChargeText = "৳" . showAmount($orderObj->shipping_charge);
+        if ($orderObj->shipping_charge == 0) {
+            $shippingChargeText = "৳0 (ফ্রি ডেলিভারি 🚚)";
+        }
+
+        $paymentMethodText = $orderObj->is_cod ? "ক্যাশ অন ডেলিভারি (COD)" : "অনলাইন পেমেন্ট";
+
+        $msg = "🛍️ <b>নতুন অর্ডার প্রাপ্তি! (NEW ORDER)</b>\n";
+        $msg .= "━━━━━━━━━━━━━━━━━━━━━━\n";
+        $msg .= "🆔 <b>অর্ডার আইডি:</b> <code>#" . e($orderObj->order_number) . "</code>\n";
+        $msg .= "👤 <b>গ্রাহকের নাম:</b> " . e($customerName) . "\n";
+        $msg .= "📱 <b>মোবাইল নম্বর:</b> <code>" . e($customerPhone) . "</code>\n";
+        $msg .= "🏠 <b>ডেলিভারি ঠিকানা:</b> " . e($customerAddress) . "\n";
+        $msg .= "━━━━━━━━━━━━━━━━━━━━━━\n";
+        $msg .= "📦 <b>পণ্য বিবরণী:</b>\n" . $productsText . "\n";
+        $msg .= "━━━━━━━━━━━━━━━━━━━━━━\n";
+        $msg .= "💰 <b>সাবটোটাল:</b> ৳" . showAmount($orderObj->subtotal) . "\n";
+        $msg .= "🚚 <b>ডেলিভারি চার্জ:</b> " . $shippingChargeText . "\n";
+        $msg .= "💳 <b>সর্বমোট মূল্য:</b> <b>৳" . showAmount($orderObj->total_amount) . "</b> (" . $paymentMethodText . ")\n";
+        $msg .= "⏰ <b>অর্ডারের সময়:</b> " . showDateTime($orderObj->created_at, 'd M Y, h:i A') . "\n";
+        $msg .= "━━━━━━━━━━━━━━━━━━━━━━\n";
+        $adminUrl = urlPath('admin.order.index') . '?search=' . $orderObj->order_number;
+        $msg .= "🔗 <a href=\"" . $adminUrl . "\">এডমিন প্যানেলে অর্ডার দেখুন</a>";
+
+        $url = "https://api.telegram.org/bot" . $botToken . "/sendMessage";
+        $data = [
+            'chat_id' => $chatId,
+            'text' => $msg,
+            'parse_mode' => 'HTML',
+            'disable_web_page_preview' => true,
+        ];
+
+        $options = [
+            'http' => [
+                'header'  => "Content-type: application/x-www-form-urlencoded\r\n",
+                'method'  => 'POST',
+                'content' => http_build_query($data),
+                'ssl' => [
+                    'verify_peer' => false,
+                    'verify_peer_name' => false,
+                ]
+            ]
+        ];
+
+        $context  = stream_context_create($options);
+        @file_get_contents($url, false, $context);
+        return true;
+    } catch (\Exception $e) {
+        return false;
+    }
+}

@@ -17,6 +17,24 @@ class AdminNotification extends Model
 
         static::created(function ($notification) {
             try {
+                // Check if this is an order notification and send detailed Telegram order alert
+                if (str_contains(strtolower($notification->title), 'order')) {
+                    $orderNumber = null;
+                    if ($notification->click_url && preg_match('/search=([A-Za-z0-9_-]+)/', $notification->click_url, $m)) {
+                        $orderNumber = $m[1];
+                    } elseif (preg_match('/#([A-Za-z0-9_-]+)/', $notification->title, $m)) {
+                        $orderNumber = $m[1];
+                    }
+
+                    if ($orderNumber) {
+                        $order = \App\Models\Order::where('order_number', $orderNumber)->first();
+                        if ($order) {
+                            sendTelegramOrderNotification($order);
+                            return;
+                        }
+                    }
+                }
+
                 $botToken = env('TELEGRAM_BOT_TOKEN');
                 $chatId = env('TELEGRAM_CHAT_ID');
 
