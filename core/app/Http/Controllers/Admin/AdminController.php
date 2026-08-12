@@ -54,7 +54,9 @@ class AdminController extends Controller {
             return collect($item)->count();
         })->sort()->reverse()->take(5);
 
-        $deposit['total_deposit_amount']   = Deposit::successful()->sum('amount');
+        $deliveredSales = Order::isValidOrder()->delivered()->sum('total_amount');
+        $paidSales = Order::isValidOrder()->where('payment_status', Status::PAYMENT_SUCCESS)->where('status', '!=', Status::ORDER_DELIVERED)->sum('total_amount');
+        $deposit['total_deposit_amount']   = $deliveredSales + $paidSales;
         $deposit['total_deposit_pending']  = Deposit::pending()->count();
         $deposit['total_deposit_rejected'] = Deposit::rejected()->count();
         $deposit['total_deposit_charge']   = Deposit::successful()->sum('charge');
