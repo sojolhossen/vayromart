@@ -460,7 +460,12 @@ class LandingPageController extends Controller
             });
         });
     </script>';
-        $content = str_replace('</body>', $autoSelectVariantScript . "\n</body>", $content);
+        // 19. Dynamically prevent header logo from opening main site; reload landing page instead
+        $content = preg_replace(
+            '/<a\s+href=["\']' . preg_quote(url('/'), '/') . '["\']([^>]*)>/i',
+            '<a href="javascript:void(0)" onclick="window.location.reload()"$1>',
+            $content
+        );
 
         return response($content)
             ->header('Content-Type', 'text/html');

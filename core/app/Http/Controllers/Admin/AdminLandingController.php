@@ -676,7 +676,7 @@ class AdminLandingController extends Controller
     <!-- Sticky Header -->
     <header class="sticky top-0 bg-white/95 backdrop-blur-md border-b border-gray-100 z-50 transition-all shadow-sm">
         <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-            <a href="' . url('/') . '" class="text-2xl font-black text-emerald-600 tracking-tight flex items-center gap-2">
+            <a href="javascript:void(0)" onclick="window.location.reload()" class="text-2xl font-black text-emerald-600 tracking-tight flex items-center gap-2">
                 <i class="fas fa-shopping-bag"></i>
                 <span>Vayromart</span>
             </a>
@@ -1492,7 +1492,7 @@ class AdminLandingController extends Controller
     <!-- Sticky Header -->
     <header class="sticky top-0 bg-white/95 backdrop-blur-md border-b border-gray-100 z-50 transition-all shadow-sm">
         <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-            <a href="' . url('/') . '" class="text-2xl font-black text-emerald-600 tracking-tight flex items-center gap-2">
+            <a href="javascript:void(0)" onclick="window.location.reload()" class="text-2xl font-black text-emerald-600 tracking-tight flex items-center gap-2">
                 <i class="fas fa-shopping-bag"></i>
                 <span>' . gs('site_name') . '</span>
             </a>
