@@ -445,6 +445,23 @@ class LandingPageController extends Controller
         // 17. Dynamically remove pattern="[0-9]*" so +880 format is allowed in existing HTML forms
         $content = str_replace('pattern="[0-9]*"', 'inputmode="tel"', $content);
 
+        // 18. Auto-select first variant option by default for existing landing pages
+        $autoSelectVariantScript = '
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            document.querySelectorAll("select[name^=\'variant\']").forEach(function(sel) {
+                if (sel.options.length > 1 && (sel.value === "" || sel.selectedIndex === 0)) {
+                    if (sel.options[0].value === "" && sel.options.length > 1) {
+                        sel.selectedIndex = 1;
+                    } else if (sel.options.length > 0) {
+                        sel.selectedIndex = 0;
+                    }
+                }
+            });
+        });
+    </script>';
+        $content = str_replace('</body>', $autoSelectVariantScript . "\n</body>", $content);
+
         return response($content)
             ->header('Content-Type', 'text/html');
     }

@@ -551,11 +551,13 @@ class AdminLandingController extends Controller
                 $variantsHtml .= '<div class="form-group mb-4">
                     <label class="block text-xs font-bold text-gray-600 mb-2">' . e($attribute->name) . ' <span class="text-rose-500">*</span></label>
                     <div class="relative">
-                        <select name="variant[' . $attribute->id . ']" required class="w-full pl-4 pr-10 py-3.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all duration-200 text-gray-800 bg-white font-medium appearance-none shadow-sm text-sm">
-                            <option value="">-- ' . e($attribute->name) . ' সিলেক্ট করুন --</option>';
+                        <select name="variant[' . $attribute->id . ']" required class="w-full pl-4 pr-10 py-3.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all duration-200 text-gray-800 bg-white font-medium appearance-none shadow-sm text-sm">';
+                $index = 0;
                 foreach ($attributeValues as $attributeValue) {
                     $attrValName = !empty($attributeValue->name) ? $attributeValue->name : $attributeValue->value;
-                    $variantsHtml .= '<option value="' . $attributeValue->id . '">' . e($attrValName) . '</option>';
+                    $selected = ($index === 0) ? ' selected="selected"' : '';
+                    $variantsHtml .= '<option value="' . $attributeValue->id . '"' . $selected . '>' . e($attrValName) . '</option>';
+                    $index++;
                 }
                 $variantsHtml .= '</select>
                         <span class="absolute inset-y-0 right-0 flex items-center pr-4 text-slate-400 pointer-events-none"><i class="fas fa-chevron-down text-xs"></i></span>
@@ -1335,11 +1337,13 @@ class AdminLandingController extends Controller
                 $variantsHtml .= '<div class="form-group mb-4">
                     <label class="block text-xs font-bold text-slate-600 mb-2">' . e($attribute->name) . ' <span class="text-rose-500">*</span></label>
                     <div class="relative">
-                        <select name="variant[' . $attribute->id . ']" required class="w-full pl-4 pr-10 py-3.5 rounded-xl border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary-light outline-none transition-all duration-200 text-slate-800 bg-slate-50/50 hover:bg-white font-medium appearance-none shadow-sm text-sm">
-                            <option value="">-- ' . e($attribute->name) . ' সিলেক্ট করুন --</option>';
+                        <select name="variant[' . $attribute->id . ']" required class="w-full pl-4 pr-10 py-3.5 rounded-xl border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary-light outline-none transition-all duration-200 text-slate-800 bg-slate-50/50 hover:bg-white font-medium appearance-none shadow-sm text-sm">';
+                $index = 0;
                 foreach ($attributeValues as $attributeValue) {
                     $attrValName = !empty($attributeValue->name) ? $attributeValue->name : $attributeValue->value;
-                    $variantsHtml .= '<option value="' . $attributeValue->id . '">' . e($attrValName) . '</option>';
+                    $selected = ($index === 0) ? ' selected="selected"' : '';
+                    $variantsHtml .= '<option value="' . $attributeValue->id . '"' . $selected . '>' . e($attrValName) . '</option>';
+                    $index++;
                 }
                 $variantsHtml .= '</select>
                         <span class="absolute inset-y-0 right-0 flex items-center pr-4 text-slate-400 pointer-events-none"><i class="fas fa-chevron-down text-xs"></i></span>
