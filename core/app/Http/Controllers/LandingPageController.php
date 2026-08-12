@@ -372,68 +372,66 @@ class LandingPageController extends Controller
 
             $qtyScript = '
     <script>
-        document.addEventListener("DOMContentLoaded", function() {
+        function changeQuantity(change) {
+            var inputs = document.querySelectorAll("input[name=\'quantity\']");
+            inputs.forEach(function(input) {
+                var current = parseInt(input.value) || 1;
+                var newQty = current + change;
+                if (newQty < 1) newQty = 1;
+                if (newQty > 99) newQty = 99;
+                input.value = newQty;
+            });
+
             var qtyInput = document.getElementById("quantity_input");
-            var qtyPlus = document.getElementById("qty_plus");
-            var qtyMinus = document.getElementById("qty_minus");
+            if (qtyInput) {
+                var current = parseInt(qtyInput.value) || 1;
+                var newQty = current + change;
+                if (newQty < 1) newQty = 1;
+                if (newQty > 99) newQty = 99;
+                qtyInput.value = newQty;
+            }
+
+            updateBillTotal();
+        }
+
+        function updateBillTotal() {
+            var qtyInput = document.getElementById("quantity_input") || document.querySelector("input[name=\'quantity\']");
             var totalBillElem = document.getElementById("total_bill_val");
             var shippingSelect = document.getElementById("shipping_location");
 
-            function getUnitPrice() {
-                var unitElem = document.getElementById("unit_price_val");
-                if (unitElem) {
-                    var p = parseFloat(unitElem.innerText.replace(/[^0-9.]/g, ""));
-                    if (p > 0) return p;
-                }
-                var billText = totalBillElem ? totalBillElem.innerText : "";
-                var match = billText.match(/([0-9.]+)/);
-                if (match) {
-                    var total = parseFloat(match[1]) || 0;
-                    var charge = 0;
-                    if (shippingSelect && shippingSelect.options[shippingSelect.selectedIndex]) {
-                        charge = parseFloat(shippingSelect.options[shippingSelect.selectedIndex].getAttribute("data-charge")) || 0;
-                    }
-                    return Math.max(0, total - charge);
-                }
-                return 0;
+            if (!qtyInput || !totalBillElem) return;
+
+            var qty = parseInt(qtyInput.value) || 1;
+            var unitElem = document.getElementById("unit_price_val");
+            var unitPrice = 0;
+
+            if (unitElem) {
+                unitPrice = parseFloat(unitElem.innerText.replace(/[^0-9.]/g, "")) || 0;
             }
 
-            var unitPriceVal = getUnitPrice();
-
-            function updateBill() {
-                if (!qtyInput || !totalBillElem) return;
-                var qty = parseInt(qtyInput.value) || 1;
-                var shippingCharge = 0;
-                if (shippingSelect && shippingSelect.options[shippingSelect.selectedIndex]) {
-                    var selectedOpt = shippingSelect.options[shippingSelect.selectedIndex];
-                    if (selectedOpt && selectedOpt.getAttribute("data-charge")) {
-                        shippingCharge = parseFloat(selectedOpt.getAttribute("data-charge")) || 0;
-                    }
+            var shippingCharge = 0;
+            if (shippingSelect && shippingSelect.options[shippingSelect.selectedIndex]) {
+                var selectedOpt = shippingSelect.options[shippingSelect.selectedIndex];
+                if (selectedOpt.getAttribute("data-charge") !== null) {
+                    shippingCharge = parseFloat(selectedOpt.getAttribute("data-charge")) || 0;
                 }
-                if (unitPriceVal === 0) unitPriceVal = getUnitPrice();
-                var total = (unitPriceVal * qty) + shippingCharge;
+            }
+
+            if (unitPrice > 0) {
+                var total = (unitPrice * qty) + shippingCharge;
                 totalBillElem.innerText = total + " BDT";
             }
+        }
 
-            if (qtyPlus) {
-                qtyPlus.addEventListener("click", function() {
-                    var current = parseInt(qtyInput.value) || 1;
-                    qtyInput.value = current + 1;
-                    updateBill();
-                });
-            }
-            if (qtyMinus) {
-                qtyMinus.addEventListener("click", function() {
-                    var current = parseInt(qtyInput.value) || 1;
-                    if (current > 1) {
-                        qtyInput.value = current - 1;
-                        updateBill();
-                    }
-                });
-            }
+        document.addEventListener("DOMContentLoaded", function() {
+            var shippingSelect = document.getElementById("shipping_location");
             if (shippingSelect) {
-                shippingSelect.addEventListener("change", updateBill);
+                shippingSelect.addEventListener("change", updateBillTotal);
             }
+            var minusBtn = document.getElementById("qty_minus");
+            var plusBtn = document.getElementById("qty_plus");
+            if (minusBtn) minusBtn.addEventListener("click", function() { changeQuantity(-1); });
+            if (plusBtn) plusBtn.addEventListener("click", function() { changeQuantity(1); });
         });
     </script>';
 
