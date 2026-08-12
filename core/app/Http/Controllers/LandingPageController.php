@@ -321,7 +321,17 @@ class LandingPageController extends Controller
             $content = str_replace('</body>', $lightboxModalHtml . "\n</body>", $content);
         }
 
-        // All elements guaranteed 100% visible
+        // 14. Dynamically fix header button and logo visibility
+        $content = str_replace(
+            'bg-primary hover:brightness-95 text-white font-bold px-6 py-2.5 rounded-full',
+            'bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold px-6 py-2.5 rounded-full shadow-md',
+            $content
+        );
+        $content = str_replace(
+            'text-2xl font-black text-primary tracking-tight',
+            'text-2xl font-black text-emerald-600 tracking-tight',
+            $content
+        );
 
         return response($content)
             ->header('Content-Type', 'text/html');

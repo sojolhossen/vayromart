@@ -674,11 +674,11 @@ class AdminLandingController extends Controller
     <!-- Sticky Header -->
     <header class="sticky top-0 bg-white/95 backdrop-blur-md border-b border-gray-100 z-50 transition-all shadow-sm">
         <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-            <a href="' . url('/') . '" class="text-2xl font-black text-primary tracking-tight flex items-center gap-2">
+            <a href="' . url('/') . '" class="text-2xl font-black text-emerald-600 tracking-tight flex items-center gap-2">
                 <i class="fas fa-shopping-bag"></i>
                 <span>Vayromart</span>
             </a>
-            <a href="#checkout-form" class="bg-primary hover:brightness-95 text-white font-bold px-6 py-2.5 rounded-full transition-all duration-300 shadow-md hover:shadow-lg flex items-center gap-2">
+            <a href="#checkout-form" class="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold px-6 py-2.5 rounded-full transition-all duration-300 shadow-md hover:shadow-lg flex items-center gap-2">
                 <i class="fas fa-cart-shopping"></i>
                 <span>এখনই কিনুন</span>
             </a>
@@ -1442,11 +1442,11 @@ class AdminLandingController extends Controller
     <!-- Sticky Header -->
     <header class="sticky top-0 bg-white/95 backdrop-blur-md border-b border-gray-100 z-50 transition-all shadow-sm">
         <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-            <a href="' . url('/') . '" class="text-2xl font-black text-primary tracking-tight flex items-center gap-2">
+            <a href="' . url('/') . '" class="text-2xl font-black text-emerald-600 tracking-tight flex items-center gap-2">
                 <i class="fas fa-shopping-bag"></i>
                 <span>' . gs('site_name') . '</span>
             </a>
-            <a href="#checkout-form" class="bg-primary hover:brightness-95 text-white font-bold px-6 py-2.5 rounded-full transition-all duration-300 shadow-md hover:shadow-lg flex items-center gap-2">
+            <a href="#checkout-form" class="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold px-6 py-2.5 rounded-full transition-all duration-300 shadow-md hover:shadow-lg flex items-center gap-2">
                 <i class="fas fa-cart-shopping"></i>
                 <span>এখনই কিনুন</span>
             </a>
