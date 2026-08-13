@@ -78,9 +78,40 @@ class OrderController extends Controller
         if($scope) {
             $orders->$scope();
         }
-        return $orders->searchable(['order_number', 'user:username'], false)
+
+        $search = request()->search;
+        if ($search) {
+            $searchClean = preg_replace('/[^0-9]/', '', $search);
+            $orders->where(function ($q) use ($search, $searchClean) {
+                $q->where('order_number', 'LIKE', "%$search%")
+                  ->orWhere('shipping_address', 'LIKE', "%$search%");
+
+                if (!empty($searchClean) && strlen($searchClean) >= 3) {
+                    $q->orWhere('shipping_address', 'LIKE', "%$searchClean%");
+                }
+
+                $q->orWhereHas('user', function ($u) use ($search, $searchClean) {
+                    $u->where('username', 'LIKE', "%$search%")
+                      ->orWhere('email', 'LIKE', "%$search%")
+                      ->orWhere('mobile', 'LIKE', "%$search%");
+                    if (!empty($searchClean) && strlen($searchClean) >= 3) {
+                        $u->orWhere('mobile', 'LIKE', "%$searchClean%");
+                    }
+                });
+
+                $q->orWhereHas('guest', function ($g) use ($search, $searchClean) {
+                    $g->where('email', 'LIKE', "%$search%");
+                    if (!empty($searchClean) && strlen($searchClean) >= 3) {
+                        $g->orWhere('mobile', 'LIKE', "%$searchClean%");
+                    }
+                });
+            });
+        }
+
+        return $orders
             ->with([
                 'user',
+                'guest',
                 'deposit',
                 'deposit.gateway',
                 'afterSaleDownloadableProducts:id,name,is_downloadable,delivery_type'

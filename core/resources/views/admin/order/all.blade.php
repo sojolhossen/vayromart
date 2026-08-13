@@ -10,6 +10,7 @@
                             <thead>
                                 <tr>
                                     <th>@lang('Order Date')</th>
+                                    <th>@lang('Mobile Number')</th>
                                     <th>@lang('Customer')</th>
                                     <th>@lang('Order ID')</th>
                                     <th>@lang('Payment Via')</th>
@@ -22,13 +23,40 @@
                             <tbody class="list">
                                 @forelse($orders as $order)
                                     <tr>
-                                        <td>{{ showDateTime($order->created_at, 'd M, Y') }}</td>
+                                        <td>
+                                            {{ showDateTime($order->created_at, 'd M, Y') }}
+                                            <br>
+                                            <small class="text-muted">{{ showDateTime($order->created_at, 'h:i A') }}</small>
+                                        </td>
+
+                                        <td>
+                                            @php
+                                                $mobile = null;
+                                                if (!empty($order->shipping_address)) {
+                                                    $sa = is_string($order->shipping_address) ? json_decode($order->shipping_address, true) : (array) $order->shipping_address;
+                                                    $mobile = $sa['mobile'] ?? ($sa['phone'] ?? null);
+                                                }
+                                                if (!$mobile && $order->user) {
+                                                    $mobile = $order->user->mobile;
+                                                }
+                                                if (!$mobile && $order->guest) {
+                                                    $mobile = @$order->guest->mobile;
+                                                }
+                                            @endphp
+                                            @if ($mobile)
+                                                <a href="tel:{{ $mobile }}" class="fw-bold text--primary">
+                                                    <i class="las la-phone"></i> {{ $mobile }}
+                                                </a>
+                                            @else
+                                                <span class="text-muted">N/A</span>
+                                            @endif
+                                        </td>
 
                                         <td>
                                             @if ($order->user_id)
                                                 <a href="{{ route('admin.users.detail', $order->user->id) }}">{{ $order->user->username }}</a>
                                             @else
-                                                {{ strLimit($order->guest->email, 15) }}
+                                                {{ strLimit($order->guest?->email ?? 'Guest', 15) }}
                                             @endif
                                         </td>
 
