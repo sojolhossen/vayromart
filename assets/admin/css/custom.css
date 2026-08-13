@@ -422,3 +422,123 @@ a {
   border-color: #4634ff;
   box-shadow: none;
 }
+
+/* =========================================================
+   PREMIUM SMOOTH ANIMATION SUITE FOR ADMIN PANEL
+   ========================================================= */
+
+/* 1. Page Content Fade-In & Slide-Up Animation */
+.bodywrapper__inner {
+  animation: adminPageFadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes adminPageFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 2. Smooth Transitions for Cards, Widgets & Tables */
+.card, .widget, .widget-two, .border-card, .summary-card {
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), 
+              box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1), 
+              border-color 0.25s ease !important;
+}
+
+.card:hover, .widget-two:hover, .summary-card .border-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04) !important;
+}
+
+/* 3. Smooth Button Hover & Press Animation */
+.btn {
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn:hover {
+  transform: translateY(-1.5px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12) !important;
+}
+
+.btn:active {
+  transform: translateY(0) scale(0.98);
+}
+
+/* 4. Table Row Smooth Hover & Highlight */
+.table tbody tr {
+  transition: background-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.table tbody tr:hover {
+  background-color: rgba(70, 52, 255, 0.035) !important;
+}
+
+/* 5. Smooth Sidebar Menu Interactions */
+.sidebar__menu .sidebar-menu-item > a {
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.sidebar__menu .sidebar-menu-item > a:hover {
+  padding-left: 22px !important;
+}
+
+.sidebar__menu .sidebar-menu-item > a .menu-icon {
+  transition: transform 0.22s ease, color 0.22s ease !important;
+}
+
+.sidebar__menu .sidebar-menu-item > a:hover .menu-icon {
+  transform: scale(1.18) rotate(3deg);
+}
+
+/* 6. Form Inputs & Select Focus Transitions */
+.form-control, .form-select, .select2-container--default .select2-selection--single {
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease !important;
+}
+
+.form-control:focus, .form-select:focus {
+  transform: translateY(-1px);
+  box-shadow: 0 0 0 4px rgba(70, 52, 255, 0.12) !important;
+}
+
+/* 7. Modal Entrance Scale & Fade Animation */
+.modal.fade .modal-dialog {
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease !important;
+  transform: scale(0.92) translateY(20px);
+}
+
+.modal.show .modal-dialog {
+  transform: scale(1) translateY(0);
+}
+
+/* 8. Badge Hover Pulse Animation */
+.badge {
+  transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+}
+
+.badge:hover {
+  transform: scale(1.06);
+}
+
+/* 9. Dropdown Menu Entrance Animation */
+.dropdown-menu {
+  animation: adminDropdownSlide 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transform-origin: top right;
+}
+
+@keyframes adminDropdownSlide {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
