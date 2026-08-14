@@ -170,7 +170,7 @@ class TelegramController extends Controller {
                 $invMsg .= "• <b>Shipping Charge:</b> " . gs('cur_sym') . showAmount($order->shipping_charge, currencyFormat: false) . "\n";
                 $invMsg .= "• <b>TOTAL PAYABLE:</b> <b>" . gs('cur_sym') . showAmount($order->total_amount, currencyFormat: false) . " " . gs('cur_text') . "</b>\n";
                 $invMsg .= "━━━━━━━━━━━━━━━━━━━\n";
-                $invMsg .= "🔗 <b>Web Invoice Link:</b>\n" . route('admin.order.print.invoice', $order->id);
+                $invMsg .= "🔗 <b>Web Invoice Link:</b>\n" . route('admin.print.invoice', $order->id);
 
                 $this->sendTelegramMessage($chatId, $invMsg);
                 return response('OK', 200);
