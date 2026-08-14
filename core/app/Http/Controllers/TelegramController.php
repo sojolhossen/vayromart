@@ -30,9 +30,6 @@ class TelegramController extends Controller {
                 return response('Unauthorized', 200);
             }
 
-            // Perform automatic 24-hour cleanup of temporary messages
-            $this->cleanupOldTemporaryMessages();
-
             $lowerText = strtolower($text);
 
             // Handle cmd, /cmd, /help, help, /start commands
@@ -55,128 +52,10 @@ class TelegramController extends Controller {
                 $cmdMsg .= "📊 <b>4. Daily Sales & Stock Commands:</b>\n";
                 $cmdMsg .= "• <code>today</code> or <code>report</code> -> View today's total sales & order breakdown\n";
                 $cmdMsg .= "• <code>stock</code> or <code>lowstock</code> -> View products running low on stock\n\n";
-                $cmdMsg .= "🛍️ <b>5. Product Stock & Price Commands:</b>\n";
-                $cmdMsg .= "• <code>plist</code> or <code>products</code> -> View product catalog list & Product IDs\n";
-                $cmdMsg .= "• <code>psearch Earbuds</code> -> Search product by name to get Product ID\n";
-                $cmdMsg .= "• <code>320-stock +10</code> or <code>320-stock -5</code> or <code>320-stock 50</code> -> Update product stock\n";
-                $cmdMsg .= "• <code>320-price 1200</code> or <code>price 320 1200</code> -> Update product sale price\n\n";
-                $cmdMsg .= "💡 <i>Tip: Replace '32' or '320' with any Order ID or Product ID!</i>\n";
+                $cmdMsg .= "💡 <i>Tip: Replace '32' with any Order ID or Order Number!</i>\n";
                 $cmdMsg .= "━━━━━━━━━━━━━━━━━━━";
 
-                $this->sendTelegramMessage($chatId, $cmdMsg, true);
-                return response('OK', 200);
-            }
-
-            // Handle Product List / Search command (plist, products, psearch Earbuds)
-            if (in_array($lowerText, ['plist', 'products', '/plist', '/products']) || preg_match('/^(?:psearch|product|prod)[\s\-_:=]+(.+)$/i', $text, $pm)) {
-                $query = isset($pm[1]) ? trim($pm[1]) : '';
-
-                $pQuery = Product::published();
-                if ($query) {
-                    $pQuery->where('name', 'LIKE', "%{$query}%");
-                }
-
-                $products = $pQuery->take(8)->get();
-                if ($products->isEmpty()) {
-                    $this->sendTelegramMessage($chatId, "❌ <b>No Products Found!</b>\nNo product matched: \"<b>{$query}</b>\"");
-                    return response('OK', 200);
-                }
-
-                $pMsg = "🛍️ <b>Product Catalog & Stock List</b>\n";
-                $pMsg .= "━━━━━━━━━━━━━━━━━━━\n\n";
-
-                foreach ($products as $p) {
-                    $priceVal = $p->sale_price ?: $p->regular_price;
-                    $pMsg .= "📦 <b>{$p->name}</b>\n";
-                    $pMsg .= "• <b>Product ID:</b> <code>{$p->id}</code>\n";
-                    $pMsg .= "• <b>Current Stock:</b> <b>{$p->in_stock} pcs</b>\n";
-                    $pMsg .= "• <b>Current Price:</b> <b>" . gs('cur_sym') . showAmount($priceVal, currencyFormat: false) . " " . gs('cur_text') . "</b>\n";
-                    $pMsg .= "⚡ <b>Quick Update Commands:</b>\n";
-                    $pMsg .= "<code>{$p->id}-stock +10</code> | <code>{$p->id}-price " . intval($priceVal) . "</code>\n\n";
-                }
-
-                $pMsg .= "━━━━━━━━━━━━━━━━━━━\n";
-                $pMsg .= "💡 <i>Tip: Search specific product by typing: <code>psearch Earbuds</code></i>";
-
-                $this->sendTelegramMessage($chatId, $pMsg, true);
-                return response('OK', 200);
-            }
-
-            // Handle Product Stock Update command (e.g. 320-stock +10, 320-stock -5, 320-stock 50, stock 320 50)
-            if (preg_match('/^(?:p|prod|product)?[\s\-_:=]*([0-9]+)[\s\-_:=]+stock[\s\-_:=]*([\+\-]?[0-9]+)$/i', $text, $m) || preg_match('/^stock[\s\-_:=]+([0-9]+)[\s\-_:=]+([\+\-]?[0-9]+)$/i', $text, $m)) {
-                $productId = intval($m[1]);
-                $valStr = trim($m[2]);
-
-                $product = Product::find($productId);
-                if (!$product) {
-                    $this->sendTelegramMessage($chatId, "❌ <b>Product Not Found!</b>\nCould not find any product with ID: <b>{$productId}</b>");
-                    return response('OK', 200);
-                }
-
-                $oldStock = intval($product->in_stock);
-                $newStock = $oldStock;
-
-                if (str_starts_with($valStr, '+')) {
-                    $addVal = intval(substr($valStr, 1));
-                    $newStock = $oldStock + $addVal;
-                } elseif (str_starts_with($valStr, '-')) {
-                    $subVal = intval(substr($valStr, 1));
-                    $newStock = max(0, $oldStock - $subVal);
-                } else {
-                    $newStock = max(0, intval($valStr));
-                }
-
-                $product->in_stock = $newStock;
-                $product->track_inventory = Status::YES;
-                $product->save();
-
-                // Log stock update if ProductManager is available
-                try {
-                    $diff = abs($newStock - $oldStock);
-                    if ($diff > 0) {
-                        $desc = "Stock updated via Telegram Command ({$valStr})";
-                        $productManager = new \App\Lib\ProductManager();
-                        $productManager->createStockLog($product, $diff, $desc, null, $newStock >= $oldStock ? '+' : '-');
-                    }
-                } catch (\Exception $e) {}
-
-                $replyMsg = "✅ <b>Product Stock Updated Successfully!</b>\n";
-                $replyMsg .= "━━━━━━━━━━━━━━━━━━━\n";
-                $replyMsg .= "📦 <b>Product:</b> {$product->name} (ID: {$product->id})\n";
-                $replyMsg .= "• <b>Previous Stock:</b> {$oldStock} pcs\n";
-                $replyMsg .= "• <b>New Stock:</b> <b>{$newStock} pcs</b>\n";
-                $replyMsg .= "━━━━━━━━━━━━━━━━━━━";
-
-                $this->sendTelegramMessage($chatId, $replyMsg, true);
-                return response('OK', 200);
-            }
-
-            // Handle Product Price Update command (e.g. 320-price 1200, 320 price 1200, price 320 1200)
-            if (preg_match('/^(?:p|prod|product)?[\s\-_:=]*([0-9]+)[\s\-_:=]+(price|sale|rate)[\s\-_:=]+([0-9]+(?:\.[0-9]{1,2})?)$/i', $text, $m) || preg_match('/^(price|sale|rate)[\s\-_:=]+([0-9]+)[\s\-_:=]+([0-9]+(?:\.[0-9]{1,2})?)$/i', $text, $m)) {
-                $productId = is_numeric($m[1]) && intval($m[1]) > 0 ? intval($m[1]) : intval($m[2]);
-                $newPrice = floatval(is_numeric($m[1]) && intval($m[1]) > 0 ? $m[3] : $m[3]);
-
-                $product = Product::find($productId);
-                if (!$product) {
-                    $this->sendTelegramMessage($chatId, "❌ <b>Product Not Found!</b>\nCould not find any product with ID: <b>{$productId}</b>");
-                    return response('OK', 200);
-                }
-
-                $oldPrice = $product->sale_price ?: $product->regular_price;
-                $product->sale_price = $newPrice;
-                $product->save();
-
-                $curSym = gs('cur_sym');
-                $curText = gs('cur_text');
-
-                $replyMsg = "✅ <b>Product Price Updated Successfully!</b>\n";
-                $replyMsg .= "━━━━━━━━━━━━━━━━━━━\n";
-                $replyMsg .= "📦 <b>Product:</b> {$product->name} (ID: {$product->id})\n";
-                $replyMsg .= "• <b>Previous Price:</b> {$curSym}" . showAmount($oldPrice, currencyFormat: false) . "\n";
-                $replyMsg .= "• <b>New Sale Price:</b> <b>{$curSym}" . showAmount($newPrice, currencyFormat: false) . " {$curText}</b>\n";
-                $replyMsg .= "━━━━━━━━━━━━━━━━━━━";
-
-                $this->sendTelegramMessage($chatId, $replyMsg, true);
+                $this->sendTelegramMessage($chatId, $cmdMsg);
                 return response('OK', 200);
             }
 
@@ -196,14 +75,14 @@ class TelegramController extends Controller {
                 }
 
                 if (!$order) {
-                    $this->sendTelegramMessage($chatId, "❌ <b>Order Not Found!</b>\nCould not find any order matching \"<b>{$orderQueryStr}</b>\".", true);
+                    $this->sendTelegramMessage($chatId, "❌ <b>Order Not Found!</b>\nCould not find any order matching \"<b>{$orderQueryStr}</b>\".");
                     return response('OK', 200);
                 }
 
                 // Check if new order number is already taken
                 $exists = Order::where('order_number', $newOrderNumber)->where('id', '!=', $order->id)->exists();
                 if ($exists) {
-                    $this->sendTelegramMessage($chatId, "❌ <b>Error:</b> Order number <b>{$newOrderNumber}</b> is already taken by another order!", true);
+                    $this->sendTelegramMessage($chatId, "❌ <b>Error:</b> Order number <b>{$newOrderNumber}</b> is already taken by another order!");
                     return response('OK', 200);
                 }
 
@@ -218,7 +97,7 @@ class TelegramController extends Controller {
                 $replyMsg .= "• <b>Database ID:</b> {$order->id}\n";
                 $replyMsg .= "━━━━━━━━━━━━━━━━━━━";
 
-                $this->sendTelegramMessage($chatId, $replyMsg, true);
+                $this->sendTelegramMessage($chatId, $replyMsg);
                 return response('OK', 200);
             }
 
@@ -418,7 +297,7 @@ class TelegramController extends Controller {
                     $replyMsg .= "• <b>Total Amount:</b> " . gs('cur_sym') . showAmount($order->total_amount, currencyFormat: false) . " " . gs('cur_text') . "\n";
                     $replyMsg .= "━━━━━━━━━━━━━━━━━━━";
 
-                    $this->sendTelegramMessage($chatId, $replyMsg, true);
+                    $this->sendTelegramMessage($chatId, $replyMsg);
                     return response('OK', 200);
                 }
             }
@@ -576,7 +455,7 @@ class TelegramController extends Controller {
                 $message .= "━━━━━━━━━━━━━━━━━━━\n";
                 $message .= "💡 <i>Tap any status command above to copy and send instantly!</i>";
 
-                $this->sendTelegramMessage($chatId, $message, true);
+                $this->sendTelegramMessage($chatId, $message);
                 return response('OK', 200);
             }
 
@@ -712,7 +591,7 @@ class TelegramController extends Controller {
         return "Failed to set Telegram Webhook. Please check your bot token or network connection.";
     }
 
-    private function sendTelegramMessage($chatId, $message, $isTemporary = false) {
+    private function sendTelegramMessage($chatId, $message) {
         $botToken = env('TELEGRAM_BOT_TOKEN');
         if (!$botToken) return;
 
@@ -737,77 +616,6 @@ class TelegramController extends Controller {
         ];
 
         $context  = stream_context_create($options);
-        $result = @file_get_contents($url, false, $context);
-
-        if ($isTemporary && $result) {
-            $resObj = json_decode($result);
-            if ($resObj && isset($resObj->result->message_id)) {
-                $this->registerTemporaryMessage($chatId, $resObj->result->message_id);
-            }
-        }
-    }
-
-    private function deleteTelegramMessage($chatId, $messageId) {
-        $botToken = env('TELEGRAM_BOT_TOKEN');
-        if (!$botToken) return;
-
-        $url = "https://api.telegram.org/bot" . $botToken . "/deleteMessage";
-        $data = [
-            'chat_id' => $chatId,
-            'message_id' => $messageId
-        ];
-
-        $options = [
-            'http' => [
-                'header'  => "Content-type: application/x-www-form-urlencoded\r\n",
-                'method'  => 'POST',
-                'content' => http_build_query($data),
-                'ssl' => [
-                    'verify_peer' => false,
-                    'verify_peer_name' => false,
-                ]
-            ]
-        ];
-
-        $context  = stream_context_create($options);
         @file_get_contents($url, false, $context);
-    }
-
-    private function registerTemporaryMessage($chatId, $messageId) {
-        $filePath = storage_path('app/telegram_temp_messages.json');
-        $messages = [];
-        if (file_exists($filePath)) {
-            $messages = json_decode(file_get_contents($filePath), true) ?: [];
-        }
-
-        $messages[] = [
-            'chat_id' => $chatId,
-            'message_id' => $messageId,
-            'time' => time()
-        ];
-
-        @file_put_contents($filePath, json_encode($messages));
-    }
-
-    private function cleanupOldTemporaryMessages() {
-        $filePath = storage_path('app/telegram_temp_messages.json');
-        if (!file_exists($filePath)) return;
-
-        $messages = json_decode(file_get_contents($filePath), true) ?: [];
-        if (empty($messages)) return;
-
-        $remaining = [];
-        $now = time();
-        $oneDayInSeconds = 86400; // 24 hours
-
-        foreach ($messages as $item) {
-            if (($now - intval($item['time'])) >= $oneDayInSeconds) {
-                $this->deleteTelegramMessage($item['chat_id'], $item['message_id']);
-            } else {
-                $remaining[] = $item;
-            }
-        }
-
-        @file_put_contents($filePath, json_encode($remaining));
     }
 }

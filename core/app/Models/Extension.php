@@ -15,7 +15,7 @@ class Extension extends Model
 
     protected $hidden = ['script','shortcode'];
 
-    public function generateScript()
+    public function scopeGenerateScript()
     {
         $script = $this->script;
         $shortcode = json_decode(json_encode($this->shortcode), true) ?: [];
