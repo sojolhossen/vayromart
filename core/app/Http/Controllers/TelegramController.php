@@ -27,10 +27,92 @@ class TelegramController extends Controller {
                 return response('Unauthorized', 200);
             }
 
-            // Ignore start command
-            if ($text === '/start') {
-                $this->sendTelegramMessage($chatId, "👋 Hello Admin! Send me a customer name, username, email, or mobile number to search their details.");
+            // Ignore start command or show help
+            if ($text === '/start' || $text === '/help') {
+                $helpMsg = "👋 <b>Hello Admin!</b> Welcome to Vayromart Telegram Assistant.\n\n";
+                $helpMsg .= "🔍 <b>Search Commands:</b>\n";
+                $helpMsg .= "• Type Order ID (e.g. <code>32</code> or <code>OID-00032</code>)\n";
+                $helpMsg .= "• Type Customer Name or Mobile (e.g. <code>01712345678</code>)\n\n";
+                $helpMsg .= "⚡ <b>Quick Order Status Commands:</b>\n";
+                $helpMsg .= "• <code>32-process</code> (Mark #32 as Processing 🔵)\n";
+                $helpMsg .= "• <code>32-dispatch</code> (Mark #32 as Dispatched 🟣)\n";
+                $helpMsg .= "• <code>32-deliver</code> (Mark #32 as Delivered 🟢)\n";
+                $helpMsg .= "• <code>32-cancel</code> (Mark #32 as Canceled 🔴)\n";
+                $helpMsg .= "• <code>32-return</code> (Mark #32 as Returned 🟠)";
+                $this->sendTelegramMessage($chatId, $helpMsg);
                 return response('OK', 200);
+            }
+
+            // Check if message is an Order Status Update Command (e.g. 32-cancel, 32-process, 32-dispatch, 32-deliver, 32-return)
+            if (preg_match('/^#?(OID-[0-9]+|[0-9]+)[\s\-_:=]+(process|proccess|processing|dispatch|dispach|dispatched|deliver|delivered|cancel|cancle|canceled|cancelled|return|returned)$/i', $text, $matches)) {
+                $orderQueryStr = trim($matches[1]);
+                $actionStr = strtolower(trim($matches[2]));
+                
+                $targetStatus = null;
+                $actionTitle = '';
+                $statusEmoji = '';
+                
+                if (in_array($actionStr, ['process', 'proccess', 'processing'])) {
+                    $targetStatus = Status::ORDER_PROCESSING;
+                    $actionTitle = 'PROCESSING';
+                    $statusEmoji = '🔵';
+                } elseif (in_array($actionStr, ['dispatch', 'dispach', 'dispatched'])) {
+                    $targetStatus = Status::ORDER_DISPATCHED;
+                    $actionTitle = 'DISPATCHED';
+                    $statusEmoji = '🟣';
+                } elseif (in_array($actionStr, ['deliver', 'delivered'])) {
+                    $targetStatus = Status::ORDER_DELIVERED;
+                    $actionTitle = 'DELIVERED';
+                    $statusEmoji = '🟢';
+                } elseif (in_array($actionStr, ['cancel', 'cancle', 'canceled', 'cancelled'])) {
+                    $targetStatus = Status::ORDER_CANCELED;
+                    $actionTitle = 'CANCELED';
+                    $statusEmoji = '🔴';
+                } elseif (in_array($actionStr, ['return', 'returned'])) {
+                    $targetStatus = Status::ORDER_RETURNED;
+                    $actionTitle = 'RETURNED';
+                    $statusEmoji = '🟠';
+                }
+
+                if ($targetStatus !== null) {
+                    $order = Order::where('order_number', $orderQueryStr)
+                        ->orWhere('id', $orderQueryStr)
+                        ->orWhere('order_number', 'LIKE', "%{$orderQueryStr}%")
+                        ->first();
+
+                    if (!$order && is_numeric($orderQueryStr)) {
+                        $padded = 'OID-' . str_pad($orderQueryStr, 5, '0', STR_PAD_LEFT);
+                        $order = Order::where('order_number', $padded)->first();
+                    }
+
+                    if (!$order) {
+                        $this->sendTelegramMessage($chatId, "❌ <b>Order Not Found!</b>\nCould not find any order matching \"<b>{$orderQueryStr}</b>\".");
+                        return response('OK', 200);
+                    }
+
+                    $order->status = $targetStatus;
+                    if ($targetStatus == Status::ORDER_DELIVERED && $order->is_cod) {
+                        $order->payment_status = Status::PAYMENT_SUCCESS;
+                        if ($order->deposit) {
+                            $order->deposit->status = Status::PAYMENT_SUCCESS;
+                            $order->deposit->save();
+                        }
+                    }
+                    $order->save();
+
+                    $custPhone = $order->shipping_address->mobile ?? ($order->user->mobile ?? ($order->guest->mobile ?? 'N/A'));
+
+                    $replyMsg = "✅ <b>Order Status Updated Successfully!</b>\n";
+                    $replyMsg .= "━━━━━━━━━━━━━━━━━━━\n";
+                    $replyMsg .= "• <b>Order ID:</b> #{$order->order_number}\n";
+                    $replyMsg .= "• <b>Customer Phone:</b> {$custPhone}\n";
+                    $replyMsg .= "• <b>New Status:</b> {$statusEmoji} <b>{$actionTitle}</b>\n";
+                    $replyMsg .= "• <b>Total Amount:</b> " . gs('cur_sym') . showAmount($order->total_amount, currencyFormat: false) . " " . gs('cur_text') . "\n";
+                    $replyMsg .= "━━━━━━━━━━━━━━━━━━━";
+
+                    $this->sendTelegramMessage($chatId, $replyMsg);
+                    return response('OK', 200);
+                }
             }
 
             // Try to find matching Order first
