@@ -21,9 +21,12 @@ class TelegramController extends Controller {
                 return response('No message', 200);
             }
 
-            // Security: Only allow configured admin Chat ID to query details
+            // Security: Only allow configured admin Chat ID(s) to query details & update orders
             $configuredChatId = trim(env('TELEGRAM_CHAT_ID'), '"\' ');
-            if (strval($chatId) !== strval($configuredChatId)) {
+            $allowedChatIds = array_map('trim', explode(',', $configuredChatId));
+            
+            if (empty($configuredChatId) || !in_array(strval($chatId), $allowedChatIds)) {
+                // Silently drop and block unauthorized access from unknown Telegram accounts
                 return response('Unauthorized', 200);
             }
 
