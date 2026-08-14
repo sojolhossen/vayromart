@@ -43,10 +43,64 @@ class TelegramController extends Controller {
                 $cmdMsg .= "• <code>32-deliver</code> or <code>32-delivered</code> -> Mark #32 as 🟢 Delivered\n";
                 $cmdMsg .= "• <code>32-cancel</code> or <code>32-cancle</code> -> Mark #32 as 🔴 Canceled\n";
                 $cmdMsg .= "• <code>32-return</code> or <code>32-returned</code> -> Mark #32 as 🟠 Returned\n\n";
+                $cmdMsg .= "📊 <b>3. Daily Sales & Stock Commands:</b>\n";
+                $cmdMsg .= "• <code>today</code> or <code>report</code> -> View today's total sales & order breakdown\n";
+                $cmdMsg .= "• <code>stock</code> or <code>lowstock</code> -> View products running low on stock\n\n";
                 $cmdMsg .= "💡 <i>Tip: Replace '32' with any Order ID or Order Number!</i>\n";
                 $cmdMsg .= "━━━━━━━━━━━━━━━━━━━";
 
                 $this->sendTelegramMessage($chatId, $cmdMsg);
+                return response('OK', 200);
+            }
+
+            // Handle Today Sales Report command (today / report / sales)
+            if (in_array($lowerText, ['today', 'report', 'sales', '/today', '/report'])) {
+                $todayOrders = Order::isValidOrder()->whereDate('created_at', now()->today())->get();
+                $totalCount = $todayOrders->count();
+                $totalSum = $todayOrders->where('status', '!=', Status::ORDER_CANCELED)->sum('total_amount');
+                $pendingCount = $todayOrders->where('status', Status::ORDER_PENDING)->count();
+                $processingCount = $todayOrders->where('status', Status::ORDER_PROCESSING)->count();
+                $dispatchedCount = $todayOrders->where('status', Status::ORDER_DISPATCHED)->count();
+                $deliveredCount = $todayOrders->where('status', Status::ORDER_DELIVERED)->count();
+                $canceledCount = $todayOrders->where('status', Status::ORDER_CANCELED)->count();
+
+                $reportMsg = "📊 <b>Today's Sales & Order Summary (" . date('d M Y') . ")</b>\n";
+                $reportMsg .= "━━━━━━━━━━━━━━━━━━━\n";
+                $reportMsg .= "• <b>Total Orders Today:</b> <b>{$totalCount}</b>\n";
+                $reportMsg .= "• <b>Total Sales Today:</b> <b>" . gs('cur_sym') . showAmount($totalSum, currencyFormat: false) . " " . gs('cur_text') . "</b>\n";
+                $reportMsg .= "━━━━━━━━━━━━━━━━━━━\n";
+                $reportMsg .= "🟡 <b>Pending:</b> {$pendingCount}\n";
+                $reportMsg .= "🔵 <b>Processing:</b> {$processingCount}\n";
+                $reportMsg .= "🟣 <b>Dispatched:</b> {$dispatchedCount}\n";
+                $reportMsg .= "🟢 <b>Delivered:</b> {$deliveredCount}\n";
+                $reportMsg .= "🔴 <b>Canceled:</b> {$canceledCount}\n";
+                $reportMsg .= "━━━━━━━━━━━━━━━━━━━";
+
+                $this->sendTelegramMessage($chatId, $reportMsg);
+                return response('OK', 200);
+            }
+
+            // Handle Low Stock Inventory command (stock / lowstock)
+            if (in_array($lowerText, ['stock', 'lowstock', 'inventory', '/stock', '/lowstock'])) {
+                $lowStockProducts = \App\Models\Product::where('track_inventory', Status::YES)
+                    ->where('in_stock', '<=', 5)
+                    ->take(10)
+                    ->get();
+
+                if ($lowStockProducts->isEmpty()) {
+                    $this->sendTelegramMessage($chatId, "✅ <b>Inventory Status:</b>\nAll products have sufficient stock levels!");
+                    return response('OK', 200);
+                }
+
+                $stockMsg = "⚠️ <b>Low Stock Inventory Alert (Top 10)</b>\n";
+                $stockMsg .= "━━━━━━━━━━━━━━━━━━━\n";
+                foreach ($lowStockProducts as $p) {
+                    $stockStatus = $p->in_stock == 0 ? "🔴 OUT OF STOCK" : "🟡 {$p->in_stock} left";
+                    $stockMsg .= "• <b>{$p->name}</b>\n  Status: {$stockStatus}\n";
+                }
+                $stockMsg .= "━━━━━━━━━━━━━━━━━━━";
+
+                $this->sendTelegramMessage($chatId, $stockMsg);
                 return response('OK', 200);
             }
 
