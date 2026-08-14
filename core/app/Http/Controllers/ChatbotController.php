@@ -527,11 +527,13 @@ Current website details:
                 $shippingCharge = 80.00; // Standard shipping method charge is 80 TK
                 $totalAmount = $subtotal + $shippingCharge;
 
-                // 5. Generate unique Order Number
-                $prefix = 'OID-';
-                $last = Order::max('id') + 1;
-                $formattedLast = str_pad($last, 5, '0', STR_PAD_LEFT);
-                $orderNumber = $prefix . $formattedLast;
+                // 5. Generate unique Order Number with prefix M (e.g. M4637)
+                $lastId = Order::max('id') + 1;
+                $orderNumber = 'M' . (4636 + $lastId);
+                while (Order::where('order_number', $orderNumber)->exists()) {
+                    $lastId++;
+                    $orderNumber = 'M' . (4636 + $lastId);
+                }
 
                 // 6. Create Order
                 $order = new Order();

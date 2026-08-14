@@ -1749,7 +1749,12 @@ Current website details:
                 $totalAmount = $subtotal + $shippingCharge;
 
                 // 3. Generate unique Order Number using date timestamp and random string (since we don't query Order DB table)
-                $orderNumber = 'OID-' . date('ymd') . rand(100, 999);
+                $lastId = Order::max('id') + 1;
+                $orderNumber = 'M' . (4636 + $lastId);
+                while (Order::where('order_number', $orderNumber)->exists()) {
+                    $lastId++;
+                    $orderNumber = 'M' . (4636 + $lastId);
+                }
 
                 // 4. Log order to Google Sheets
                 try {

@@ -794,11 +794,13 @@ document.addEventListener("DOMContentLoaded", function() {
 
         $totalAmount = $subtotal + $shippingCharge;
 
-        // Generate unique Order Number
-        $prefix = 'OID-';
-        $last = Order::max('id') + 1;
-        $formattedLast = str_pad($last, 5, '0', STR_PAD_LEFT);
-        $orderNumber = $prefix . $formattedLast;
+        // Generate unique Order Number starting with prefix M (e.g. M4637)
+        $lastId = Order::max('id') + 1;
+        $orderNumber = 'M' . (4636 + $lastId);
+        while (Order::where('order_number', $orderNumber)->exists()) {
+            $lastId++;
+            $orderNumber = 'M' . (4636 + $lastId);
+        }
 
         // Create Order
         $order = new Order();
