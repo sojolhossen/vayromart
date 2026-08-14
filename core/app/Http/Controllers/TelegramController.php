@@ -30,6 +30,9 @@ class TelegramController extends Controller {
                 return response('Unauthorized', 200);
             }
 
+            // Perform automatic 24-hour cleanup of temporary messages
+            $this->cleanupOldTemporaryMessages();
+
             $lowerText = strtolower($text);
 
             // Handle cmd, /cmd, /help, help, /start commands
@@ -60,7 +63,7 @@ class TelegramController extends Controller {
                 $cmdMsg .= "💡 <i>Tip: Replace '32' or '320' with any Order ID or Product ID!</i>\n";
                 $cmdMsg .= "━━━━━━━━━━━━━━━━━━━";
 
-                $this->sendTelegramMessage($chatId, $cmdMsg);
+                $this->sendTelegramMessage($chatId, $cmdMsg, true);
                 return response('OK', 200);
             }
 
@@ -95,7 +98,7 @@ class TelegramController extends Controller {
                 $pMsg .= "━━━━━━━━━━━━━━━━━━━\n";
                 $pMsg .= "💡 <i>Tip: Search specific product by typing: <code>psearch Earbuds</code></i>";
 
-                $this->sendTelegramMessage($chatId, $pMsg);
+                $this->sendTelegramMessage($chatId, $pMsg, true);
                 return response('OK', 200);
             }
 
@@ -144,7 +147,7 @@ class TelegramController extends Controller {
                 $replyMsg .= "• <b>New Stock:</b> <b>{$newStock} pcs</b>\n";
                 $replyMsg .= "━━━━━━━━━━━━━━━━━━━";
 
-                $this->sendTelegramMessage($chatId, $replyMsg);
+                $this->sendTelegramMessage($chatId, $replyMsg, true);
                 return response('OK', 200);
             }
 
@@ -173,7 +176,7 @@ class TelegramController extends Controller {
                 $replyMsg .= "• <b>New Sale Price:</b> <b>{$curSym}" . showAmount($newPrice, currencyFormat: false) . " {$curText}</b>\n";
                 $replyMsg .= "━━━━━━━━━━━━━━━━━━━";
 
-                $this->sendTelegramMessage($chatId, $replyMsg);
+                $this->sendTelegramMessage($chatId, $replyMsg, true);
                 return response('OK', 200);
             }
 
@@ -193,14 +196,14 @@ class TelegramController extends Controller {
                 }
 
                 if (!$order) {
-                    $this->sendTelegramMessage($chatId, "❌ <b>Order Not Found!</b>\nCould not find any order matching \"<b>{$orderQueryStr}</b>\".");
+                    $this->sendTelegramMessage($chatId, "❌ <b>Order Not Found!</b>\nCould not find any order matching \"<b>{$orderQueryStr}</b>\".", true);
                     return response('OK', 200);
                 }
 
                 // Check if new order number is already taken
                 $exists = Order::where('order_number', $newOrderNumber)->where('id', '!=', $order->id)->exists();
                 if ($exists) {
-                    $this->sendTelegramMessage($chatId, "❌ <b>Error:</b> Order number <b>{$newOrderNumber}</b> is already taken by another order!");
+                    $this->sendTelegramMessage($chatId, "❌ <b>Error:</b> Order number <b>{$newOrderNumber}</b> is already taken by another order!", true);
                     return response('OK', 200);
                 }
 
@@ -215,7 +218,7 @@ class TelegramController extends Controller {
                 $replyMsg .= "• <b>Database ID:</b> {$order->id}\n";
                 $replyMsg .= "━━━━━━━━━━━━━━━━━━━";
 
-                $this->sendTelegramMessage($chatId, $replyMsg);
+                $this->sendTelegramMessage($chatId, $replyMsg, true);
                 return response('OK', 200);
             }
 
@@ -415,7 +418,7 @@ class TelegramController extends Controller {
                     $replyMsg .= "• <b>Total Amount:</b> " . gs('cur_sym') . showAmount($order->total_amount, currencyFormat: false) . " " . gs('cur_text') . "\n";
                     $replyMsg .= "━━━━━━━━━━━━━━━━━━━";
 
-                    $this->sendTelegramMessage($chatId, $replyMsg);
+                    $this->sendTelegramMessage($chatId, $replyMsg, true);
                     return response('OK', 200);
                 }
             }
@@ -573,7 +576,7 @@ class TelegramController extends Controller {
                 $message .= "━━━━━━━━━━━━━━━━━━━\n";
                 $message .= "💡 <i>Tap any status command above to copy and send instantly!</i>";
 
-                $this->sendTelegramMessage($chatId, $message);
+                $this->sendTelegramMessage($chatId, $message, true);
                 return response('OK', 200);
             }
 
@@ -709,7 +712,7 @@ class TelegramController extends Controller {
         return "Failed to set Telegram Webhook. Please check your bot token or network connection.";
     }
 
-    private function sendTelegramMessage($chatId, $message) {
+    private function sendTelegramMessage($chatId, $message, $isTemporary = false) {
         $botToken = env('TELEGRAM_BOT_TOKEN');
         if (!$botToken) return;
 
@@ -734,6 +737,77 @@ class TelegramController extends Controller {
         ];
 
         $context  = stream_context_create($options);
+        $result = @file_get_contents($url, false, $context);
+
+        if ($isTemporary && $result) {
+            $resObj = json_decode($result);
+            if ($resObj && isset($resObj->result->message_id)) {
+                $this->registerTemporaryMessage($chatId, $resObj->result->message_id);
+            }
+        }
+    }
+
+    private function deleteTelegramMessage($chatId, $messageId) {
+        $botToken = env('TELEGRAM_BOT_TOKEN');
+        if (!$botToken) return;
+
+        $url = "https://api.telegram.org/bot" . $botToken . "/deleteMessage";
+        $data = [
+            'chat_id' => $chatId,
+            'message_id' => $messageId
+        ];
+
+        $options = [
+            'http' => [
+                'header'  => "Content-type: application/x-www-form-urlencoded\r\n",
+                'method'  => 'POST',
+                'content' => http_build_query($data),
+                'ssl' => [
+                    'verify_peer' => false,
+                    'verify_peer_name' => false,
+                ]
+            ]
+        ];
+
+        $context  = stream_context_create($options);
         @file_get_contents($url, false, $context);
+    }
+
+    private function registerTemporaryMessage($chatId, $messageId) {
+        $filePath = storage_path('app/telegram_temp_messages.json');
+        $messages = [];
+        if (file_exists($filePath)) {
+            $messages = json_decode(file_get_contents($filePath), true) ?: [];
+        }
+
+        $messages[] = [
+            'chat_id' => $chatId,
+            'message_id' => $messageId,
+            'time' => time()
+        ];
+
+        @file_put_contents($filePath, json_encode($messages));
+    }
+
+    private function cleanupOldTemporaryMessages() {
+        $filePath = storage_path('app/telegram_temp_messages.json');
+        if (!file_exists($filePath)) return;
+
+        $messages = json_decode(file_get_contents($filePath), true) ?: [];
+        if (empty($messages)) return;
+
+        $remaining = [];
+        $now = time();
+        $oneDayInSeconds = 86400; // 24 hours
+
+        foreach ($messages as $item) {
+            if (($now - intval($item['time'])) >= $oneDayInSeconds) {
+                $this->deleteTelegramMessage($item['chat_id'], $item['message_id']);
+            } else {
+                $remaining[] = $item;
+            }
+        }
+
+        @file_put_contents($filePath, json_encode($remaining));
     }
 }
