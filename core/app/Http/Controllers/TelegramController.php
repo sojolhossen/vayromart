@@ -52,10 +52,91 @@ class TelegramController extends Controller {
                 $cmdMsg .= "📊 <b>4. Daily Sales & Stock Commands:</b>\n";
                 $cmdMsg .= "• <code>today</code> or <code>report</code> -> View today's total sales & order breakdown\n";
                 $cmdMsg .= "• <code>stock</code> or <code>lowstock</code> -> View products running low on stock\n\n";
-                $cmdMsg .= "💡 <i>Tip: Replace '32' with any Order ID or Order Number!</i>\n";
+                $cmdMsg .= "🛍️ <b>5. Product Stock & Price Commands:</b>\n";
+                $cmdMsg .= "• <code>320-stock +10</code> or <code>320-stock -5</code> or <code>320-stock 50</code> -> Update product stock\n";
+                $cmdMsg .= "• <code>320-price 1200</code> or <code>price 320 1200</code> -> Update product sale price\n\n";
+                $cmdMsg .= "💡 <i>Tip: Replace '32' or '320' with any Order ID or Product ID!</i>\n";
                 $cmdMsg .= "━━━━━━━━━━━━━━━━━━━";
 
                 $this->sendTelegramMessage($chatId, $cmdMsg);
+                return response('OK', 200);
+            }
+
+            // Handle Product Stock Update command (e.g. 320-stock +10, 320-stock -5, 320-stock 50, stock 320 50)
+            if (preg_match('/^(?:p|prod|product)?[\s\-_:=]*([0-9]+)[\s\-_:=]+stock[\s\-_:=]*([\+\-]?[0-9]+)$/i', $text, $m) || preg_match('/^stock[\s\-_:=]+([0-9]+)[\s\-_:=]+([\+\-]?[0-9]+)$/i', $text, $m)) {
+                $productId = intval($m[1]);
+                $valStr = trim($m[2]);
+
+                $product = Product::find($productId);
+                if (!$product) {
+                    $this->sendTelegramMessage($chatId, "❌ <b>Product Not Found!</b>\nCould not find any product with ID: <b>{$productId}</b>");
+                    return response('OK', 200);
+                }
+
+                $oldStock = intval($product->in_stock);
+                $newStock = $oldStock;
+
+                if (str_starts_with($valStr, '+')) {
+                    $addVal = intval(substr($valStr, 1));
+                    $newStock = $oldStock + $addVal;
+                } elseif (str_starts_with($valStr, '-')) {
+                    $subVal = intval(substr($valStr, 1));
+                    $newStock = max(0, $oldStock - $subVal);
+                } else {
+                    $newStock = max(0, intval($valStr));
+                }
+
+                $product->in_stock = $newStock;
+                $product->track_inventory = Status::YES;
+                $product->save();
+
+                // Log stock update if ProductManager is available
+                try {
+                    $diff = abs($newStock - $oldStock);
+                    if ($diff > 0) {
+                        $desc = "Stock updated via Telegram Command ({$valStr})";
+                        $productManager = new \App\Lib\ProductManager();
+                        $productManager->createStockLog($product, $diff, $desc, null, $newStock >= $oldStock ? '+' : '-');
+                    }
+                } catch (\Exception $e) {}
+
+                $replyMsg = "✅ <b>Product Stock Updated Successfully!</b>\n";
+                $replyMsg .= "━━━━━━━━━━━━━━━━━━━\n";
+                $replyMsg .= "📦 <b>Product:</b> {$product->name} (ID: {$product->id})\n";
+                $replyMsg .= "• <b>Previous Stock:</b> {$oldStock} pcs\n";
+                $replyMsg .= "• <b>New Stock:</b> <b>{$newStock} pcs</b>\n";
+                $replyMsg .= "━━━━━━━━━━━━━━━━━━━";
+
+                $this->sendTelegramMessage($chatId, $replyMsg);
+                return response('OK', 200);
+            }
+
+            // Handle Product Price Update command (e.g. 320-price 1200, 320 price 1200, price 320 1200)
+            if (preg_match('/^(?:p|prod|product)?[\s\-_:=]*([0-9]+)[\s\-_:=]+(price|sale|rate)[\s\-_:=]+([0-9]+(?:\.[0-9]{1,2})?)$/i', $text, $m) || preg_match('/^(price|sale|rate)[\s\-_:=]+([0-9]+)[\s\-_:=]+([0-9]+(?:\.[0-9]{1,2})?)$/i', $text, $m)) {
+                $productId = is_numeric($m[1]) && intval($m[1]) > 0 ? intval($m[1]) : intval($m[2]);
+                $newPrice = floatval(is_numeric($m[1]) && intval($m[1]) > 0 ? $m[3] : $m[3]);
+
+                $product = Product::find($productId);
+                if (!$product) {
+                    $this->sendTelegramMessage($chatId, "❌ <b>Product Not Found!</b>\nCould not find any product with ID: <b>{$productId}</b>");
+                    return response('OK', 200);
+                }
+
+                $oldPrice = $product->sale_price ?: $product->regular_price;
+                $product->sale_price = $newPrice;
+                $product->save();
+
+                $curSym = gs('cur_sym');
+                $curText = gs('cur_text');
+
+                $replyMsg = "✅ <b>Product Price Updated Successfully!</b>\n";
+                $replyMsg .= "━━━━━━━━━━━━━━━━━━━\n";
+                $replyMsg .= "📦 <b>Product:</b> {$product->name} (ID: {$product->id})\n";
+                $replyMsg .= "• <b>Previous Price:</b> {$curSym}" . showAmount($oldPrice, currencyFormat: false) . "\n";
+                $replyMsg .= "• <b>New Sale Price:</b> <b>{$curSym}" . showAmount($newPrice, currencyFormat: false) . " {$curText}</b>\n";
+                $replyMsg .= "━━━━━━━━━━━━━━━━━━━";
+
+                $this->sendTelegramMessage($chatId, $replyMsg);
                 return response('OK', 200);
             }
 
