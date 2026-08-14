@@ -59,8 +59,8 @@ class TelegramController extends Controller {
                 return response('OK', 200);
             }
 
-            // Check for Change Order Number Command (e.g. 32-change OID-55555, 32-number 99999, 32-rename 88888)
-            if (preg_match('/^#?(OID-[0-9]+|[0-9]+)[\s\-_:=]+(change|rename|number)[\s\-_:=]+([A-Za-z0-9_-]+)$/i', $text, $m)) {
+            // Check for Change Order Number Command (e.g. 39 - chnage M39016, 32-change OID-55555, 32-number 99999)
+            if (preg_match('/^#?([A-Za-z0-9_-]+)[\s\-_:=]+(change|chnage|chng|chg|rename|number|num|set|update)[\s\-_:=]+([A-Za-z0-9_-]+)$/i', $text, $m)) {
                 $orderQueryStr = trim($m[1]);
                 $newOrderNumber = trim($m[3]);
 
@@ -70,8 +70,8 @@ class TelegramController extends Controller {
                     ->first();
 
                 if (!$order && is_numeric($orderQueryStr)) {
-                    $padded = 'OID-' . str_pad($orderQueryStr, 5, '0', STR_PAD_LEFT);
-                    $order = Order::where('order_number', $padded)->first();
+                    $paddedOid = 'OID-' . str_pad($orderQueryStr, 5, '0', STR_PAD_LEFT);
+                    $order = Order::where('order_number', $paddedOid)->first();
                 }
 
                 if (!$order) {
