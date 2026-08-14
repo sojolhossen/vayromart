@@ -38,18 +38,141 @@ class TelegramController extends Controller {
                 $cmdMsg .= "• Type Order ID (e.g. <code>32</code> or <code>OID-00032</code>) -> Order details\n";
                 $cmdMsg .= "• Type Name / Username (e.g. <code>john_doe</code>) -> Search customer\n\n";
                 $cmdMsg .= "⚡ <b>2. Instant Order Status Update Commands:</b>\n";
-                $cmdMsg .= "• <code>32-process</code> or <code>32-processing</code> -> Mark #32 as 🔵 Processing\n";
-                $cmdMsg .= "• <code>32-dispatch</code> or <code>32-dispatched</code> -> Mark #32 as 🟣 Dispatched\n";
-                $cmdMsg .= "• <code>32-deliver</code> or <code>32-delivered</code> -> Mark #32 as 🟢 Delivered\n";
-                $cmdMsg .= "• <code>32-cancel</code> or <code>32-cancle</code> -> Mark #32 as 🔴 Canceled\n";
-                $cmdMsg .= "• <code>32-return</code> or <code>32-returned</code> -> Mark #32 as 🟠 Returned\n\n";
-                $cmdMsg .= "📊 <b>3. Daily Sales & Stock Commands:</b>\n";
+                $cmdMsg .= "• <code>32-process</code> -> Mark #32 as 🔵 Processing\n";
+                $cmdMsg .= "• <code>32-dispatch</code> -> Mark #32 as 🟣 Dispatched\n";
+                $cmdMsg .= "• <code>32-deliver</code> -> Mark #32 as 🟢 Delivered\n";
+                $cmdMsg .= "• <code>32-cancel</code> -> Mark #32 as 🔴 Canceled\n";
+                $cmdMsg .= "• <code>32-return</code> -> Mark #32 as 🟠 Returned\n\n";
+                $cmdMsg .= "🧾 <b>3. Invoice & Order Number Edit Commands:</b>\n";
+                $cmdMsg .= "• <code>32-invoice</code> or <code>32-pdf</code> -> Get full Invoice details & web link\n";
+                $cmdMsg .= "• <code>32-change OID-55555</code> or <code>32-number 99999</code> -> Change Order Number to new ID\n\n";
+                $cmdMsg .= "📊 <b>4. Daily Sales & Stock Commands:</b>\n";
                 $cmdMsg .= "• <code>today</code> or <code>report</code> -> View today's total sales & order breakdown\n";
                 $cmdMsg .= "• <code>stock</code> or <code>lowstock</code> -> View products running low on stock\n\n";
                 $cmdMsg .= "💡 <i>Tip: Replace '32' with any Order ID or Order Number!</i>\n";
                 $cmdMsg .= "━━━━━━━━━━━━━━━━━━━";
 
                 $this->sendTelegramMessage($chatId, $cmdMsg);
+                return response('OK', 200);
+            }
+
+            // Check for Change Order Number Command (e.g. 32-change OID-55555, 32-number 99999, 32-rename 88888)
+            if (preg_match('/^#?(OID-[0-9]+|[0-9]+)[\s\-_:=]+(change|rename|number)[\s\-_:=]+([A-Za-z0-9_-]+)$/i', $text, $m)) {
+                $orderQueryStr = trim($m[1]);
+                $newOrderNumber = trim($m[3]);
+
+                $order = Order::where('order_number', $orderQueryStr)
+                    ->orWhere('id', $orderQueryStr)
+                    ->orWhere('order_number', 'LIKE', "%{$orderQueryStr}%")
+                    ->first();
+
+                if (!$order && is_numeric($orderQueryStr)) {
+                    $padded = 'OID-' . str_pad($orderQueryStr, 5, '0', STR_PAD_LEFT);
+                    $order = Order::where('order_number', $padded)->first();
+                }
+
+                if (!$order) {
+                    $this->sendTelegramMessage($chatId, "❌ <b>Order Not Found!</b>\nCould not find any order matching \"<b>{$orderQueryStr}</b>\".");
+                    return response('OK', 200);
+                }
+
+                // Check if new order number is already taken
+                $exists = Order::where('order_number', $newOrderNumber)->where('id', '!=', $order->id)->exists();
+                if ($exists) {
+                    $this->sendTelegramMessage($chatId, "❌ <b>Error:</b> Order number <b>{$newOrderNumber}</b> is already taken by another order!");
+                    return response('OK', 200);
+                }
+
+                $oldNumber = $order->order_number;
+                $order->order_number = $newOrderNumber;
+                $order->save();
+
+                $replyMsg = "✅ <b>Order Number Updated Successfully!</b>\n";
+                $replyMsg .= "━━━━━━━━━━━━━━━━━━━\n";
+                $replyMsg .= "• <b>Old Order Number:</b> #{$oldNumber}\n";
+                $replyMsg .= "• <b>New Order Number:</b> #<b>{$newOrderNumber}</b>\n";
+                $replyMsg .= "• <b>Database ID:</b> {$order->id}\n";
+                $replyMsg .= "━━━━━━━━━━━━━━━━━━━";
+
+                $this->sendTelegramMessage($chatId, $replyMsg);
+                return response('OK', 200);
+            }
+
+            // Check for Invoice Command (e.g. 32-invoice, 32-pdf, invoice 32)
+            if (preg_match('/^#?(OID-[0-9]+|[0-9]+)[\s\-_:=]+(invoice|pdf)$/i', $text, $m) || preg_match('/^(invoice|pdf)[\s\-_:=]+#?(OID-[0-9]+|[0-9]+)$/i', $text, $m)) {
+                $orderQueryStr = is_numeric($m[1]) || str_contains($m[1], 'OID-') ? trim($m[1]) : trim($m[2]);
+
+                $order = Order::with(['orderDetail.product', 'user', 'guest'])
+                    ->where('order_number', $orderQueryStr)
+                    ->orWhere('id', $orderQueryStr)
+                    ->orWhere('order_number', 'LIKE', "%{$orderQueryStr}%")
+                    ->first();
+
+                if (!$order && is_numeric($orderQueryStr)) {
+                    $padded = 'OID-' . str_pad($orderQueryStr, 5, '0', STR_PAD_LEFT);
+                    $order = Order::with(['orderDetail.product', 'user', 'guest'])->where('order_number', $padded)->first();
+                }
+
+                if (!$order) {
+                    $this->sendTelegramMessage($chatId, "❌ <b>Order Not Found!</b>\nCould not find any order matching \"<b>{$orderQueryStr}</b>\".");
+                    return response('OK', 200);
+                }
+
+                $custName = '';
+                $custPhone = '';
+                $address = '';
+                if ($order->shipping_address) {
+                    $addr = is_string($order->shipping_address) ? json_decode($order->shipping_address) : $order->shipping_address;
+                    $custName = trim(($addr->firstname ?? '') . ' ' . ($addr->lastname ?? ''));
+                    $custPhone = $addr->mobile ?? ($addr->phone ?? '');
+                    $address = $addr->address ?? '';
+                }
+
+                if (empty($custName)) {
+                    if ($order->user) {
+                        $custName = trim($order->user->firstname . ' ' . $order->user->lastname);
+                        $custPhone = $order->user->mobile;
+                    } elseif ($order->guest) {
+                        $custPhone = $order->guest->mobile;
+                    }
+                }
+
+                $itemsList = "";
+                $subtotal = 0;
+                foreach ($order->orderDetail ?? [] as $idx => $detail) {
+                    $pName = $detail->product->name ?? 'Product';
+                    $itemTotal = $detail->price * $detail->quantity;
+                    $subtotal += $itemTotal;
+                    $num = $idx + 1;
+                    $itemsList .= "{$num}. <b>{$pName}</b>\n";
+                    $itemsList .= "   • Qty: {$detail->quantity} x " . gs('cur_sym') . showAmount($detail->price, currencyFormat: false) . " = <b>" . gs('cur_sym') . showAmount($itemTotal, currencyFormat: false) . "</b>\n";
+                }
+
+                $payMethod = $order->is_cod ? 'Cash on Delivery (COD)' : 'Online Paid';
+
+                $invMsg = "🧾 <b>OFFICIAL INVOICE</b>\n";
+                $invMsg .= "━━━━━━━━━━━━━━━━━━━\n";
+                $invMsg .= "🏢 <b>Store:</b> " . gs('site_name') . "\n";
+                $invMsg .= "📦 <b>Invoice #:</b> {$order->order_number}\n";
+                $invMsg .= "📅 <b>Date:</b> " . showDateTime($order->created_at, 'd M Y h:i A') . "\n";
+                $invMsg .= "💳 <b>Payment Method:</b> {$payMethod}\n";
+                $invMsg .= "━━━━━━━━━━━━━━━━━━━\n";
+                $invMsg .= "👤 <b>CUSTOMER DETAILS:</b>\n";
+                $invMsg .= "• <b>Name:</b> {$custName}\n";
+                $invMsg .= "• <b>Phone:</b> {$custPhone}\n";
+                if ($address) {
+                    $invMsg .= "• <b>Address:</b> {$address}\n";
+                }
+                $invMsg .= "━━━━━━━━━━━━━━━━━━━\n";
+                $invMsg .= "🛍️ <b>ORDER ITEMS:</b>\n{$itemsList}";
+                $invMsg .= "━━━━━━━━━━━━━━━━━━━\n";
+                $invMsg .= "• <b>Subtotal:</b> " . gs('cur_sym') . showAmount($subtotal, currencyFormat: false) . "\n";
+                $invMsg .= "• <b>Shipping Charge:</b> " . gs('cur_sym') . showAmount($order->shipping_charge, currencyFormat: false) . "\n";
+                $invMsg .= "• <b>TOTAL PAYABLE:</b> <b>" . gs('cur_sym') . showAmount($order->total_amount, currencyFormat: false) . " " . gs('cur_text') . "</b>\n";
+                $invMsg .= "━━━━━━━━━━━━━━━━━━━\n";
+                $invMsg .= "🔗 <b>Web Invoice Link:</b>\n" . route('admin.order.print.invoice', $order->id);
+
+                $this->sendTelegramMessage($chatId, $invMsg);
                 return response('OK', 200);
             }
 
