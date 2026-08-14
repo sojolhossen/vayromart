@@ -27,19 +27,26 @@ class TelegramController extends Controller {
                 return response('Unauthorized', 200);
             }
 
-            // Ignore start command or show help
-            if ($text === '/start' || $text === '/help') {
-                $helpMsg = "👋 <b>Hello Admin!</b> Welcome to Vayromart Telegram Assistant.\n\n";
-                $helpMsg .= "🔍 <b>Search Commands:</b>\n";
-                $helpMsg .= "• Type Order ID (e.g. <code>32</code> or <code>OID-00032</code>)\n";
-                $helpMsg .= "• Type Customer Name or Mobile (e.g. <code>01712345678</code>)\n\n";
-                $helpMsg .= "⚡ <b>Quick Order Status Commands:</b>\n";
-                $helpMsg .= "• <code>32-process</code> (Mark #32 as Processing 🔵)\n";
-                $helpMsg .= "• <code>32-dispatch</code> (Mark #32 as Dispatched 🟣)\n";
-                $helpMsg .= "• <code>32-deliver</code> (Mark #32 as Delivered 🟢)\n";
-                $helpMsg .= "• <code>32-cancel</code> (Mark #32 as Canceled 🔴)\n";
-                $helpMsg .= "• <code>32-return</code> (Mark #32 as Returned 🟠)";
-                $this->sendTelegramMessage($chatId, $helpMsg);
+            $lowerText = strtolower($text);
+
+            // Handle cmd, /cmd, /help, help, /start commands
+            if (in_array($lowerText, ['cmd', '/cmd', 'help', '/help', '/start'])) {
+                $cmdMsg = "🤖 <b>Vayromart Telegram Bot Command Guide</b>\n";
+                $cmdMsg .= "━━━━━━━━━━━━━━━━━━━\n\n";
+                $cmdMsg .= "🔍 <b>1. Order & Customer Search:</b>\n";
+                $cmdMsg .= "• Type Customer Mobile (e.g. <code>01712345678</code>) -> Lists all customer orders\n";
+                $cmdMsg .= "• Type Order ID (e.g. <code>32</code> or <code>OID-00032</code>) -> Order details\n";
+                $cmdMsg .= "• Type Name / Username (e.g. <code>john_doe</code>) -> Search customer\n\n";
+                $cmdMsg .= "⚡ <b>2. Instant Order Status Update Commands:</b>\n";
+                $cmdMsg .= "• <code>32-process</code> or <code>32-processing</code> -> Mark #32 as 🔵 Processing\n";
+                $cmdMsg .= "• <code>32-dispatch</code> or <code>32-dispatched</code> -> Mark #32 as 🟣 Dispatched\n";
+                $cmdMsg .= "• <code>32-deliver</code> or <code>32-delivered</code> -> Mark #32 as 🟢 Delivered\n";
+                $cmdMsg .= "• <code>32-cancel</code> or <code>32-cancle</code> -> Mark #32 as 🔴 Canceled\n";
+                $cmdMsg .= "• <code>32-return</code> or <code>32-returned</code> -> Mark #32 as 🟠 Returned\n\n";
+                $cmdMsg .= "💡 <i>Tip: Replace '32' with any Order ID or Order Number!</i>\n";
+                $cmdMsg .= "━━━━━━━━━━━━━━━━━━━";
+
+                $this->sendTelegramMessage($chatId, $cmdMsg);
                 return response('OK', 200);
             }
 
