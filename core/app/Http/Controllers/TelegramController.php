@@ -53,12 +53,49 @@ class TelegramController extends Controller {
                 $cmdMsg .= "• <code>today</code> or <code>report</code> -> View today's total sales & order breakdown\n";
                 $cmdMsg .= "• <code>stock</code> or <code>lowstock</code> -> View products running low on stock\n\n";
                 $cmdMsg .= "🛍️ <b>5. Product Stock & Price Commands:</b>\n";
+                $cmdMsg .= "• <code>plist</code> or <code>products</code> -> View product catalog list & Product IDs\n";
+                $cmdMsg .= "• <code>psearch Earbuds</code> -> Search product by name to get Product ID\n";
                 $cmdMsg .= "• <code>320-stock +10</code> or <code>320-stock -5</code> or <code>320-stock 50</code> -> Update product stock\n";
                 $cmdMsg .= "• <code>320-price 1200</code> or <code>price 320 1200</code> -> Update product sale price\n\n";
                 $cmdMsg .= "💡 <i>Tip: Replace '32' or '320' with any Order ID or Product ID!</i>\n";
                 $cmdMsg .= "━━━━━━━━━━━━━━━━━━━";
 
                 $this->sendTelegramMessage($chatId, $cmdMsg);
+                return response('OK', 200);
+            }
+
+            // Handle Product List / Search command (plist, products, psearch Earbuds)
+            if (in_array($lowerText, ['plist', 'products', '/plist', '/products']) || preg_match('/^(?:psearch|product|prod)[\s\-_:=]+(.+)$/i', $text, $pm)) {
+                $query = isset($pm[1]) ? trim($pm[1]) : '';
+
+                $pQuery = Product::published();
+                if ($query) {
+                    $pQuery->where('name', 'LIKE', "%{$query}%");
+                }
+
+                $products = $pQuery->take(8)->get();
+                if ($products->isEmpty()) {
+                    $this->sendTelegramMessage($chatId, "❌ <b>No Products Found!</b>\nNo product matched: \"<b>{$query}</b>\"");
+                    return response('OK', 200);
+                }
+
+                $pMsg = "🛍️ <b>Product Catalog & Stock List</b>\n";
+                $pMsg .= "━━━━━━━━━━━━━━━━━━━\n\n";
+
+                foreach ($products as $p) {
+                    $priceVal = $p->sale_price ?: $p->regular_price;
+                    $pMsg .= "📦 <b>{$p->name}</b>\n";
+                    $pMsg .= "• <b>Product ID:</b> <code>{$p->id}</code>\n";
+                    $pMsg .= "• <b>Current Stock:</b> <b>{$p->in_stock} pcs</b>\n";
+                    $pMsg .= "• <b>Current Price:</b> <b>" . gs('cur_sym') . showAmount($priceVal, currencyFormat: false) . " " . gs('cur_text') . "</b>\n";
+                    $pMsg .= "⚡ <b>Quick Update Commands:</b>\n";
+                    $pMsg .= "<code>{$p->id}-stock +10</code> | <code>{$p->id}-price " . intval($priceVal) . "</code>\n\n";
+                }
+
+                $pMsg .= "━━━━━━━━━━━━━━━━━━━\n";
+                $pMsg .= "💡 <i>Tip: Search specific product by typing: <code>psearch Earbuds</code></i>";
+
+                $this->sendTelegramMessage($chatId, $pMsg);
                 return response('OK', 200);
             }
 
