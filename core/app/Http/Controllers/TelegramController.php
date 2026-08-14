@@ -193,8 +193,81 @@ class TelegramController extends Controller {
                 $message .= "━━━━━━━━━━━━━━━━━━━\n";
                 $message .= "• <b>Shipping Charge:</b> " . gs('cur_sym') . showAmount($order->shipping_charge, currencyFormat: false) . "\n";
                 $message .= "• <b>Total Amount:</b> <b>" . gs('cur_sym') . showAmount($order->total_amount, currencyFormat: false) . " " . gs('cur_text') . "</b>\n";
+                $message .= "━━━━━━━━━━━━━━━━━━━\n";
+                $message .= "⚡ <b>Quick Update Status:</b>\n";
+                $message .= "<code>{$order->id}-process</code> | <code>{$order->id}-dispatch</code> | <code>{$order->id}-deliver</code> | <code>{$order->id}-cancel</code>\n";
                 $message .= "━━━━━━━━━━━━━━━━━━━";
                 
+                $this->sendTelegramMessage($chatId, $message);
+                return response('OK', 200);
+            }
+
+            // Search orders matching customer phone number or query
+            $cleanPhone = preg_replace('/[^0-9]/', '', $text);
+            $customerOrdersQuery = Order::with(['orderDetail.product', 'user', 'guest'])
+                ->where(function($q) use ($text, $cleanPhone) {
+                    $q->where('shipping_address', 'like', "%{$text}%");
+                    if (strlen($cleanPhone) >= 3) {
+                        $q->orWhere('shipping_address', 'like', "%{$cleanPhone}%");
+                    }
+                    $q->orWhereHas('user', function($u) use ($text, $cleanPhone) {
+                        $u->where('mobile', 'like', "%{$text}%")
+                          ->orWhere('username', 'like', "%{$text}%");
+                        if (strlen($cleanPhone) >= 3) {
+                            $u->orWhere('mobile', 'like', "%{$cleanPhone}%");
+                        }
+                    });
+                    $q->orWhereHas('guest', function($g) use ($text, $cleanPhone) {
+                        $g->where('mobile', 'like', "%{$text}%")
+                          ->orWhere('email', 'like', "%{$text}%");
+                        if (strlen($cleanPhone) >= 3) {
+                            $g->orWhere('mobile', 'like', "%{$cleanPhone}%");
+                        }
+                    });
+                })
+                ->orderBy('id', 'desc');
+
+            $matchedOrders = $customerOrdersQuery->take(5)->get();
+
+            if ($matchedOrders->count() > 0) {
+                $count = $matchedOrders->count();
+                $message = "👤 <b>Customer Orders Found ({$count}) for: {$text}</b>\n";
+                $message .= "━━━━━━━━━━━━━━━━━━━\n\n";
+
+                foreach ($matchedOrders as $idx => $ord) {
+                    $items = '';
+                    foreach ($ord->orderDetail ?? [] as $detail) {
+                        $pName = $detail->product->name ?? 'Product';
+                        $items .= "  • {$pName} (x{$detail->quantity})\n";
+                    }
+
+                    $sEmoji = '🟡';
+                    $sText = 'Pending';
+                    if ($ord->status == Status::ORDER_PENDING) { $sEmoji = '🟡'; $sText = 'Pending'; }
+                    elseif ($ord->status == Status::ORDER_PROCESSING) { $sEmoji = '🔵'; $sText = 'Processing'; }
+                    elseif ($ord->status == Status::ORDER_DISPATCHED) { $sEmoji = '🟣'; $sText = 'Dispatched'; }
+                    elseif ($ord->status == Status::ORDER_DELIVERED) { $sEmoji = '🟢'; $sText = 'Delivered'; }
+                    elseif ($ord->status == Status::ORDER_CANCELED) { $sEmoji = '🔴'; $sText = 'Cancelled'; }
+                    elseif ($ord->status == Status::ORDER_RETURNED) { $sEmoji = '🟠'; $sText = 'Returned'; }
+
+                    $orderIdNum = $ord->id;
+                    $orderNumStr = $ord->order_number;
+                    $totalFormatted = gs('cur_sym') . showAmount($ord->total_amount, currencyFormat: false) . " " . gs('cur_text');
+
+                    $message .= "📦 <b>Order #{$orderNumStr} (ID: {$orderIdNum})</b>\n";
+                    $message .= "• <b>Date:</b> " . showDateTime($ord->created_at, 'd M Y h:i A') . "\n";
+                    $message .= "• <b>Status:</b> {$sEmoji} <b>{$sText}</b>\n";
+                    if ($items) {
+                        $message .= "• <b>Items:</b>\n{$items}";
+                    }
+                    $message .= "• <b>Total:</b> <b>{$totalFormatted}</b>\n";
+                    $message .= "⚡ <b>Update Command:</b>\n";
+                    $message .= "<code>{$orderIdNum}-process</code> | <code>{$orderIdNum}-dispatch</code> | <code>{$orderIdNum}-cancel</code>\n\n";
+                }
+
+                $message .= "━━━━━━━━━━━━━━━━━━━\n";
+                $message .= "💡 <i>Tap any status command above to copy and send instantly!</i>";
+
                 $this->sendTelegramMessage($chatId, $message);
                 return response('OK', 200);
             }
