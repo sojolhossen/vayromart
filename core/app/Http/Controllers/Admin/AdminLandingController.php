@@ -567,53 +567,83 @@ class AdminLandingController extends Controller
             $variantsHtml .= '</div>';
         }
 
-        // Reviews HTML Auto Slider
-        $reviewItemsHtml = '';
-        $reviewers = [
-            ['name' => ($data['reviewer_name_1'] ?? '') ?: 'Sojol Hossen', 'comment' => ($data['reviewer_comment_1'] ?? '') ?: 'অসাধারণ প্রোডাক্ট! ঠিক যেমনটি চেয়েছিলাম তেমনই পেয়েছি। ডেলিভারি সার্ভিসও খুব ফাস্ট ছিল। ধন্যবাদ বায়রোমার্ট!'],
-            ['name' => ($data['reviewer_name_2'] ?? '') ?: 'Farhana Yasmin', 'comment' => ($data['reviewer_comment_2'] ?? '') ?: 'পণ্যটির কোয়ালিটি খুবই ভালো। ২ দিনেই ডেলিভারি পেয়েছি। আপনারা চাইলে চোখ বন্ধ করে নিতে পারেন।'],
-            ['name' => ($data['reviewer_name_3'] ?? '') ?: 'Md. Arif', 'comment' => ($data['reviewer_comment_3'] ?? '') ?: 'প্রোডাক্ট হাতে পেয়ে চেক করে পেমেন্ট করেছি। ক্যাশ অন ডেলিভারি সুবিধা থাকায় অনেক সুবিধা হয়েছে। ১০/১০ দিব।']
-        ];
+        // Reviews HTML Dual-Row Opposite Marquee Auto Slider
+        $rawItems = [];
+        if (!empty($data['review_images'])) {
+            foreach ($data['review_images'] as $imgPath) {
+                if ($imgPath) {
+                    $imgUrl = $resolveUrl($imgPath);
+                    $rawItems[] = '
+                    <div class="review-card-item flex-none w-[280px] sm:w-[340px]">
+                        <div class="overflow-hidden rounded-2xl border border-gray-200/80 shadow-sm hover:shadow-xl hover:scale-[1.02] transition-all duration-300 bg-white p-2 h-full">
+                            <img src="' . $imgUrl . '" alt="Customer Review" class="w-full h-56 sm:h-64 object-cover rounded-xl image-popup cursor-zoom-in">
+                        </div>
+                    </div>';
+                }
+            }
+        }
         
-        foreach ($reviewers as $idx => $rev) {
-            $initial = mb_substr($rev['name'], 0, 1, 'utf-8');
-            $reviewItemsHtml .= '
-            <div class="review-slide-item flex-none w-full md:w-[calc(33.333%-16px)]">
-                <div class="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 h-full flex flex-col justify-between">
-                    <div>
-                        <div class="flex items-center gap-4 mb-4">
-                            <div class="w-12 h-12 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-lg shadow-inner">' . $initial . '</div>
-                            <div>
-                                <h6 class="font-bold text-gray-800 text-base">' . e($rev['name']) . '</h6>
-                                <div class="text-amber-500 text-xs flex gap-0.5 mt-1">
-                                    <i class="fas fa-star"></i>
-                                    <i class="fas fa-star"></i>
-                                    <i class="fas fa-star"></i>
-                                    <i class="fas fa-star"></i>
-                                    <i class="fas fa-star"></i>
+        if (empty($rawItems)) {
+            $reviewers = [
+                ['name' => ($data['reviewer_name_1'] ?? '') ?: 'Sojol Hossen', 'comment' => ($data['reviewer_comment_1'] ?? '') ?: 'অসাধারণ প্রোডাক্ট! ঠিক যেমনটি চেয়েছিলাম তেমনই পেয়েছি। ডেলিভারি সার্ভিসও খুব ফাস্ট ছিল। ধন্যবাদ বায়রোমার্ট!'],
+                ['name' => ($data['reviewer_name_2'] ?? '') ?: 'Farhana Yasmin', 'comment' => ($data['reviewer_comment_2'] ?? '') ?: 'পণ্যটির কোয়ালিটি খুবই ভালো। ২ দিনেই ডেলিভারি পেয়েছি। আপনারা চাইলে চোখ বন্ধ করে নিতে পারেন।'],
+                ['name' => ($data['reviewer_name_3'] ?? '') ?: 'Md. Arif', 'comment' => ($data['reviewer_comment_3'] ?? '') ?: 'প্রোডাক্ট হাতে পেয়ে চেক করে পেমেন্ট করেছি। ক্যাশ অন ডেলিভারি সুবিধা থাকায় অনেক সুবিধা হয়েছে। ১০/১০ দিব।']
+            ];
+            foreach ($reviewers as $rev) {
+                $initial = mb_substr($rev['name'], 0, 1, 'utf-8');
+                $rawItems[] = '
+                <div class="review-card-item flex-none w-[280px] sm:w-[340px]">
+                    <div class="bg-white p-5 sm:p-6 rounded-2xl border border-gray-200/80 shadow-sm hover:shadow-xl transition-all duration-300 h-full flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center gap-3.5 mb-3">
+                                <div class="w-11 h-11 rounded-full bg-[#f2532c] text-white flex items-center justify-center font-bold text-base shadow-md">' . $initial . '</div>
+                                <div>
+                                    <h6 class="font-bold text-gray-800 text-sm sm:text-base">' . e($rev['name']) . '</h6>
+                                    <div class="text-amber-500 text-xs flex gap-0.5 mt-0.5">
+                                        <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
+                                    </div>
                                 </div>
                             </div>
+                            <p class="text-gray-600 text-xs sm:text-sm leading-relaxed">"' . e($rev['comment']) . '"</p>
                         </div>
-                        <p class="text-gray-600 text-sm leading-relaxed">"' . e($rev['comment']) . '"</p>
                     </div>
-                </div>
-            </div>';
+                </div>';
+            }
         }
 
+        // Split into 2 Rows for Dual Marquee
+        $row1Items = [];
+        $row2Items = [];
+        foreach ($rawItems as $idx => $itemHtml) {
+            if ($idx % 2 === 0) {
+                $row1Items[] = $itemHtml;
+            } else {
+                $row2Items[] = $itemHtml;
+            }
+        }
+        if (empty($row2Items)) {
+            $row2Items = $row1Items;
+        }
+
+        // Build continuous track content by duplicating array
+        $row1Html = implode('', array_merge($row1Items, $row1Items, $row1Items, $row1Items));
+        $row2Html = implode('', array_merge($row2Items, $row2Items, $row2Items, $row2Items));
+
         $reviewsHtml = '
-        <div class="review-carousel-wrapper relative max-w-6xl mx-auto px-2">
-            <button type="button" aria-label="Previous Review" class="review-carousel-prev absolute -left-2 md:-left-5 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-white/95 shadow-xl border border-gray-200 text-gray-800 flex items-center justify-center hover:bg-emerald-600 hover:text-white hover:border-emerald-600 hover:scale-110 active:scale-95 transition-all duration-300 cursor-pointer">
-                <i class="fas fa-chevron-left text-lg"></i>
-            </button>
-            <button type="button" aria-label="Next Review" class="review-carousel-next absolute -right-2 md:-right-5 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-white/95 shadow-xl border border-gray-200 text-gray-800 flex items-center justify-center hover:bg-emerald-600 hover:text-white hover:border-emerald-600 hover:scale-110 active:scale-95 transition-all duration-300 cursor-pointer">
-                <i class="fas fa-chevron-right text-lg"></i>
-            </button>
-            <div class="review-carousel-container overflow-hidden rounded-2xl p-2 cursor-grab active:cursor-grabbing">
-                <div class="review-carousel-track flex gap-6 transition-transform duration-500 ease-out">
-                    ' . $reviewItemsHtml . '
+        <div class="dual-review-marquee-container space-y-6 max-w-full overflow-hidden py-4">
+            <!-- Row 1: Left Marquee Track -->
+            <div class="marquee-row-wrapper relative overflow-hidden group">
+                <div class="marquee-track-left flex gap-6 w-max animate-marquee-left group-hover:[animation-play-state:paused] active:[animation-play-state:paused]">
+                    ' . $row1Html . '
                 </div>
             </div>
-            <div class="review-carousel-dots flex justify-center items-center gap-2 mt-6"></div>
+
+            <!-- Row 2: OPPOSITE Right Marquee Track -->
+            <div class="marquee-row-wrapper relative overflow-hidden group">
+                <div class="marquee-track-right flex gap-6 w-max animate-marquee-right group-hover:[animation-play-state:paused] active:[animation-play-state:paused]">
+                    ' . $row2Html . '
+                </div>
+            </div>
         </div>';
 
         $html = '<!DOCTYPE html>
@@ -1405,24 +1435,23 @@ class AdminLandingController extends Controller
             $variantsHtml .= '</div>';
         }
 
-        // Review images / Text Reviews Auto Slider
-        $reviewsHtml = '';
-        $reviewItemsHtml = '';
-
+        // Review images / Text Reviews Dual-Row Marquee Slider
+        $rawItems = [];
         if (!empty($data['review_images'])) {
             foreach ($data['review_images'] as $imgPath) {
                 if ($imgPath) {
                     $imgUrl = $resolveUrl($imgPath);
-                    $reviewItemsHtml .= '
-                    <div class="review-slide-item flex-none w-full md:w-[calc(33.333%-16px)]">
-                        <div class="overflow-hidden rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg hover:scale-[1.02] transition-all duration-300 bg-white p-2 h-full">
-                            <img src="' . $imgUrl . '" alt="Customer Review" class="w-full h-64 object-cover rounded-xl image-popup cursor-zoom-in">
+                    $rawItems[] = '
+                    <div class="review-card-item flex-none w-[280px] sm:w-[340px]">
+                        <div class="overflow-hidden rounded-2xl border border-gray-200/80 shadow-sm hover:shadow-xl hover:scale-[1.02] transition-all duration-300 bg-white p-2 h-full">
+                            <img src="' . $imgUrl . '" alt="Customer Review" class="w-full h-56 sm:h-64 object-cover rounded-xl image-popup cursor-zoom-in">
                         </div>
                     </div>';
                 }
             }
-        } else {
-            // Fallback text reviews
+        }
+        
+        if (empty($rawItems)) {
             $reviewers = [
                 ['name' => 'Sojol Hossen', 'comment' => 'অসাধারণ প্রোডাক্ট! ঠিক যেমনটি চেয়েছিলাম তেমনই পেয়েছি। ডেলিভারি সার্ভিসও খুব ফাস্ট ছিল। ধন্যবাদ বায়রোমার্ট!'],
                 ['name' => 'Farhana Yasmin', 'comment' => 'পণ্যটির কোয়ালিটি খুবই ভালো। ২ দিনেই ডেলিভারি পেয়েছি। আপনারা চাইলে চোখ বন্ধ করে নিতে পারেন।'],
@@ -1430,40 +1459,57 @@ class AdminLandingController extends Controller
             ];
             foreach ($reviewers as $rev) {
                 $initial = mb_substr($rev['name'], 0, 1, 'utf-8');
-                $reviewItemsHtml .= '
-                <div class="review-slide-item flex-none w-full md:w-[calc(33.333%-16px)]">
-                    <div class="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 h-full flex flex-col justify-between">
+                $rawItems[] = '
+                <div class="review-card-item flex-none w-[280px] sm:w-[340px]">
+                    <div class="bg-white p-5 sm:p-6 rounded-2xl border border-gray-200/80 shadow-sm hover:shadow-xl transition-all duration-300 h-full flex flex-col justify-between">
                         <div>
-                            <div class="flex items-center gap-4 mb-4">
-                                <div class="w-12 h-12 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-lg shadow-inner">' . $initial . '</div>
+                            <div class="flex items-center gap-3.5 mb-3">
+                                <div class="w-11 h-11 rounded-full bg-[#f2532c] text-white flex items-center justify-center font-bold text-base shadow-md">' . $initial . '</div>
                                 <div>
-                                    <h6 class="font-bold text-gray-800 text-base">' . e($rev['name']) . '</h6>
-                                    <div class="text-amber-500 text-xs flex gap-0.5 mt-1">
+                                    <h6 class="font-bold text-gray-800 text-sm sm:text-base">' . e($rev['name']) . '</h6>
+                                    <div class="text-amber-500 text-xs flex gap-0.5 mt-0.5">
                                         <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
                                     </div>
                                 </div>
                             </div>
-                            <p class="text-gray-600 text-sm leading-relaxed">"' . e($rev['comment']) . '"</p>
+                            <p class="text-gray-600 text-xs sm:text-sm leading-relaxed">"' . e($rev['comment']) . '"</p>
                         </div>
                     </div>
                 </div>';
             }
         }
 
+        $row1Items = [];
+        $row2Items = [];
+        foreach ($rawItems as $idx => $itemHtml) {
+            if ($idx % 2 === 0) {
+                $row1Items[] = $itemHtml;
+            } else {
+                $row2Items[] = $itemHtml;
+            }
+        }
+        if (empty($row2Items)) {
+            $row2Items = $row1Items;
+        }
+
+        $row1Html = implode('', array_merge($row1Items, $row1Items, $row1Items, $row1Items));
+        $row2Html = implode('', array_merge($row2Items, $row2Items, $row2Items, $row2Items));
+
         $reviewsHtml = '
-        <div class="review-carousel-wrapper relative max-w-6xl mx-auto px-2">
-            <button type="button" aria-label="Previous Review" class="review-carousel-prev absolute -left-2 md:-left-5 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-white/95 shadow-xl border border-gray-200 text-gray-800 flex items-center justify-center hover:bg-emerald-600 hover:text-white hover:border-emerald-600 hover:scale-110 active:scale-95 transition-all duration-300 cursor-pointer">
-                <i class="fas fa-chevron-left text-lg"></i>
-            </button>
-            <button type="button" aria-label="Next Review" class="review-carousel-next absolute -right-2 md:-right-5 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-white/95 shadow-xl border border-gray-200 text-gray-800 flex items-center justify-center hover:bg-emerald-600 hover:text-white hover:border-emerald-600 hover:scale-110 active:scale-95 transition-all duration-300 cursor-pointer">
-                <i class="fas fa-chevron-right text-lg"></i>
-            </button>
-            <div class="review-carousel-container overflow-hidden rounded-2xl p-2 cursor-grab active:cursor-grabbing">
-                <div class="review-carousel-track flex gap-6 transition-transform duration-500 ease-out">
-                    ' . $reviewItemsHtml . '
+        <div class="dual-review-marquee-container space-y-6 max-w-full overflow-hidden py-4">
+            <!-- Row 1: Left Marquee Track -->
+            <div class="marquee-row-wrapper relative overflow-hidden group">
+                <div class="marquee-track-left flex gap-6 w-max animate-marquee-left group-hover:[animation-play-state:paused] active:[animation-play-state:paused]">
+                    ' . $row1Html . '
                 </div>
             </div>
-            <div class="review-carousel-dots flex justify-center items-center gap-2 mt-6"></div>
+
+            <!-- Row 2: OPPOSITE Right Marquee Track -->
+            <div class="marquee-row-wrapper relative overflow-hidden group">
+                <div class="marquee-track-right flex gap-6 w-max animate-marquee-right group-hover:[animation-play-state:paused] active:[animation-play-state:paused]">
+                    ' . $row2Html . '
+                </div>
+            </div>
         </div>';
 
         // Enhanced Hotline & Call + WhatsApp Banner Block

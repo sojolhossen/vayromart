@@ -59,7 +59,7 @@ class LandingPageController extends Controller
             animation: pulse-glow 2s infinite;
         }', $content);
 
-        // Inject #f2532c Main Brand Primary Color stylesheet override into head
+        // Inject #f2532c Main Brand Primary Color & Dual Marquee Keyframes override into head
         $brandColorOverrideCss = '
     <style id="brand-main-color-theme">
         :root {
@@ -83,12 +83,21 @@ class LandingPageController extends Controller
             background: linear-gradient(135deg, #f2532c 0%, #de3812 100%) !important;
             box-shadow: 0 10px 25px -5px rgba(242, 83, 44, 0.4) !important;
         }
-        .review-carousel-dots .bg-emerald-600 {
-            background-color: #f2532c !important;
+        @keyframes marqueeLeft {
+            0% { transform: translateX(0%); }
+            100% { transform: translateX(-33.3333%); }
         }
-        .review-carousel-prev:hover, .review-carousel-next:hover {
-            background-color: #f2532c !important;
-            border-color: #f2532c !important;
+        @keyframes marqueeRight {
+            0% { transform: translateX(-33.3333%); }
+            100% { transform: translateX(0%); }
+        }
+        .animate-marquee-left {
+            animation: marqueeLeft 28s linear infinite !important;
+            will-change: transform;
+        }
+        .animate-marquee-right {
+            animation: marqueeRight 28s linear infinite !important;
+            will-change: transform;
         }
     </style>';
         $content = str_replace('</head>', $brandColorOverrideCss . "\n</head>", $content);
