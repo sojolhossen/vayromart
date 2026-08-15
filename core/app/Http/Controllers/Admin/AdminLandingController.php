@@ -1318,23 +1318,36 @@ class AdminLandingController extends Controller
             </li>';
         }
 
-        // Custom descriptions list as Roadmap Timeline
+        // Custom descriptions list as Ultra-Premium Roadmap Timeline
         $descriptionsHtml = '';
         if (!empty($data['descriptions'])) {
-            $descriptionsHtml .= '<div class="relative pl-6 sm:pl-8 space-y-6 before:absolute before:left-3 sm:before:left-4 before:top-3 before:bottom-3 before:w-1 before:bg-[#f2532c] before:rounded-full my-6">';
+            $descriptionsHtml .= '
+            <div class="relative pl-8 sm:pl-12 my-10 space-y-8 before:absolute before:left-4 sm:before:left-5 before:top-4 before:bottom-4 before:w-1.5 before:bg-gradient-to-b before:from-[#f2532c] before:via-[#ff7352] before:to-[#de3812] before:rounded-full before:shadow-[0_0_12px_rgba(242,83,44,0.5)]">';
+            
             foreach ($data['descriptions'] as $idx => $desc) {
                 if (trim($desc)) {
                     $stepNum = str_pad($idx + 1, 2, '0', STR_PAD_LEFT);
                     $descriptionsHtml .= '
                     <div class="relative group">
-                        <div class="absolute -left-[calc(1.5rem+8px)] sm:-left-[calc(2rem+8px)] top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-[#f2532c] text-white font-black text-xs flex items-center justify-center shadow-md shadow-[#f2532c]/40 group-hover:scale-125 transition-transform duration-300 border-2 border-white z-10">
+                        <!-- Step Badge Circle (Dual Ring with Glow) -->
+                        <div class="absolute -left-[calc(2rem+11px)] sm:-left-[calc(3rem+11px)] top-4 w-9 h-9 rounded-full bg-gradient-to-tr from-[#f2532c] to-[#ff7352] text-white font-black text-xs flex items-center justify-center shadow-lg shadow-[#f2532c]/50 group-hover:scale-125 group-hover:rotate-6 transition-all duration-300 ring-4 ring-white ring-offset-2 ring-offset-[#fff0ed] z-10">
                             ' . $stepNum . '
                         </div>
-                        <div class="bg-white p-5 sm:p-6 rounded-2xl border border-gray-100 hover:border-[#f2532c]/40 shadow-sm hover:shadow-xl hover:shadow-[#f2532c]/10 transition-all duration-300 flex items-center gap-4 hover:-translate-y-0.5">
-                            <span class="w-10 h-10 rounded-xl bg-[#fff0ed] text-[#f2532c] flex items-center justify-center flex-shrink-0 text-base group-hover:bg-[#f2532c] group-hover:text-white transition-colors duration-300">
+
+                        <!-- Roadmap Step Card -->
+                        <div class="bg-white p-6 sm:p-7 rounded-3xl border border-gray-100 border-l-4 border-l-[#f2532c] shadow-md shadow-gray-200/60 hover:shadow-2xl hover:shadow-[#f2532c]/15 transition-all duration-300 flex items-start gap-4 hover:-translate-y-1">
+                            <!-- Icon Box -->
+                            <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#fff0ed] to-[#ffe2dc] text-[#f2532c] flex items-center justify-center flex-shrink-0 text-lg shadow-inner group-hover:bg-[#f2532c] group-hover:text-white transition-all duration-300 group-hover:scale-110">
                                 <i class="fas fa-check-double"></i>
-                            </span>
-                            <p class="text-slate-800 font-bold text-base sm:text-lg leading-relaxed">' . e($desc) . '</p>
+                            </div>
+
+                            <!-- Content -->
+                            <div class="flex-1">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <span class="text-[11px] font-black uppercase tracking-wider text-[#f2532c] bg-[#fff0ed] px-2.5 py-0.5 rounded-full border border-[#f2532c]/20">Step ' . $stepNum . '</span>
+                                </div>
+                                <p class="text-slate-800 font-bold text-base sm:text-lg leading-relaxed">' . e($desc) . '</p>
+                            </div>
                         </div>
                     </div>';
                 }
