@@ -500,7 +500,7 @@ class LandingPageController extends Controller
             $content = preg_replace_callback('/<div class="relative (?:pl-6|pl-8)[^"]*before:absolute[^"]*">([\s\S]*?)<\/div>\s*<\/div>/i', function($m) {
                 $innerHtml = $m[1];
                 if (preg_match_all('/<div class="relative group">([\s\S]*?)<\/div>\s*<\/div>/i', $innerHtml, $cards)) {
-                    $newTimeline = '<div class="relative max-w-4xl mx-auto my-12 py-4">
+                    $newTimeline = '<div class="relative max-w-5xl mx-auto my-12 px-4 py-4">
                         <div class="hidden md:block absolute left-1/2 -translate-x-1/2 top-6 bottom-6 w-1 bg-gray-200 rounded-full"></div>
                         <div class="space-y-8 md:space-y-12">';
                     
@@ -517,19 +517,19 @@ class LandingPageController extends Controller
                             $isLeft = (($validCards - 1) % 2 === 0);
 
                             $newTimeline .= '
-                            <div class="relative flex flex-col md:flex-row items-center group">
-                                <div class="hidden md:flex absolute left-1/2 -translate-x-1/2 top-6 w-10 h-10 rounded-full bg-[#f2532c] text-white font-black text-sm items-center justify-center shadow-md shadow-[#f2532c]/30 border-2 border-white z-20 group-hover:scale-125 transition-transform duration-300">
+                            <div class="relative flex flex-col md:flex-row items-stretch md:items-center group">
+                                <div class="hidden md:flex absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-[#f2532c] text-white font-black text-sm items-center justify-center shadow-md shadow-[#f2532c]/30 border-2 border-white z-20 group-hover:scale-125 transition-transform duration-300">
                                     ' . $stepNum . '
                                 </div>
                                 <div class="md:hidden flex mb-2 w-8 h-8 rounded-full bg-[#f2532c] text-white font-black text-xs items-center justify-center shadow-md border-2 border-white">
                                     ' . $stepNum . '
                                 </div>
-                                <div class="w-full md:w-1/2 ' . ($isLeft ? 'md:pr-12 md:text-right' : 'md:ml-auto md:pl-12 md:text-left') . '">
-                                    <div class="bg-white p-6 rounded-2xl border border-gray-200/80 shadow-sm hover:shadow-xl hover:border-[#f2532c]/40 transition-all duration-300 hover:-translate-y-1">
-                                        <div class="flex items-center gap-2 mb-2 ' . ($isLeft ? 'md:justify-end' : 'md:justify-start') . '">
-                                            <span class="text-xs font-black uppercase text-[#f2532c] bg-[#fff0ed] px-2.5 py-0.5 rounded-full border border-[#f2532c]/20">Step ' . $stepNum . '</span>
+                                <div class="w-full md:w-[calc(50%-2.5rem)] ' . ($isLeft ? 'md:mr-auto' : 'md:ml-auto') . '">
+                                    <div class="w-full bg-white p-6 sm:p-7 rounded-2xl border border-gray-200/80 shadow-sm hover:shadow-xl hover:border-[#f2532c]/40 transition-all duration-300 hover:-translate-y-1 text-left">
+                                        <div class="flex items-center gap-2 mb-3">
+                                            <span class="text-xs font-black uppercase text-[#f2532c] bg-[#fff0ed] px-3 py-1 rounded-full border border-[#f2532c]/20">Step ' . $stepNum . '</span>
                                         </div>
-                                        <p class="text-slate-800 font-bold text-base sm:text-lg leading-relaxed">' . e($descText) . '</p>
+                                        <p class="text-slate-800 font-bold text-base sm:text-lg leading-relaxed text-left block w-full">' . e($descText) . '</p>
                                     </div>
                                 </div>
                             </div>';
