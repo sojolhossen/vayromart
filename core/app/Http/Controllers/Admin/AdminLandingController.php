@@ -567,8 +567,8 @@ class AdminLandingController extends Controller
             $variantsHtml .= '</div>';
         }
 
-        // Reviews HTML
-        $reviewsHtml = '';
+        // Reviews HTML Auto Slider
+        $reviewItemsHtml = '';
         $reviewers = [
             ['name' => ($data['reviewer_name_1'] ?? '') ?: 'Sojol Hossen', 'comment' => ($data['reviewer_comment_1'] ?? '') ?: 'অসাধারণ প্রোডাক্ট! ঠিক যেমনটি চেয়েছিলাম তেমনই পেয়েছি। ডেলিভারি সার্ভিসও খুব ফাস্ট ছিল। ধন্যবাদ বায়রোমার্ট!'],
             ['name' => ($data['reviewer_name_2'] ?? '') ?: 'Farhana Yasmin', 'comment' => ($data['reviewer_comment_2'] ?? '') ?: 'পণ্যটির কোয়ালিটি খুবই ভালো। ২ দিনেই ডেলিভারি পেয়েছি। আপনারা চাইলে চোখ বন্ধ করে নিতে পারেন।'],
@@ -577,24 +577,44 @@ class AdminLandingController extends Controller
         
         foreach ($reviewers as $idx => $rev) {
             $initial = mb_substr($rev['name'], 0, 1, 'utf-8');
-            $reviewsHtml .= '
-            <div class="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300">
-                <div class="flex items-center gap-4 mb-4">
-                    <div class="w-12 h-12 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-lg shadow-inner">' . $initial . '</div>
+            $reviewItemsHtml .= '
+            <div class="review-slide-item flex-none w-full md:w-[calc(33.333%-16px)]">
+                <div class="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 h-full flex flex-col justify-between">
                     <div>
-                        <h6 class="font-bold text-gray-800 text-base">' . e($rev['name']) . '</h6>
-                        <div class="text-amber-500 text-xs flex gap-0.5 mt-1">
-                            <i class="fas fa-star"></i>
-                            <i class="fas fa-star"></i>
-                            <i class="fas fa-star"></i>
-                            <i class="fas fa-star"></i>
-                            <i class="fas fa-star"></i>
+                        <div class="flex items-center gap-4 mb-4">
+                            <div class="w-12 h-12 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-lg shadow-inner">' . $initial . '</div>
+                            <div>
+                                <h6 class="font-bold text-gray-800 text-base">' . e($rev['name']) . '</h6>
+                                <div class="text-amber-500 text-xs flex gap-0.5 mt-1">
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                </div>
+                            </div>
                         </div>
+                        <p class="text-gray-600 text-sm leading-relaxed">"' . e($rev['comment']) . '"</p>
                     </div>
                 </div>
-                <p class="text-gray-600 text-sm leading-relaxed">"' . e($rev['comment']) . '"</p>
             </div>';
         }
+
+        $reviewsHtml = '
+        <div class="review-carousel-wrapper relative max-w-6xl mx-auto px-2">
+            <button type="button" aria-label="Previous Review" class="review-carousel-prev absolute -left-2 md:-left-5 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-white/95 shadow-xl border border-gray-200 text-gray-800 flex items-center justify-center hover:bg-emerald-600 hover:text-white hover:border-emerald-600 hover:scale-110 active:scale-95 transition-all duration-300 cursor-pointer">
+                <i class="fas fa-chevron-left text-lg"></i>
+            </button>
+            <button type="button" aria-label="Next Review" class="review-carousel-next absolute -right-2 md:-right-5 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-white/95 shadow-xl border border-gray-200 text-gray-800 flex items-center justify-center hover:bg-emerald-600 hover:text-white hover:border-emerald-600 hover:scale-110 active:scale-95 transition-all duration-300 cursor-pointer">
+                <i class="fas fa-chevron-right text-lg"></i>
+            </button>
+            <div class="review-carousel-container overflow-hidden rounded-2xl p-2 cursor-grab active:cursor-grabbing">
+                <div class="review-carousel-track flex gap-6 transition-transform duration-500 ease-out">
+                    ' . $reviewItemsHtml . '
+                </div>
+            </div>
+            <div class="review-carousel-dots flex justify-center items-center gap-2 mt-6"></div>
+        </div>';
 
         $html = '<!DOCTYPE html>
 <html lang="bn">
@@ -1353,20 +1373,22 @@ class AdminLandingController extends Controller
             $variantsHtml .= '</div>';
         }
 
-        // Review images
+        // Review images / Text Reviews Auto Slider
         $reviewsHtml = '';
+        $reviewItemsHtml = '';
+
         if (!empty($data['review_images'])) {
-            $reviewsHtml .= '<div class="grid grid-cols-2 md:grid-cols-3 gap-6">';
             foreach ($data['review_images'] as $imgPath) {
                 if ($imgPath) {
                     $imgUrl = $resolveUrl($imgPath);
-                    $reviewsHtml .= '
-                    <div class="overflow-hidden rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg hover:scale-[1.02] transition-all duration-300 bg-white p-2">
-                        <img src="' . $imgUrl . '" alt="Customer Review" class="w-full h-64 object-cover rounded-xl image-popup cursor-zoom-in">
+                    $reviewItemsHtml .= '
+                    <div class="review-slide-item flex-none w-full md:w-[calc(33.333%-16px)]">
+                        <div class="overflow-hidden rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg hover:scale-[1.02] transition-all duration-300 bg-white p-2 h-full">
+                            <img src="' . $imgUrl . '" alt="Customer Review" class="w-full h-64 object-cover rounded-xl image-popup cursor-zoom-in">
+                        </div>
                     </div>';
                 }
             }
-            $reviewsHtml .= '</div>';
         } else {
             // Fallback text reviews
             $reviewers = [
@@ -1374,25 +1396,43 @@ class AdminLandingController extends Controller
                 ['name' => 'Farhana Yasmin', 'comment' => 'পণ্যটির কোয়ালিটি খুবই ভালো। ২ দিনেই ডেলিভারি পেয়েছি। আপনারা চাইলে চোখ বন্ধ করে নিতে পারেন।'],
                 ['name' => 'Md. Arif', 'comment' => 'প্রোডাক্ট হাতে পেয়ে চেক করে পেমেন্ট করেছি। ক্যাশ অন ডেলিভারি সুবিধা থাকায় অনেক সুবিধা হয়েছে। ১০/১০ দিব।']
             ];
-            $reviewsHtml .= '<div class="grid md:grid-cols-3 gap-8">';
             foreach ($reviewers as $rev) {
                 $initial = mb_substr($rev['name'], 0, 1, 'utf-8');
-                $reviewsHtml .= '
-                <div class="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300">
-                    <div class="flex items-center gap-4 mb-4">
-                        <div class="w-12 h-12 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-lg shadow-inner">' . $initial . '</div>
+                $reviewItemsHtml .= '
+                <div class="review-slide-item flex-none w-full md:w-[calc(33.333%-16px)]">
+                    <div class="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 h-full flex flex-col justify-between">
                         <div>
-                            <h6 class="font-bold text-gray-800 text-base">' . e($rev['name']) . '</h6>
-                            <div class="text-amber-500 text-xs flex gap-0.5 mt-1">
-                                <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
+                            <div class="flex items-center gap-4 mb-4">
+                                <div class="w-12 h-12 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-lg shadow-inner">' . $initial . '</div>
+                                <div>
+                                    <h6 class="font-bold text-gray-800 text-base">' . e($rev['name']) . '</h6>
+                                    <div class="text-amber-500 text-xs flex gap-0.5 mt-1">
+                                        <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
+                                    </div>
+                                </div>
                             </div>
+                            <p class="text-gray-600 text-sm leading-relaxed">"' . e($rev['comment']) . '"</p>
                         </div>
                     </div>
-                    <p class="text-gray-600 text-sm leading-relaxed">"' . e($rev['comment']) . '"</p>
                 </div>';
             }
-            $reviewsHtml .= '</div>';
         }
+
+        $reviewsHtml = '
+        <div class="review-carousel-wrapper relative max-w-6xl mx-auto px-2">
+            <button type="button" aria-label="Previous Review" class="review-carousel-prev absolute -left-2 md:-left-5 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-white/95 shadow-xl border border-gray-200 text-gray-800 flex items-center justify-center hover:bg-emerald-600 hover:text-white hover:border-emerald-600 hover:scale-110 active:scale-95 transition-all duration-300 cursor-pointer">
+                <i class="fas fa-chevron-left text-lg"></i>
+            </button>
+            <button type="button" aria-label="Next Review" class="review-carousel-next absolute -right-2 md:-right-5 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-white/95 shadow-xl border border-gray-200 text-gray-800 flex items-center justify-center hover:bg-emerald-600 hover:text-white hover:border-emerald-600 hover:scale-110 active:scale-95 transition-all duration-300 cursor-pointer">
+                <i class="fas fa-chevron-right text-lg"></i>
+            </button>
+            <div class="review-carousel-container overflow-hidden rounded-2xl p-2 cursor-grab active:cursor-grabbing">
+                <div class="review-carousel-track flex gap-6 transition-transform duration-500 ease-out">
+                    ' . $reviewItemsHtml . '
+                </div>
+            </div>
+            <div class="review-carousel-dots flex justify-center items-center gap-2 mt-6"></div>
+        </div>';
 
         $hotlineBlock = '';
         if ($hotlinePhone) {

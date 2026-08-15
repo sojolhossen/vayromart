@@ -321,6 +321,216 @@ class LandingPageController extends Controller
             $content = str_replace('</body>', $lightboxModalHtml . "\n</body>", $content);
         }
 
+        // 13. Dynamically inject Review Auto-Slider Script for existing landing pages
+        if (strpos($content, 'review-carousel-slider-script') === false) {
+            $sliderScriptHtml = '
+    <script id="review-carousel-slider-script">
+        (function() {
+            function convertGridToSlider() {
+                var reviewSections = document.querySelectorAll("section");
+                reviewSections.forEach(function(sec) {
+                    var heading = sec.querySelector("h2");
+                    if (heading && (heading.textContent.indexOf("গ্রাহকদের") !== -1 || heading.textContent.indexOf("Reviews") !== -1 || heading.textContent.indexOf("মতামত") !== -1)) {
+                        var grid = sec.querySelector(".grid");
+                        if (grid && !grid.closest(".review-carousel-wrapper")) {
+                            var items = Array.from(grid.children);
+                            if (items.length > 0) {
+                                var wrapper = document.createElement("div");
+                                wrapper.className = "review-carousel-wrapper relative max-w-6xl mx-auto px-2";
+                                wrapper.innerHTML = \'\' +
+                                    \'<button type="button" aria-label="Previous Review" class="review-carousel-prev absolute -left-2 md:-left-5 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-white/95 shadow-xl border border-gray-200 text-gray-800 flex items-center justify-center hover:bg-emerald-600 hover:text-white hover:border-emerald-600 hover:scale-110 active:scale-95 transition-all duration-300 cursor-pointer"><i class="fas fa-chevron-left text-lg"></i></button>\' +
+                                    \'<button type="button" aria-label="Next Review" class="review-carousel-next absolute -right-2 md:-right-5 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-white/95 shadow-xl border border-gray-200 text-gray-800 flex items-center justify-center hover:bg-emerald-600 hover:text-white hover:border-emerald-600 hover:scale-110 active:scale-95 transition-all duration-300 cursor-pointer"><i class="fas fa-chevron-right text-lg"></i></button>\' +
+                                    \'<div class="review-carousel-container overflow-hidden rounded-2xl p-2 cursor-grab active:cursor-grabbing"><div class="review-carousel-track flex gap-6 transition-transform duration-500 ease-out"></div></div>\' +
+                                    \'<div class="review-carousel-dots flex justify-center items-center gap-2 mt-6"></div>\';
+
+                                var track = wrapper.querySelector(".review-carousel-track");
+                                items.forEach(function(item) {
+                                    item.className = "review-slide-item flex-none w-full md:w-[calc(33.333%-16px)]";
+                                    var inner = item.firstElementChild;
+                                    if (inner && !inner.classList.contains("h-full")) {
+                                        inner.classList.add("h-full");
+                                    }
+                                    track.appendChild(item);
+                                });
+
+                                grid.parentNode.replaceChild(wrapper, grid);
+                            }
+                        }
+                    }
+                });
+            }
+
+            function initReviewSliders() {
+                convertGridToSlider();
+                var wrappers = document.querySelectorAll(".review-carousel-wrapper");
+                wrappers.forEach(function(wrapper) {
+                    if (wrapper.dataset.sliderInitialized) return;
+                    wrapper.dataset.sliderInitialized = "true";
+
+                    var track = wrapper.querySelector(".review-carousel-track");
+                    var prevBtn = wrapper.querySelector(".review-carousel-prev");
+                    var nextBtn = wrapper.querySelector(".review-carousel-next");
+                    var dotsContainer = wrapper.querySelector(".review-carousel-dots");
+                    if (!track) return;
+
+                    var items = Array.from(track.children);
+                    if (items.length <= 1) {
+                        if (prevBtn) prevBtn.style.display = "none";
+                        if (nextBtn) nextBtn.style.display = "none";
+                        return;
+                    }
+
+                    var currentIndex = 0;
+                    var autoPlayTimer = null;
+
+                    function getItemsPerPage() {
+                        return window.innerWidth >= 768 ? 3 : 1;
+                    }
+
+                    function getMaxIndex() {
+                        var perPage = getItemsPerPage();
+                        return Math.max(0, items.length - perPage);
+                    }
+
+                    function renderDots() {
+                        if (!dotsContainer) return;
+                        dotsContainer.innerHTML = "";
+                        var maxIdx = getMaxIndex();
+                        var count = maxIdx + 1;
+                        if (count <= 1) return;
+
+                        for (var i = 0; i < count; i++) {
+                            var dot = document.createElement("button");
+                            dot.type = "button";
+                            dot.className = "w-3 h-3 rounded-full transition-all duration-300 " + (i === currentIndex ? "bg-emerald-600 w-8" : "bg-gray-300 hover:bg-gray-400");
+                            (function(idx) {
+                                dot.addEventListener("click", function() {
+                                    currentIndex = idx;
+                                    updateSlidePosition();
+                                    resetAutoPlay();
+                                });
+                            })(i);
+                            dotsContainer.appendChild(dot);
+                        }
+                    }
+
+                    function updateSlidePosition() {
+                        var perPage = getItemsPerPage();
+                        var container = wrapper.querySelector(".review-carousel-container");
+                        if (!container) return;
+                        var itemWidth = container.clientWidth / perPage;
+                        var maxIdx = getMaxIndex();
+                        if (currentIndex > maxIdx) currentIndex = 0;
+                        if (currentIndex < 0) currentIndex = maxIdx;
+
+                        var gap = 24;
+                        var shift = currentIndex * (itemWidth + (gap / perPage));
+                        track.style.transform = "translateX(-" + shift + "px)";
+
+                        if (dotsContainer) {
+                            var dots = Array.from(dotsContainer.children);
+                            dots.forEach(function(dot, idx) {
+                                if (idx === currentIndex) {
+                                    dot.className = "w-8 h-3 rounded-full bg-emerald-600 transition-all duration-300";
+                                } else {
+                                    dot.className = "w-3 h-3 rounded-full bg-gray-300 hover:bg-gray-400 transition-all duration-300";
+                                }
+                            });
+                        }
+                    }
+
+                    function nextSlide() {
+                        var maxIdx = getMaxIndex();
+                        if (currentIndex >= maxIdx) {
+                            currentIndex = 0;
+                        } else {
+                            currentIndex++;
+                        }
+                        updateSlidePosition();
+                    }
+
+                    function prevSlide() {
+                        var maxIdx = getMaxIndex();
+                        if (currentIndex <= 0) {
+                            currentIndex = maxIdx;
+                        } else {
+                            currentIndex--;
+                        }
+                        updateSlidePosition();
+                    }
+
+                    function startAutoPlay() {
+                        stopAutoPlay();
+                        autoPlayTimer = setInterval(nextSlide, 3500);
+                    }
+
+                    function stopAutoPlay() {
+                        if (autoPlayTimer) clearInterval(autoPlayTimer);
+                    }
+
+                    function resetAutoPlay() {
+                        startAutoPlay();
+                    }
+
+                    if (prevBtn) {
+                        prevBtn.addEventListener("click", function() {
+                            prevSlide();
+                            resetAutoPlay();
+                        });
+                    }
+                    if (nextBtn) {
+                        nextBtn.addEventListener("click", function() {
+                            nextSlide();
+                            resetAutoPlay();
+                        });
+                    }
+
+                    wrapper.addEventListener("mouseenter", stopAutoPlay);
+                    wrapper.addEventListener("mouseleave", startAutoPlay);
+
+                    var startX = 0;
+                    var isDragging = false;
+
+                    track.addEventListener("touchstart", function(e) {
+                        startX = e.touches[0].clientX;
+                        isDragging = true;
+                        stopAutoPlay();
+                    }, { passive: true });
+
+                    track.addEventListener("touchend", function(e) {
+                        if (!isDragging) return;
+                        isDragging = false;
+                        var endX = e.changedTouches[0].clientX;
+                        var diffX = startX - endX;
+                        if (diffX > 40) {
+                            nextSlide();
+                        } else if (diffX < -40) {
+                            prevSlide();
+                        }
+                        startAutoPlay();
+                    }, { passive: true });
+
+                    window.addEventListener("resize", function() {
+                        renderDots();
+                        updateSlidePosition();
+                    });
+
+                    renderDots();
+                    updateSlidePosition();
+                    startAutoPlay();
+                });
+            }
+
+            if (document.readyState === "loading") {
+                document.addEventListener("DOMContentLoaded", initReviewSliders);
+            } else {
+                initReviewSliders();
+            }
+        })();
+    </script>';
+            $content = str_replace('</body>', $sliderScriptHtml . "\n</body>", $content);
+        }
+
         // 14. Dynamically fix header button and logo visibility
         $content = str_replace(
             'bg-primary hover:brightness-95 text-white font-bold px-6 py-2.5 rounded-full',
