@@ -90,28 +90,15 @@ class LandingPageController extends Controller
             background-color: #f2532c !important;
             border-color: #f2532c !important;
         }
-        /* Roadmap Section #f2532c Styling */
+        /* Roadmap Section #f2532c Styling (Numbers, line, & tick icons only) */
         .before\:from-emerald-500, .before\:via-teal-400, .before\:to-emerald-600 {
             background-image: linear-gradient(to bottom, #f2532c, #ff7352, #de3812) !important;
-        }
-        .from-emerald-500, .to-teal-600 {
-            --tw-gradient-from: #f2532c !important;
-            --tw-gradient-to: #de3812 !important;
-        }
-        .from-emerald-50\/60 {
-            --tw-gradient-from: #fff0ed !important;
-        }
-        .border-emerald-100\/80 {
-            border-color: #ffcfc5 !important;
-        }
-        .hover\:border-emerald-500\/40:hover {
-            border-color: #f2532c !important;
         }
         .bg-emerald-500\/10 {
             background-color: rgba(242, 83, 44, 0.1) !important;
         }
-        .group-hover\:bg-emerald-600:hover {
-            background-color: #f2532c !important;
+        .fa-check-double {
+            color: #f2532c !important;
         }
     </style>';
         $content = str_replace('</head>', $brandColorOverrideCss . "\n</head>", $content);
