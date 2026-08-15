@@ -100,6 +100,13 @@ class LandingPageController extends Controller
         .fa-check-double {
             color: #f2532c !important;
         }
+        .before\:from-emerald-500 ~ .group > div, .before\:from-\[\#f2532c\] ~ .group > div {
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            padding-top: 0.25rem !important;
+            padding-bottom: 0.25rem !important;
+        }
     </style>';
         $content = str_replace('</head>', $brandColorOverrideCss . "\n</head>", $content);
 
