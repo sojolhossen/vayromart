@@ -1318,20 +1318,22 @@ class AdminLandingController extends Controller
             </li>';
         }
 
-        // Custom descriptions list as Roadmap Timeline (Clean points without background box)
+        // Custom descriptions list as Roadmap Timeline
         $descriptionsHtml = '';
         if (!empty($data['descriptions'])) {
-            $descriptionsHtml .= '<div class="relative pl-6 sm:pl-8 space-y-5 before:absolute before:left-3 sm:before:left-4 before:top-3 before:bottom-3 before:w-1 before:bg-gradient-to-b before:from-[#f2532c] before:via-[#ff7352] before:to-[#de3812] before:rounded-full my-6">';
+            $descriptionsHtml .= '<div class="relative pl-6 sm:pl-8 space-y-6 before:absolute before:left-3 sm:before:left-4 before:top-3 before:bottom-3 before:w-1 before:bg-[#f2532c] before:rounded-full my-6">';
             foreach ($data['descriptions'] as $idx => $desc) {
                 if (trim($desc)) {
                     $stepNum = str_pad($idx + 1, 2, '0', STR_PAD_LEFT);
                     $descriptionsHtml .= '
-                    <div class="relative group py-1">
-                        <div class="absolute -left-[calc(1.5rem+8px)] sm:-left-[calc(2rem+8px)] top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-gradient-to-r from-[#f2532c] to-[#de3812] text-white font-black text-xs flex items-center justify-center shadow-md shadow-[#f2532c]/30 group-hover:scale-110 transition-transform duration-300 border-2 border-white z-10">
+                    <div class="relative group">
+                        <div class="absolute -left-[calc(1.5rem+8px)] sm:-left-[calc(2rem+8px)] top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-[#f2532c] text-white font-black text-xs flex items-center justify-center shadow-md shadow-[#f2532c]/40 group-hover:scale-125 transition-transform duration-300 border-2 border-white z-10">
                             ' . $stepNum . '
                         </div>
-                        <div class="flex items-center gap-3.5 pl-2">
-                            <span class="text-[#f2532c] text-lg flex-shrink-0"><i class="fas fa-check-circle"></i></span>
+                        <div class="bg-white p-5 sm:p-6 rounded-2xl border border-gray-100 hover:border-[#f2532c]/40 shadow-sm hover:shadow-xl hover:shadow-[#f2532c]/10 transition-all duration-300 flex items-center gap-4 hover:-translate-y-0.5">
+                            <span class="w-10 h-10 rounded-xl bg-[#fff0ed] text-[#f2532c] flex items-center justify-center flex-shrink-0 text-base group-hover:bg-[#f2532c] group-hover:text-white transition-colors duration-300">
+                                <i class="fas fa-check-double"></i>
+                            </span>
                             <p class="text-slate-800 font-bold text-base sm:text-lg leading-relaxed">' . e($desc) . '</p>
                         </div>
                     </div>';
