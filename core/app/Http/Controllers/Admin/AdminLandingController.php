@@ -1318,18 +1318,28 @@ class AdminLandingController extends Controller
             </li>';
         }
 
-        // Custom descriptions list
+        // Custom descriptions list as Roadmap Timeline
         $descriptionsHtml = '';
         if (!empty($data['descriptions'])) {
-            foreach ($data['descriptions'] as $desc) {
+            $descriptionsHtml .= '<div class="relative pl-6 sm:pl-8 space-y-6 before:absolute before:left-3 sm:before:left-4 before:top-3 before:bottom-3 before:w-1 before:bg-gradient-to-b before:from-emerald-500 before:via-teal-400 before:to-emerald-600 before:rounded-full my-6">';
+            foreach ($data['descriptions'] as $idx => $desc) {
                 if (trim($desc)) {
+                    $stepNum = str_pad($idx + 1, 2, '0', STR_PAD_LEFT);
                     $descriptionsHtml .= '
-                    <div class="flex gap-4 items-start bg-white p-5 rounded-2xl border border-slate-100 hover:border-primary-light hover:shadow-md transition-all duration-300">
-                        <span class="w-8 h-8 rounded-full bg-primary-light text-primary flex items-center justify-center flex-shrink-0 mt-0.5"><i class="fas fa-arrow-right text-xs"></i></span>
-                        <p class="text-slate-700 font-semibold">' . e($desc) . '</p>
+                    <div class="relative group">
+                        <div class="absolute -left-[calc(1.5rem+8px)] sm:-left-[calc(2rem+8px)] top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-black text-xs flex items-center justify-center shadow-lg shadow-emerald-500/30 group-hover:scale-125 transition-transform duration-300 border-2 border-white z-10">
+                            ' . $stepNum . '
+                        </div>
+                        <div class="bg-gradient-to-r from-emerald-50/60 to-white p-5 sm:p-6 rounded-2xl border border-emerald-100/80 hover:border-emerald-500/40 shadow-sm hover:shadow-xl hover:shadow-emerald-500/10 transition-all duration-300 flex items-center gap-4 hover:-translate-y-0.5">
+                            <span class="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center flex-shrink-0 text-base group-hover:bg-emerald-600 group-hover:text-white transition-colors duration-300">
+                                <i class="fas fa-check-double"></i>
+                            </span>
+                            <p class="text-slate-800 font-bold text-base sm:text-lg leading-relaxed">' . e($desc) . '</p>
+                        </div>
                     </div>';
                 }
             }
+            $descriptionsHtml .= '</div>';
         }
 
         // Handle custom prices
@@ -1434,22 +1444,56 @@ class AdminLandingController extends Controller
             <div class="review-carousel-dots flex justify-center items-center gap-2 mt-6"></div>
         </div>';
 
+        // Enhanced Hotline & Call + WhatsApp Banner Block
         $hotlineBlock = '';
         if ($hotlinePhone) {
+            $cleanPhone = preg_replace('/[^0-9]/', '', $hotlinePhone);
+            $whatsappUrl = "https://api.whatsapp.com/send?phone=88" . ltrim($cleanPhone, '0') . "&text=" . urlencode("আসসালামু আলাইকুম, আমি " . $title . " সম্পর্কে বিস্তারিত জানতে চাই এবং অর্ডার করতে চাই।");
+
             $hotlineBlock = '
-            <div class="bg-gradient-to-r from-orange-500 to-amber-500 text-white p-8 rounded-3xl text-center shadow-xl mb-12 max-w-2xl mx-auto border border-orange-400">
-                <h3 class="text-2xl font-bold mb-3">' . $hotlineTitle . '</h3>
-                <a href="tel:' . $hotlinePhone . '" class="text-3xl lg:text-4xl font-black flex items-center justify-center gap-4 hover:scale-105 transition-all"><i class="fas fa-phone-volume animate-bounce"></i> ' . $hotlinePhone . '</a>
+            <div class="relative overflow-hidden bg-gradient-to-br from-emerald-900 via-teal-900 to-slate-900 text-white p-8 lg:p-10 rounded-3xl text-center shadow-2xl mb-12 max-w-3xl mx-auto border border-emerald-500/30 backdrop-blur-xl">
+                <div class="absolute -top-24 -right-24 w-48 h-48 bg-emerald-500/20 rounded-full blur-3xl"></div>
+                <div class="absolute -bottom-24 -left-24 w-48 h-48 bg-teal-500/20 rounded-full blur-3xl"></div>
+
+                <h3 class="text-2xl sm:text-3xl font-extrabold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-emerald-200 to-teal-100">' . $hotlineTitle . '</h3>
+                <p class="text-emerald-200/80 text-sm mb-6 font-medium">যেকোনো তথ্যের জন্য সরাসরি কল করুন অথবা হোয়াটসঅ্যাপে মেসেজ দিন</p>
+
+                <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+                    <a href="tel:' . $hotlinePhone . '" class="w-full sm:w-auto bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white px-8 py-4 rounded-2xl font-black text-xl sm:text-2xl flex items-center justify-center gap-3 shadow-lg shadow-emerald-500/30 hover:scale-105 active:scale-95 transition-all duration-300 group cursor-pointer border border-emerald-400/40">
+                        <span class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-xl group-hover:rotate-12 transition-transform">
+                            <i class="fas fa-phone-volume animate-bounce"></i>
+                        </span>
+                        <span>' . $hotlinePhone . '</span>
+                    </a>
+
+                    <a href="' . $whatsappUrl . '" target="_blank" rel="noopener noreferrer" class="w-full sm:w-auto bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-8 py-4 rounded-2xl font-black text-xl sm:text-2xl flex items-center justify-center gap-3 shadow-lg shadow-green-500/30 hover:scale-105 active:scale-95 transition-all duration-300 group cursor-pointer border border-green-400/40">
+                        <span class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
+                            <i class="fab fa-whatsapp"></i>
+                        </span>
+                        <span>WhatsApp এ মেসেজ দিন</span>
+                    </a>
+                </div>
             </div>';
         }
 
+        // Floating Call & WhatsApp Widgets (Bottom Left)
         $floatingWidget = '';
         if ($hotlinePhone) {
+            $cleanPhone = preg_replace('/[^0-9]/', '', $hotlinePhone);
+            $whatsappUrl = "https://api.whatsapp.com/send?phone=88" . ltrim($cleanPhone, '0') . "&text=" . urlencode("আসসালামু আলাইকুম, আমি " . $title . " সম্পর্কে বিস্তারিত জানতে চাই এবং অর্ডার করতে চাই।");
+
             $floatingWidget = '
-            <a href="tel:' . $hotlinePhone . '" class="fixed bottom-16 sm:bottom-6 left-4 sm:left-6 z-50 bg-emerald-600 hover:bg-emerald-700 text-white p-3.5 sm:p-4 rounded-full shadow-2xl flex items-center gap-3 transition-all hover:scale-110 active:scale-95 group">
-                <span class="w-9 h-9 sm:w-10 sm:h-10 bg-white/20 rounded-full flex items-center justify-center text-lg sm:text-xl animate-pulse"><i class="fas fa-phone"></i></span>
-                <span class="max-w-0 overflow-hidden group-hover:max-w-xs transition-all duration-500 ease-out font-bold text-sm whitespace-nowrap">কল করুন</span>
-            </a>';
+            <div class="fixed bottom-16 sm:bottom-6 left-4 sm:left-6 z-50 flex flex-col gap-3">
+                <a href="' . $whatsappUrl . '" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp Us" class="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white p-3.5 sm:p-4 rounded-full shadow-2xl flex items-center gap-3 transition-all duration-300 hover:scale-110 active:scale-95 group border-2 border-white/80">
+                    <span class="w-9 h-9 sm:w-10 sm:h-10 bg-white/20 rounded-full flex items-center justify-center text-xl sm:text-2xl animate-pulse"><i class="fab fa-whatsapp"></i></span>
+                    <span class="max-w-0 overflow-hidden group-hover:max-w-xs transition-all duration-500 ease-out font-extrabold text-sm whitespace-nowrap pr-1">WhatsApp এ মেসেজ</span>
+                </a>
+
+                <a href="tel:' . $hotlinePhone . '" aria-label="Call Hotline" class="bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white p-3.5 sm:p-4 rounded-full shadow-2xl flex items-center gap-3 transition-all duration-300 hover:scale-110 active:scale-95 group border-2 border-white/80">
+                    <span class="w-9 h-9 sm:w-10 sm:h-10 bg-white/20 rounded-full flex items-center justify-center text-lg sm:text-xl animate-bounce"><i class="fas fa-phone-volume"></i></span>
+                    <span class="max-w-0 overflow-hidden group-hover:max-w-xs transition-all duration-500 ease-out font-extrabold text-sm whitespace-nowrap pr-1">সরাসরি কল করুন</span>
+                </a>
+            </div>';
         }
 
         $html = '<!DOCTYPE html>
