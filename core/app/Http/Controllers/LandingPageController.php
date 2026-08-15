@@ -148,6 +148,27 @@ class LandingPageController extends Controller
             $content
         );
 
+        $content = str_replace(
+            '৭ দিনের রিফান্ড/এক্সচেঞ্জ সুবিধা পাবেন',
+            '২৪ ঘণ্টার রিপ্লেসমেন্ট ও রিফান্ড/এক্সচেঞ্জ সুবিধা পাবেন',
+            $content
+        );
+        $content = str_replace(
+            '৭ দিনের রিপ্লেসমেন্ট',
+            '২৪ ঘণ্টার রিপ্লেসমেন্ট',
+            $content
+        );
+        $content = str_replace(
+            '7 days replacement',
+            '24 hours replacement',
+            $content
+        );
+        $content = str_replace(
+            '7 Days Replacement',
+            '24 Hours Replacement',
+            $content
+        );
+
         // Reposition floating call button on mobile so it doesn't overlap the mobile sticky bar
         $content = str_replace('class="fixed bottom-6 left-6 z-50', 'class="fixed bottom-16 sm:bottom-6 left-4 sm:left-6 z-50', $content);
 

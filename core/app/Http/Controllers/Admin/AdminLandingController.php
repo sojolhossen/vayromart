@@ -311,7 +311,7 @@ class AdminLandingController extends Controller
                         <i class="fas fa-chevron-down text-sm transition-transform duration-300"></i>
                     </button>
                     <div class="faq-answer max-h-0 overflow-hidden transition-all duration-300 ease-in-out mt-3 text-gray-600 text-base leading-relaxed">
-                        অবশ্যই! প্রোডাক্টে কোনো ধরনের সমস্যা থাকলে বা আপনার পছন্দ না হলে ডেলিভারি ম্যান থাকা অবস্থায় আপনি কোনো চার্জ ছাড়া রিটার্ন করতে পারবেন অথবা ৭ দিনের রিফান্ড/এক্সচেঞ্জ সুবিধা পাবেন।
+                        অবশ্যই! প্রোডাক্টে কোনো ধরনের সমস্যা থাকলে বা আপনার পছন্দ না হলে ডেলিভারি ম্যান থাকা অবস্থায় আপনি কোনো চার্জ ছাড়া রিটার্ন করতে পারবেন অথবা ২৪ ঘণ্টার রিপ্লেসমেন্ট ও রিফান্ড/এক্সচেঞ্জ সুবিধা পাবেন।
                     </div>
                 </div>
             </div>
@@ -1130,7 +1130,7 @@ class AdminLandingController extends Controller
                         <i class="fas fa-chevron-down text-sm transition-transform duration-300"></i>
                     </button>
                     <div class="faq-answer max-h-0 overflow-hidden transition-all duration-300 ease-in-out mt-3 text-gray-600 text-base leading-relaxed">
-                        অবশ্যই! প্রোডাক্টে কোনো ধরনের সমস্যা থাকলে বা আপনার পছন্দ না হলে ডেলিভারি ম্যান থাকা অবস্থায় আপনি কোনো চার্জ ছাড়া রিটার্ন করতে পারবেন অথবা ৭ দিনের রিফান্ড/এক্সচেঞ্জ সুবিধা পাবেন।
+                        অবশ্যই! প্রোডাক্টে কোনো ধরনের সমস্যা থাকলে বা আপনার পছন্দ না হলে ডেলিভারি ম্যান থাকা অবস্থায় আপনি কোনো চার্জ ছাড়া রিটার্ন করতে পারবেন অথবা ২৪ ঘণ্টার রিপ্লেসমেন্ট ও রিফান্ড/এক্সচেঞ্জ সুবিধা পাবেন।
                     </div>
                 </div>
             </div>
