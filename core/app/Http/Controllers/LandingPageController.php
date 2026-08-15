@@ -90,42 +90,8 @@ class LandingPageController extends Controller
             background-color: #f2532c !important;
             border-color: #f2532c !important;
         }
-        /* Roadmap Section #f2532c Styling (Clean text, no card background box) */
-        .before\:from-emerald-500, .before\:via-teal-400, .before\:to-emerald-600 {
-            background-image: linear-gradient(to bottom, #f2532c, #ff7352, #de3812) !important;
-        }
-        .bg-emerald-500\/10 {
-            background-color: transparent !important;
-        }
-        .fa-check-double, .fa-check-circle {
-            color: #f2532c !important;
-        }
-        .before\:from-emerald-500 ~ .group > div,
-        .before\:from-\[\#f2532c\] ~ .group > div,
-        .relative.group > div[class*="bg-"],
-        .relative.group > div.bg-white {
-            background: transparent !important;
-            background-color: transparent !important;
-            border: none !important;
-            box-shadow: none !important;
-            padding-top: 0.25rem !important;
-            padding-bottom: 0.25rem !important;
-        }
     </style>';
         $content = str_replace('</head>', $brandColorOverrideCss . "\n</head>", $content);
-
-        // Dynamically strip out background box & borders from description/roadmap items in existing pages
-        $content = str_replace(
-            'bg-gradient-to-r from-emerald-50/60 to-white p-5 sm:p-6 rounded-2xl border border-emerald-100/80 hover:border-emerald-500/40 shadow-sm hover:shadow-xl hover:shadow-emerald-500/10 transition-all duration-300 flex items-center gap-4 hover:-translate-y-0.5',
-            'flex items-center gap-3.5 pl-2 py-1',
-            $content
-        );
-
-        $content = str_replace(
-            'flex gap-4 items-start bg-white p-5 rounded-2xl border border-slate-100 hover:border-primary-light hover:shadow-md transition-all duration-300',
-            'flex items-center gap-3.5 pl-2 py-1',
-            $content
-        );
 
         // 3. Dynamically replace old button styles with the premium green gradient styling
         // Order form buttons
@@ -599,7 +565,57 @@ class LandingPageController extends Controller
             $content = str_replace('</body>', $sliderScriptHtml . "\n</body>", $content);
         }
 
-        // 14. Dynamically fix header button and logo visibility
+        // 14. Dynamically convert any old Roadmap Timeline HTML to the new Alternating Center-Line Timeline layout
+        if (strpos($content, 'left-1/2 -translate-x-1/2') === false) {
+            $content = preg_replace_callback('/<div class="relative (?:pl-6|pl-8)[^"]*before:absolute[^"]*">([\s\S]*?)<\/div>\s*<\/div>/i', function($m) {
+                $innerHtml = $m[1];
+                if (preg_match_all('/<div class="relative group">([\s\S]*?)<\/div>\s*<\/div>/i', $innerHtml, $cards)) {
+                    $newTimeline = '<div class="relative max-w-4xl mx-auto my-12 py-4">
+                        <div class="hidden md:block absolute left-1/2 -translate-x-1/2 top-6 bottom-6 w-1 bg-gray-200 rounded-full"></div>
+                        <div class="space-y-8 md:space-y-12">';
+                    
+                    $validCards = 0;
+                    foreach ($cards[0] as $idx => $cardHtml) {
+                        $descText = '';
+                        if (preg_match('/<p[^>]*>([\s\S]*?)<\/p>/i', $cardHtml, $pMatch)) {
+                            $descText = trim(strip_tags($pMatch[1]));
+                        }
+
+                        if ($descText) {
+                            $validCards++;
+                            $stepNum = str_pad($validCards, 2, '0', STR_PAD_LEFT);
+                            $isLeft = (($validCards - 1) % 2 === 0);
+
+                            $newTimeline .= '
+                            <div class="relative flex flex-col md:flex-row items-center group">
+                                <div class="hidden md:flex absolute left-1/2 -translate-x-1/2 top-6 w-10 h-10 rounded-full bg-[#f2532c] text-white font-black text-sm items-center justify-center shadow-md shadow-[#f2532c]/30 border-2 border-white z-20 group-hover:scale-125 transition-transform duration-300">
+                                    ' . $stepNum . '
+                                </div>
+                                <div class="md:hidden flex mb-2 w-8 h-8 rounded-full bg-[#f2532c] text-white font-black text-xs items-center justify-center shadow-md border-2 border-white">
+                                    ' . $stepNum . '
+                                </div>
+                                <div class="w-full md:w-1/2 ' . ($isLeft ? 'md:pr-12 md:text-right' : 'md:ml-auto md:pl-12 md:text-left') . '">
+                                    <div class="bg-white p-6 rounded-2xl border border-gray-200/80 shadow-sm hover:shadow-xl hover:border-[#f2532c]/40 transition-all duration-300 hover:-translate-y-1">
+                                        <div class="flex items-center gap-2 mb-2 ' . ($isLeft ? 'md:justify-end' : 'md:justify-start') . '">
+                                            <span class="text-xs font-black uppercase text-[#f2532c] bg-[#fff0ed] px-2.5 py-0.5 rounded-full border border-[#f2532c]/20">Step ' . $stepNum . '</span>
+                                        </div>
+                                        <p class="text-slate-800 font-bold text-base sm:text-lg leading-relaxed">' . e($descText) . '</p>
+                                    </div>
+                                </div>
+                            </div>';
+                        }
+                    }
+
+                    $newTimeline .= '</div></div>';
+                    if ($validCards > 0) {
+                        return $newTimeline;
+                    }
+                }
+                return $m[0];
+            }, $content);
+        }
+
+        // 15. Dynamically fix header button and logo visibility
         $content = str_replace(
             'bg-primary hover:brightness-95 text-white font-bold px-6 py-2.5 rounded-full',
             'bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold px-6 py-2.5 rounded-full shadow-md',
