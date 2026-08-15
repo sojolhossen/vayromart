@@ -90,18 +90,22 @@ class LandingPageController extends Controller
             background-color: #f2532c !important;
             border-color: #f2532c !important;
         }
-        /* Roadmap Section #f2532c Styling (Numbers, line, & tick icons only) */
+        /* Roadmap Section #f2532c Styling (Clean text, no card background box) */
         .before\:from-emerald-500, .before\:via-teal-400, .before\:to-emerald-600 {
             background-image: linear-gradient(to bottom, #f2532c, #ff7352, #de3812) !important;
         }
         .bg-emerald-500\/10 {
-            background-color: #ffffff !important;
+            background-color: transparent !important;
         }
-        .fa-check-double {
+        .fa-check-double, .fa-check-circle {
             color: #f2532c !important;
         }
-        .before\:from-emerald-500 ~ .group > div, .before\:from-\[\#f2532c\] ~ .group > div {
+        .before\:from-emerald-500 ~ .group > div,
+        .before\:from-\[\#f2532c\] ~ .group > div,
+        .relative.group > div[class*="bg-"],
+        .relative.group > div.bg-white {
             background: transparent !important;
+            background-color: transparent !important;
             border: none !important;
             box-shadow: none !important;
             padding-top: 0.25rem !important;
@@ -109,6 +113,19 @@ class LandingPageController extends Controller
         }
     </style>';
         $content = str_replace('</head>', $brandColorOverrideCss . "\n</head>", $content);
+
+        // Dynamically strip out background box & borders from description/roadmap items in existing pages
+        $content = str_replace(
+            'bg-gradient-to-r from-emerald-50/60 to-white p-5 sm:p-6 rounded-2xl border border-emerald-100/80 hover:border-emerald-500/40 shadow-sm hover:shadow-xl hover:shadow-emerald-500/10 transition-all duration-300 flex items-center gap-4 hover:-translate-y-0.5',
+            'flex items-center gap-3.5 pl-2 py-1',
+            $content
+        );
+
+        $content = str_replace(
+            'flex gap-4 items-start bg-white p-5 rounded-2xl border border-slate-100 hover:border-primary-light hover:shadow-md transition-all duration-300',
+            'flex items-center gap-3.5 pl-2 py-1',
+            $content
+        );
 
         // 3. Dynamically replace old button styles with the premium green gradient styling
         // Order form buttons
