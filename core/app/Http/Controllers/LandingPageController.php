@@ -48,16 +48,50 @@ class LandingPageController extends Controller
             }
         }
 
-        // 2. Replace the old scaling & blinking pulse animation with a modern glowing shadow pulse
+        // 2. Replace the old scaling & blinking pulse animation with a modern glowing shadow pulse in brand color #f2532c
         $content = preg_replace('/@keyframes pulse-ring\s*\{[^}]*\}/is', '@keyframes pulse-glow {
-            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.6); }
-            70% { box-shadow: 0 0 0 15px rgba(16, 185, 129, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+            0% { box-shadow: 0 0 0 0 rgba(242, 83, 44, 0.6); }
+            70% { box-shadow: 0 0 0 16px rgba(242, 83, 44, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(242, 83, 44, 0); }
         }', $content);
 
         $content = preg_replace('/\.pulsing-btn\s*\{[^}]*\}/is', '.pulsing-btn {
             animation: pulse-glow 2s infinite;
         }', $content);
+
+        // Inject #f2532c Main Brand Primary Color stylesheet override into head
+        $brandColorOverrideCss = '
+    <style id="brand-main-color-theme">
+        :root {
+            --primary-color: #f2532c !important;
+            --primary-hover: #de3812 !important;
+            --primary-light: #fff0ed !important;
+        }
+        .bg-primary, .bg-emerald-600, .bg-emerald-500, .bg-teal-600, .bg-indigo-600 {
+            background-color: #f2532c !important;
+        }
+        .hover\:bg-emerald-600:hover, .hover\:bg-emerald-700:hover, .hover\:bg-teal-700:hover {
+            background-color: #de3812 !important;
+        }
+        .text-primary, .text-emerald-600, .text-emerald-500, .text-teal-600 {
+            color: #f2532c !important;
+        }
+        .border-primary, .border-emerald-500, .border-emerald-600 {
+            border-color: #f2532c !important;
+        }
+        .pulsing-btn {
+            background: linear-gradient(135deg, #f2532c 0%, #de3812 100%) !important;
+            box-shadow: 0 10px 25px -5px rgba(242, 83, 44, 0.4) !important;
+        }
+        .review-carousel-dots .bg-emerald-600 {
+            background-color: #f2532c !important;
+        }
+        .review-carousel-prev:hover, .review-carousel-next:hover {
+            background-color: #f2532c !important;
+            border-color: #f2532c !important;
+        }
+    </style>';
+        $content = str_replace('</head>', $brandColorOverrideCss . "\n</head>", $content);
 
         // 3. Dynamically replace old button styles with the premium green gradient styling
         // Order form buttons
