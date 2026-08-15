@@ -1644,11 +1644,11 @@ class AdminLandingController extends Controller
     <!-- Sticky Header -->
     <header class="sticky top-0 bg-white/95 backdrop-blur-md border-b border-gray-100 z-50 transition-all shadow-sm">
         <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-            <a href="javascript:void(0)" onclick="window.location.reload()" class="text-2xl font-black text-emerald-600 tracking-tight flex items-center gap-2">
+            <a href="javascript:void(0)" onclick="window.location.reload()" class="text-2xl font-black text-[#f2532c] tracking-tight flex items-center gap-2">
                 <i class="fas fa-shopping-bag"></i>
                 <span>' . gs('site_name') . '</span>
             </a>
-            <a href="#checkout-form" class="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold px-6 py-2.5 rounded-full transition-all duration-300 shadow-md hover:shadow-lg flex items-center gap-2">
+            <a href="#checkout-form" class="bg-gradient-to-r from-[#f2532c] to-[#d83d16] hover:from-[#d83d16] hover:to-[#ba2a0b] text-white font-black px-7 py-3 rounded-full transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-[#f2532c]/30 flex items-center gap-2 text-base">
                 <i class="fas fa-cart-shopping"></i>
                 <span>এখনই কিনুন</span>
             </a>
@@ -1687,9 +1687,9 @@ class AdminLandingController extends Controller
             ' . $countdownTimerHtml . '
 
             <div class="flex flex-col sm:flex-row gap-4 max-w-lg">
-                <a href="#checkout-form" class="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 hover:scale-[1.02] active:scale-[0.98] text-white text-xl font-bold px-8 py-4.5 rounded-2xl transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-emerald-500/20 text-center flex items-center justify-center gap-3 pulsing-btn">
+                <a href="#checkout-form" class="w-full bg-gradient-to-r from-[#f2532c] to-[#d83d16] hover:from-[#d83d16] hover:to-[#ba2a0b] hover:scale-[1.02] active:scale-[0.98] text-white text-2xl sm:text-3xl font-black px-10 py-5 sm:py-6 rounded-2xl transition-all duration-300 shadow-xl hover:shadow-2xl hover:shadow-[#f2532c]/40 text-center flex items-center justify-center gap-3.5 pulsing-btn border-2 border-white/40 ring-4 ring-[#fff0ed]">
                     <i class="fas fa-hand-pointer"></i>
-                    <span>অর্ডার করতে ফর্মটি পূরণ করুন</span>
+                    <span>অর্ডার করতে ক্লিক করুন</span>
                 </a>
             </div>
         </div>
@@ -1829,8 +1829,8 @@ class AdminLandingController extends Controller
                         <span class="font-black text-slate-800 text-xl">সর্বমোট বিল: <span id="total_bill_val" class="text-emerald-600 font-black">' . ($price + $insideCharge) . ' BDT</span></span>
                     </div>
 
-                    <button type="submit" class="w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 hover:scale-[1.01] active:scale-[0.99] text-white font-black text-xl py-4.5 rounded-2xl shadow-lg hover:shadow-xl hover:shadow-emerald-600/20 transition-all duration-300 flex items-center justify-center gap-3 pulsing-btn">
-                        <i class="fas fa-circle-check"></i>
+                    <button type="submit" class="w-full bg-gradient-to-r from-[#f2532c] to-[#d83d16] hover:from-[#d83d16] hover:to-[#ba2a0b] hover:scale-[1.01] active:scale-[0.99] text-white font-black text-2xl sm:text-3xl py-5 sm:py-6 px-10 rounded-2xl shadow-xl hover:shadow-2xl hover:shadow-[#f2532c]/40 transition-all duration-300 flex items-center justify-center gap-3.5 pulsing-btn border-2 border-white/40 ring-4 ring-[#fff0ed]">
+                        <i class="fas fa-circle-check text-2xl sm:text-3xl"></i>
                         <span>অর্ডার নিশ্চিত করুন</span>
                     </button>
                 </form>
@@ -1853,11 +1853,13 @@ class AdminLandingController extends Controller
     <!-- Mobile Sticky Floating Order Bar -->
     <div id="mobile-sticky-bar" class="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 p-2.5 shadow-[0_-4px_20px_rgba(0,0,0,0.15)] flex items-center justify-between gap-3 sm:hidden">
         <div class="pl-2">
-            <span class="text-[10px] ' . ($isFreeDelivery ? 'text-emerald-600 font-black' : 'text-slate-500 font-semibold') . ' block leading-tight">' . ($isFreeDelivery ? '🚚 ফ্রি ডেলিভারি' : 'বিশেষ অফার') . '</span>
-            <span class="text-base font-black text-emerald-600 leading-tight block">' . $price . ' BDT</span>
+            <span class="text-[10px] ' . ($isFreeDelivery ? 'text-[#f2532c] font-black' : 'text-slate-500 font-semibold') . ' block leading-tight">' . ($isFreeDelivery ? '🚚 ফ্রি ডেলিভারি' : 'বিশেষ অফার') . '</span>
+            <span class="text-base font-black text-[#f2532c] leading-tight block">' . $price . ' BDT</span>
         </div>
-        <a href="#checkout-form" class="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold py-2.5 px-4 rounded-xl shadow-md text-sm flex items-center justify-center gap-2 pulsing-btn flex-1 active:scale-95 transition-all">
+        <a href="#checkout-form" class="bg-gradient-to-r from-[#f2532c] to-[#d83d16] hover:from-[#d83d16] hover:to-[#ba2a0b] text-white font-black py-3.5 px-6 rounded-xl shadow-lg text-base flex items-center justify-center gap-2 pulsing-btn flex-1 active:scale-95 transition-all">
             <i class="fas fa-cart-shopping"></i>
+            <span>এখনই অর্ডার করুন</span>
+        </a>
             <span>অর্ডার করুন</span>
         </a>
     </div>

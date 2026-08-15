@@ -102,30 +102,37 @@ class LandingPageController extends Controller
     </style>';
         $content = str_replace('</head>', $brandColorOverrideCss . "\n</head>", $content);
 
-        // 3. Dynamically replace old button styles with the premium green gradient styling
-        // Order form buttons
+        // 3. Dynamically replace button styles with the thick, bold #f2532c brand gradient styling
         $content = str_replace(
-            'class="bg-emerald-600 hover:bg-emerald-700 text-white text-xl font-bold px-8 py-4 rounded-full transition-all duration-300 shadow-lg text-center flex items-center justify-center gap-3 pulsing-btn"',
-            'class="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 hover:scale-[1.02] active:scale-[0.98] text-white text-xl font-bold px-8 py-4 rounded-full transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-emerald-500/20 text-center flex items-center justify-center gap-3 pulsing-btn"',
+            'from-emerald-500 to-teal-600',
+            'from-[#f2532c] to-[#d83d16]',
+            $content
+        );
+        $content = str_replace(
+            'hover:from-emerald-600 hover:to-teal-700',
+            'hover:from-[#d83d16] hover:to-[#ba2a0b]',
+            $content
+        );
+        $content = str_replace(
+            'bg-emerald-600 hover:bg-emerald-700',
+            'bg-[#f2532c] hover:bg-[#d83d16]',
             $content
         );
 
+        // Make order buttons thicker, bolder and larger
         $content = str_replace(
-            'class="bg-emerald-600 hover:bg-emerald-700 text-white text-xl font-bold px-8 py-4.5 rounded-2xl transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-emerald-600/20 text-center flex items-center justify-center gap-3 pulsing-btn"',
-            'class="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 hover:scale-[1.02] active:scale-[0.98] text-white text-xl font-bold px-8 py-4.5 rounded-2xl transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-emerald-600/20 text-center flex items-center justify-center gap-3 pulsing-btn"',
+            'py-4 rounded-full',
+            'py-5 sm:py-6 px-10 text-2xl sm:text-3xl font-black rounded-2xl shadow-2xl ring-4 ring-[#fff0ed]',
             $content
         );
-
-        // Confirm Order buttons
         $content = str_replace(
-            'class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-lg py-4 rounded-xl shadow-lg transition-all duration-300 flex items-center justify-center gap-2 pulsing-btn"',
-            'class="w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 hover:scale-[1.01] active:scale-[0.99] text-white font-bold text-xl py-4 rounded-xl shadow-lg hover:shadow-xl hover:shadow-emerald-500/20 transition-all duration-300 flex items-center justify-center gap-2 pulsing-btn"',
+            'py-4.5 rounded-2xl',
+            'py-5 sm:py-6 px-10 text-2xl sm:text-3xl font-black rounded-2xl shadow-2xl ring-4 ring-[#fff0ed]',
             $content
         );
-
         $content = str_replace(
-            'class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xl py-4.5 rounded-2xl shadow-lg hover:shadow-xl hover:shadow-emerald-600/20 active:scale-95 transition-all duration-300 flex items-center justify-center gap-3 pulsing-btn"',
-            'class="w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 hover:scale-[1.01] active:scale-[0.99] text-white font-black text-xl py-4.5 rounded-2xl shadow-lg hover:shadow-xl hover:shadow-emerald-500/20 transition-all duration-300 flex items-center justify-center gap-3 pulsing-btn"',
+            'py-4 rounded-xl',
+            'py-5 sm:py-6 px-10 text-2xl sm:text-3xl font-black rounded-2xl shadow-2xl ring-4 ring-[#fff0ed]',
             $content
         );
 
