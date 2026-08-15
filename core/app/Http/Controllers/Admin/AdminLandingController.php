@@ -1318,33 +1318,39 @@ class AdminLandingController extends Controller
             </li>';
         }
 
-        // Custom descriptions list as Ultra-Premium Roadmap Timeline
+        // Alternating Center-Line Roadmap Timeline
         $descriptionsHtml = '';
         if (!empty($data['descriptions'])) {
             $descriptionsHtml .= '
-            <div class="relative pl-8 sm:pl-12 my-10 space-y-8 before:absolute before:left-4 sm:before:left-5 before:top-4 before:bottom-4 before:w-1.5 before:bg-gradient-to-b before:from-[#f2532c] before:via-[#ff7352] before:to-[#de3812] before:rounded-full before:shadow-[0_0_12px_rgba(242,83,44,0.5)]">';
+            <div class="relative max-w-4xl mx-auto my-12 py-4">
+                <!-- Center Vertical Line -->
+                <div class="hidden md:block absolute left-1/2 -translate-x-1/2 top-6 bottom-6 w-1 bg-gray-200 rounded-full"></div>
+
+                <div class="space-y-8 md:space-y-12">
+            ';
             
             foreach ($data['descriptions'] as $idx => $desc) {
                 if (trim($desc)) {
                     $stepNum = str_pad($idx + 1, 2, '0', STR_PAD_LEFT);
+                    $isLeft = ($idx % 2 === 0);
+
                     $descriptionsHtml .= '
-                    <div class="relative group">
-                        <!-- Step Badge Circle (Dual Ring with Glow) -->
-                        <div class="absolute -left-[calc(2rem+11px)] sm:-left-[calc(3rem+11px)] top-4 w-9 h-9 rounded-full bg-gradient-to-tr from-[#f2532c] to-[#ff7352] text-white font-black text-xs flex items-center justify-center shadow-lg shadow-[#f2532c]/50 group-hover:scale-125 group-hover:rotate-6 transition-all duration-300 ring-4 ring-white ring-offset-2 ring-offset-[#fff0ed] z-10">
+                    <div class="relative flex flex-col md:flex-row items-center group">
+                        <!-- Center Step Number Circle -->
+                        <div class="hidden md:flex absolute left-1/2 -translate-x-1/2 top-6 w-10 h-10 rounded-full bg-[#f2532c] text-white font-black text-sm items-center justify-center shadow-md shadow-[#f2532c]/30 border-2 border-white z-20 group-hover:scale-125 transition-transform duration-300">
                             ' . $stepNum . '
                         </div>
 
-                        <!-- Roadmap Step Card -->
-                        <div class="bg-white p-6 sm:p-7 rounded-3xl border border-gray-100 border-l-4 border-l-[#f2532c] shadow-md shadow-gray-200/60 hover:shadow-2xl hover:shadow-[#f2532c]/15 transition-all duration-300 flex items-start gap-4 hover:-translate-y-1">
-                            <!-- Icon Box -->
-                            <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#fff0ed] to-[#ffe2dc] text-[#f2532c] flex items-center justify-center flex-shrink-0 text-lg shadow-inner group-hover:bg-[#f2532c] group-hover:text-white transition-all duration-300 group-hover:scale-110">
-                                <i class="fas fa-check-double"></i>
-                            </div>
+                        <!-- Mobile Number Circle -->
+                        <div class="md:hidden flex mb-2 w-8 h-8 rounded-full bg-[#f2532c] text-white font-black text-xs items-center justify-center shadow-md border-2 border-white">
+                            ' . $stepNum . '
+                        </div>
 
-                            <!-- Content -->
-                            <div class="flex-1">
-                                <div class="flex items-center gap-2 mb-1">
-                                    <span class="text-[11px] font-black uppercase tracking-wider text-[#f2532c] bg-[#fff0ed] px-2.5 py-0.5 rounded-full border border-[#f2532c]/20">Step ' . $stepNum . '</span>
+                        <!-- Step Card (Left or Right side) -->
+                        <div class="w-full md:w-1/2 ' . ($isLeft ? 'md:pr-12 md:text-right' : 'md:ml-auto md:pl-12 md:text-left') . '">
+                            <div class="bg-white p-6 rounded-2xl border border-gray-200/80 shadow-sm hover:shadow-xl hover:border-[#f2532c]/40 transition-all duration-300 hover:-translate-y-1">
+                                <div class="flex items-center gap-2 mb-2 ' . ($isLeft ? 'md:justify-end' : 'md:justify-start') . '">
+                                    <span class="text-xs font-black uppercase text-[#f2532c] bg-[#fff0ed] px-2.5 py-0.5 rounded-full border border-[#f2532c]/20">Step ' . $stepNum . '</span>
                                 </div>
                                 <p class="text-slate-800 font-bold text-base sm:text-lg leading-relaxed">' . e($desc) . '</p>
                             </div>
@@ -1352,7 +1358,10 @@ class AdminLandingController extends Controller
                     </div>';
                 }
             }
-            $descriptionsHtml .= '</div>';
+
+            $descriptionsHtml .= '
+                </div>
+            </div>';
         }
 
         // Handle custom prices
