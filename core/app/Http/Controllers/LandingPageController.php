@@ -95,7 +95,7 @@ class LandingPageController extends Controller
             background-image: linear-gradient(to bottom, #f2532c, #ff7352, #de3812) !important;
         }
         .bg-emerald-500\/10 {
-            background-color: rgba(242, 83, 44, 0.1) !important;
+            background-color: #ffffff !important;
         }
         .fa-check-double {
             color: #f2532c !important;
